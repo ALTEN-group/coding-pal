@@ -1,8 +1,8 @@
-# coding-pal
+# Coding pal
 
-instructions, skills and agents to improve your AI coding assistant.
+Instructions, skills and agents to improve your AI coding assistant.
 
-## Install
+## Install with APM
 
 To install these instructions in an APM-enabled project, run:
 
