@@ -4,24 +4,28 @@ Instructions, skills and agents to improve your AI coding assistant.
 
 ## Install with APM
 
-To install these instructions in an APM-enabled project, create a yml file :
+To install these instructions in an APM-enabled project, first create a yml file :
 
 ```yml
 # apm.yml — ships with your project
-name: Gatelin
+name: Your-project
 version: 1.0.0
 author: xxx
+targets:
+- copilot
 dependencies:
   apm:
-    - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
+  mcp:
+
 ```
 
-then install packages :
+then install a package :
 
 ```bash
-apm install
+apm install ALTEN-group/instructions/sharp-agent.instructions.md --target copilot
 ```
 
-This will install the `instructions/sharp-agent.instructions.md` file into your repository. so once it is installed your agent can load it directly.
+This will install the `instructions/sharp-agent.instructions.md` file into your .github folder so your coding assistant can load it directly.
 
+Learn more avout apm [here](https://microsoft.github.io/apm/quickstart/)
 
