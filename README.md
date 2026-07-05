@@ -27,5 +27,11 @@ apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --ta
 
 This installs the `instructions/sharp-agent.instructions.md` file into your project so your coding assistant can use it.
 
+You can update your collection regularly to keep it up to date : 
+
+```bash
+apm update
+```
+
 Learn more about [**Agent Package Manager**](https://microsoft.github.io/apm/quickstart/)
 
