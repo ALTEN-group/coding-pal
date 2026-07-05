@@ -3,7 +3,7 @@ description: "Guidelines to avoid overengineering and reduce token consumption. 
 applyTo: "**"
 ---
 
-**Tradeoff:** These guidelines bias toward caution over speed.
+**Tradeoff:** These guidelines bias toward caution.
 
 ## 1. Think Before Coding
 
