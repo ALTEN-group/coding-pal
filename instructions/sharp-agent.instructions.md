@@ -33,7 +33,6 @@ When editing existing code:
 - Do not "improve" adjacent code, comments, or formatting.
 - Do not refactor things that are not broken.
 - Always match existing style.
-- If you notice dead code, mention it - do not delete it.
 
 When your changes create orphans:
 - Only remove imports/variables/functions that your changes made unused.
