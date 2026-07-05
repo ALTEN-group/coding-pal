@@ -4,7 +4,7 @@ Instructions, skills, and agents to improve your AI coding assistant.
 
 ## Install with APM
 
-To install this collection of custom agents, instructions, and skills in an APM-enabled project, first create an `apm.yml` file:
+To install this collection in an APM-enabled project, first create an `apm.yml` file:
 
 ```yml
 # apm.yml — ships with your project
