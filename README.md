@@ -27,5 +27,5 @@ apm install ALTEN-group/instructions/sharp-agent.instructions.md --target copilo
 
 This will install the `instructions/sharp-agent.instructions.md` file into your .github folder so your coding assistant can load it directly.
 
-Learn more avout apm [here](https://microsoft.github.io/apm/quickstart/)
+Learn more about **Agent Package Manager** [here](https://microsoft.github.io/apm/quickstart/)
 
