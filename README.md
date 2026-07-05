@@ -19,7 +19,7 @@ dependencies:
 
 ```
 
-Then install a package:
+### Then install a package
 
 ```bash
 apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --target copilot
@@ -27,7 +27,7 @@ apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --ta
 
 This installs the `instructions/sharp-agent.instructions.md` file to your project so your coding assistant can use it.
 
-To keep your collection up to date, run : 
+### Keep your collection up to date 
 
 ```bash
 apm update
