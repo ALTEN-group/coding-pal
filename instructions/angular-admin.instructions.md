@@ -11,6 +11,7 @@ Target: `<app>/src/app/`. One "domain" folder per business area (e.g. `<domainA>
 
 - Zoneless: `provideZonelessChangeDetection()` + `importProvidersFrom(BrowserModule)` **first** in the providers array, then animations, then PrimeNG.
 - PrimeNG themed via `providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: ".dark" } } })`.
+- `provideHttpClient(...)` includes `withXsrfConfiguration({ cookieName, headerName })` matching the backend's CSRF double-submit cookie/header names — Angular's built-in XSRF interceptor reads the (non-httpOnly) CSRF cookie and attaches it as a header on mutating requests automatically; no custom interceptor needed for this.
 - Global providers always present: `MessageService`, `ConfirmationService`, `DialogService` (PrimeNG), plus app's own `provideAppConfig()`.
 - `angular.json` schematics defaults: components are `standalone: true`, `changeDetection: "OnPush"`, `style: "scss"`, `skipTests: true` for component/class/directive/pipe/service generation — every generated file must follow these without repeating the flags manually.
 - Path aliases declared in `tsconfig.json` (`baseUrl: "./src"`): `@core/*` → `app/core/*`. Non-aliased app code is imported via the bare `app/...` path (relative to `src`), not relative `../../`.
@@ -84,6 +85,6 @@ Reusable, composable column-config fragments consumed by every `<entity>.conf.ts
 
 ## 8. Auth/session (`core/auth/`)
 
-- `AuthenticationService` (signals `_isAuthenticated`, `_user`): `login()`/`refreshToken()` both save tokens via `TokenService`, flip `_isAuthenticated`, then call `aclService.storeAccessLevels(permissions)` — ACLs are always refreshed together with the token, never independently.
-- `TokenService` only wraps `LocalStorageService` with the two key names read from `APP_CONFIG.storageKeys` — no token logic (decoding/expiry) here, that's the backend's job via `refreshToken`.
+- `AuthenticationService` (signals `_isAuthenticated`, `_user`): `login()`/`refreshToken()` save only the **access token** via `TokenService`, flip `_isAuthenticated`, then call `aclService.storeAccessLevels(permissions)` — ACLs are always refreshed together with the token, never independently. The refresh token itself never appears in a request/response body or in `TokenService`: the backend (`@dwtechs/toker-express`) sets it as an httpOnly cookie on login/refresh and reads it back the same way, so the browser sends it automatically on same-origin requests. `refreshToken()`'s `PUT` is sent with an empty body and gates on `tokenService.getAccessToken()` presence (not a stored refresh token, which no longer exists client-side) to skip firing a doomed request when no session ever existed.
+- `TokenService` only wraps `LocalStorageService` with a single key (`TOKEN`, from `APP_CONFIG.storageKeys`) for the access token — no refresh-token storage or decoding/expiry logic here, that's entirely the backend's job.
 - `getUserBasics()` returns an RxJS `pipe(switchMap(() => getAccount()))` meant to be chained after a successful token refresh (see app initializer in `app.config.ts` and `login()`).
