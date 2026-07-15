@@ -21,7 +21,7 @@ Every Node.js service **must** follow this structure — do not introduce folder
 src/
 ├── app.js                  ← Entry point
 ├── conf/                   ← Configuration middleware factories (CORS, security headers, …)
-├── controllers/            ← Orchestration logic (proxy forwarding, multi-step operations)
+├── controllers/            ← Orchestration logic in multi-step operations. Favor mapper middlewares instead of controllers.
 ├── entities/               ← SQLEntity field-schema definitions for @dwtechs/antity-pgsql, one file per table
 ├── jobs/                   ← Scheduled/cron tasks
 ├── middlewares/
@@ -172,6 +172,13 @@ export default { init, getOne, deleteArchived };
 ---
 
 ## Middlewares
+
+### Mappers vs Controllers
+
+- **Do not write terminal controllers if avoidable.** Instead, fetch/transform data in mapper middlewares and store them in `res.locals.rows`.
+- Let the downstream terminal middleware `send` handle formatting the HTTP response payload.
+- Only use `src/controllers/` for complex multi-endpoint orchestrations.
+
 
 ### Naming & Location
 
