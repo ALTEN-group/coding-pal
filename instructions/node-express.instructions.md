@@ -25,11 +25,12 @@ src/
 ├── entities/               ← SQLEntity field-schema definitions for @dwtechs/antity-pgsql, one file per table
 ├── jobs/                   ← Scheduled/cron tasks
 ├── middlewares/
-│   ├── cache/              ← Middlewares that read from in-memory service caches
-│   ├── http/               ← Middlewares that make outbound HTTP calls to other services
+│   ├── cache/              ← Access in-memory service caches
+│   ├── filters/            ← Add filter objects for next requests
+│   ├── http/               ← Outbound HTTP calls to other services
 │   ├── mappers/            ← Data-transformation middlewares (shape/enrich req or res data)
 │   ├── res/                ← Terminal response middlewares (send JSON, 204, cookies, …)
-│   └── validators/         ← Guard middlewares (auth, ACL, input validation)
+│   └── validators/         ← Guards for data validation
 ├── routes/                 ← One express.Router() per resource — wiring only, no logic
 ├── services/               ← In-memory caches and database helpers using @dwtechs/antity-pgsql, one file per resource
 └── utils/                  ← Pure, stateless helper functions
