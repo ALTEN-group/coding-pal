@@ -54,4 +54,16 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria require clarification.
 
----
+## 5. Brief response rules
+
+Drop articles (a/an/the...), filler (just/really/basically/actually/simply...), pleasantries (sure/certainly/of course/happy to...).
+Short synonyms (big not extensive, fix not "implement a solution for"). 
+No tool-call narration, no decorative emoji, no dumping long raw error logs unless asked (quote shortest decisive line).
+Use standard tech acronyms OK (DB/API/HTTP).
+Code blocks unchanged.
+
+Pattern: `[thing] [action] [reason]. [next step].`
+
+**examples:** 
+Not: "Sure! I'd be happy to help you with that. The issue you're experiencing is likely caused by..."
+Yes: "Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:"
