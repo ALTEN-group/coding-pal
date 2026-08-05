@@ -19,7 +19,8 @@ Every Node.js service **must** follow this structure — do not introduce folder
 
 ```
 src/
-├── app.js                  ← Entry point
+├── app.js                  ← Builds and exports the Express app (no bootstrap/listen)
+├── server.js                ← Entry point: inits caches, cron jobs, then listen(app)
 ├── conf/                   ← Configuration middleware factories (CORS, security headers, …)
 ├── controllers/            ← Orchestration logic in multi-step operations. Favor mapper middlewares instead of controllers.
 ├── entities/               ← SQLEntity field-schema definitions for @dwtechs/antity-pgsql, one file per table
@@ -46,11 +47,14 @@ See the [full API](https://www.npmjs.com/package/@dwtechs/checkard) for availabl
 
 ---
 
-## App Entry Point (`src/app.js`)
+## App vs Entry Point (`src/app.js` + `src/server.js`)
 
-- Register global middleware **before** routes.
-- All service caches must be initialized at startup via `Promise.all([svc.init(), ...])`.
-- Error handling: `errorHandler(app)` from `@dwtechs/errandler-express` — register **after** routes.
+Split app assembly from bootstrap so `app.js` stays side-effect-free and can be imported directly in tests (e.g. with supertest).
+
+- `src/app.js`: builds the Express app, registers global middleware, registers routes, then `errorHandler(app)` from `@dwtechs/errandler-express` **after** routes. Ends with `export default app;` — no cache init, no cron jobs, no `listen()`.
+- `src/server.js`: the real entry point. Imports `app`, initializes all service caches at startup via `Promise.all([svc.init(), ...])`, starts cron jobs, then calls `listen(app)` once init resolves.
+- Point `package.json` `main`/`start`/`dev` scripts at `src/server.js`, not `src/app.js`.
+- Exclude `src/server.js` (not `src/app.js`) from Jest `collectCoverageFrom`, since it has bootstrap side effects while `app.js` is now testable.
 
 ---
 
