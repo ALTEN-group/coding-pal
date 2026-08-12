@@ -101,7 +101,7 @@ test("rejects missing markers and reordered sections", () => {
 		.replace("## Critical", "## TEMP")
 		.replace("## Important", "## Critical")
 		.replace("## TEMP", "## Important");
-	assert.throws(() => normalizeAuditReport(reordered), /missing, duplicated, or reordered/);
+	assert.throws(() => normalizeAuditReport(reordered), /plain-text headings/);
 });
 
 test("rejects reordered finding fields", () => {

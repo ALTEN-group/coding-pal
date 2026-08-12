@@ -15,10 +15,10 @@ Produce audit findings that automated workflows can validate and publish safely.
 
 ## Workflow
 
-1. Read [the report contract](./references/report-contract.md).
+1. **Read the contract file now before proceeding** — use your file-reading tool on `./references/report-contract.md`. Do not skip this step.
 2. Examine every file in the configured scope.
 3. Write findings following the contract: report only evidenced problems, no positive findings, prioritize by severity.
-4. Return **only** the delimited `<!-- AUDIT-REPORT:START/END -->` fragment — nothing outside the markers.
+4. Return **only** the delimited Markdown fragment specified in the contract — nothing outside the markers, structure and headings exactly as defined.
 5. When command execution is available, validate and normalize before publishing:
 
 ```bash
