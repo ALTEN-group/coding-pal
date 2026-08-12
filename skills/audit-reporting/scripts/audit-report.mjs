@@ -131,7 +131,7 @@ export function parseAuditReport(rawMarkdown, { scopes = [] } = {}) {
 	const sections = [...fragment.matchAll(sectionPattern)];
 	const expected = ["Executive Summary", ...SEVERITIES];
 	if (sections.length !== expected.length || sections.some((section, index) => section[1] !== expected[index]))
-		fail("required sections are missing, duplicated, or reordered");
+		fail("sections must appear exactly once and in order: ## Executive Summary, ## Critical, ## Important, ## Suggestions — plain-text headings without '## ' are not accepted");
 	const summary = sections[0][2].trim();
 	if (!summary || summary.length > 1200) fail("Executive Summary must contain 1 to 1200 characters");
 	const findings = SEVERITIES.flatMap((severity, index) => parseSeverity(sections[index + 1][2], severity, scopes));
