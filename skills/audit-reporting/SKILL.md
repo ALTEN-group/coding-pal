@@ -35,7 +35,7 @@ Treat a nonzero validator exit as an invalid report and regenerate rather than p
 
 ## Gotchas
 
-- **Do not invent finding IDs or severity counts.** The validator derives them.
+- **Do not invent finding IDs or severity counts.** The validation script derives them.
 - **Do not use absolute paths.** Locations must be repository-relative and inside a configured scope.
 - **Do not weaken evidence to fit the template.** Omit an unverified finding instead.
 - **Do not publish unvalidated model output.** Prompt compliance is advisory; validation is the enforcement boundary.

@@ -1,5 +1,39 @@
 #!/usr/bin/env node
 
+// This script is a command-line formatter and validator for audit-report Markdown files.
+// It does three things:
+// - reads an input Markdown file.
+// - validates the file follows a strict audit-report structure.
+// - rewrites the report into a normalized, canonical format in an output file.
+// What it expects:
+// - A report wrapped between <!-- AUDIT-REPORT:START --> and <!-- AUDIT-REPORT:END -->
+// - An Executive Summary section
+// - Three severity sections: Critical, Important, Suggestions
+// - Findings written with a strict field order: Location, Category, Evidence, Impact, Recommendation
+// What it enforces:
+// - File size must stay under 60 KiB
+// - No unsafe control characters
+// - The audit marker block must appear exactly once
+// - Sections must appear in the right order
+// - Each finding must have all required fields
+// - Location must be written in backticks and stay inside allowed scopes, if scopes are provided
+// - Limits on lengths for title, category, and description fields
+// - No duplicate findings with the same severity, location, and title
+// - No more than 20 findings total
+// What it outputs:
+
+// A normalized Markdown report with:
+// numbered audit identifiers like AUDIT-001
+// findings sorted by severity, then location, then title
+// consistent formatting
+// section counts in the headings
+
+// How it is used:
+
+// Run it with --input, --output, and optional --scope arguments
+// It reads the source report, normalizes it, and writes the cleaned version to the output file
+// So the script is basically a strict audit-report linter plus formatter for the workspace.
+
 import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
@@ -8,7 +42,7 @@ const END_MARKER = "<!-- AUDIT-REPORT:END -->";
 const SEVERITIES = ["Critical", "Important", "Suggestions"];
 const FIELD_NAMES = ["Location", "Category", "Evidence", "Impact", "Recommendation"];
 const MAX_INPUT_BYTES = 60 * 1024;
-const MAX_FINDINGS = 50;
+const MAX_FINDINGS = 20;
 
 export class AuditReportError extends Error {}
 
@@ -63,11 +97,10 @@ function parseFinding(block, severity, scopes) {
 			lastFieldIndex = fieldIndex;
 			if (fields[currentField]) fail(`duplicate ${currentField} field in: ${title}`);
 			fields[currentField] = field[2].trim();
-		} else if (line.trim() && currentField) {
+		} else if (line.trim() && currentField)
 			fields[currentField] += `\n${line.trim()}`;
-		} else if (line.trim()) {
+		else if (line.trim())
 			fail(`unexpected content in finding: ${title}`);
-		}
 	}
 
 	for (const field of FIELD_NAMES) {
@@ -97,9 +130,8 @@ export function parseAuditReport(rawMarkdown, { scopes = [] } = {}) {
 	const sectionPattern = /(?:^|\n)## (Executive Summary|Critical|Important|Suggestions)(?: \(\d+\))?\n+([\s\S]*?)(?=\n## |$)/g;
 	const sections = [...fragment.matchAll(sectionPattern)];
 	const expected = ["Executive Summary", ...SEVERITIES];
-	if (sections.length !== expected.length || sections.some((section, index) => section[1] !== expected[index])) {
+	if (sections.length !== expected.length || sections.some((section, index) => section[1] !== expected[index]))
 		fail("required sections are missing, duplicated, or reordered");
-	}
 	const summary = sections[0][2].trim();
 	if (!summary || summary.length > 1200) fail("Executive Summary must contain 1 to 1200 characters");
 	const findings = SEVERITIES.flatMap((severity, index) => parseSeverity(sections[index + 1][2], severity, scopes));
@@ -160,9 +192,8 @@ function parseArguments(arguments_) {
 		else if (argument === "--scope") options.scopes.push(arguments_[index += 1]?.replace(/\/$/, ""));
 		else fail(`unknown argument: ${argument}`);
 	}
-	if (!options.input || !options.output || options.scopes.some((scope) => !scope)) {
+	if (!options.input || !options.output || options.scopes.some((scope) => !scope))
 		fail("usage: audit-report.mjs --input FILE --output FILE [--scope PATH ...]");
-	}
 	return options;
 }
 
@@ -172,9 +203,8 @@ export async function main(arguments_) {
 	await writeFile(options.output, normalizeAuditReport(markdown, options), "utf8");
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href)
 	main(process.argv.slice(2)).catch((error) => {
 		console.error(`audit-report: ${error.message}`);
 		process.exitCode = 1;
 	});
-}

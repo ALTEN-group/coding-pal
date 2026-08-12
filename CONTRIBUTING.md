@@ -6,12 +6,12 @@ This guide defines where reusable Copilot guidance belongs and the standard for 
 
 Start with the behavior you need to add, not the file type you want to create.
 
-| Primitive | Use it for | Loads when | Owns | Do not use it for |
-|---|---|---|---|---|
-| Instruction | Stable standards that affect code or files matching a path | A matching file is in context | Rules, conventions, security, architecture, and coding standards | A one-off workflow or output protocol |
-| Agent | A named specialist that performs a bounded kind of work | Explicitly selected with `--agent` or by a user | Scope, method, constraints, and task completion | Shared report formats or general code conventions |
-| Skill | A reusable on-demand workflow with assets or tools | Its description matches the task | Procedures, contracts, templates, scripts, fixtures, and artifact validation | Always-on project standards |
-| Prompt | A single focused command with parameters | Explicitly invoked | One repeatable request or operation | Broad standing behavior or a multi-step toolkit |
+| Primitive | Use it for | Loads when | Owns |
+|---|---|---|---|
+| Instruction | Stable standards that affect code or files matching a path | A matching file is in context | Rules, conventions, security, architecture, and coding standards |
+| Agent | A named specialist that performs a bounded kind of work | Explicitly selected with `--agent` or by a user | Scope, method, constraints, and task completion |
+| Skill | A reusable on-demand workflow with assets and tools | Its description matches the task | Procedures, contracts, templates, scripts, fixtures, and artifact validation |
+| Prompt | A single focused command with parameters | Explicitly invoked | One repeatable request or operation |
 
 Use the smallest primitive that owns the behavior without forcing unrelated work to load it.
 
