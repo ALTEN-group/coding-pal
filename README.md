@@ -2,6 +2,8 @@
 
 Instructions, skills, and agents to improve your AI coding assistant.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the golden standard on choosing and creating instructions, agents, skills, and prompts.
+
 ## Install with APM
 
 To install this collection in an APM-enabled project, first create an `apm.yml` file:
