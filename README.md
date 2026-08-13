@@ -35,5 +35,12 @@ This installs the `instructions/sharp-agent.instructions.md` file to your projec
 apm update
 ```
 
+## Agents
+
+- `node-express-back-end-code-audit`: Audit Node.js Express service code and PostgreSQL schemas.
+- `node-express-audit-fix`: Remediate single audit findings in Node.js Express services and PostgreSQL schemas.
+- `spec-from-code`: Generate technical specifications from existing codebases.
+- `unit-test`: Create or update unit tests with edge-case coverage.
+
 Learn more about [**Agent Package Manager**](https://microsoft.github.io/apm/quickstart/)
 
