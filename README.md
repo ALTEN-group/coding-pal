@@ -54,6 +54,8 @@ Focused, parameterized commands invoked explicitly.
 
 Declare what you need in the consumer project's `apm.yml`, then run `apm install`.
 
+Because this repo ships skills under `skills/`, APM treats it as a **skill bundle**. Agents and instructions must be listed as **virtual path** dependencies; skills are selected from the bundle with a `skills:` subset. Do not nest `agents:` / `instructions:` under a single `git: ALTEN-group/coding-pal` entry — APM will install only the skills and skip the rest.
+
 ```yml
 # apm.yml — ships with your project
 name: your-project
@@ -63,18 +65,19 @@ targets:
   - copilot
 dependencies:
   apm:
+    # Agents (virtual paths — single-file primitives)
+    - ALTEN-group/coding-pal/agents/unit-test.agent.md
+    - ALTEN-group/coding-pal/agents/node-express-back-end-code-audit.agent.md
+    - ALTEN-group/coding-pal/agents/node-express-audit-fix.agent.md
+    # Instructions (virtual paths — single-file primitives)
+    - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
+    - ALTEN-group/coding-pal/instructions/node-express.instructions.md
+    - ALTEN-group/coding-pal/instructions/node-unit-tests.instructions.md
+    - ALTEN-group/coding-pal/instructions/postgres-liquibase.instructions.md
+    - ALTEN-group/coding-pal/instructions/docker.instructions.md
+    - ALTEN-group/coding-pal/instructions/angular-admin.instructions.md
+    # Skills (folder bundles — SKILL.md + references/ + scripts/)
     - git: ALTEN-group/coding-pal
-      agents:
-        - agents/unit-test.agent.md
-        - agents/node-express-back-end-code-audit.agent.md
-        - agents/node-express-audit-fix.agent.md
-      instructions:
-        - instructions/sharp-agent.instructions.md
-        - instructions/node-express.instructions.md
-        - instructions/node-unit-tests.instructions.md
-        - instructions/postgres-liquibase.instructions.md
-        - instructions/docker.instructions.md
-        - instructions/angular-admin.instructions.md
       skills:
         - audit-reporting
         - node-express-examples
