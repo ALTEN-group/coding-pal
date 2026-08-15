@@ -5,6 +5,8 @@ applyTo: "**"
 
 **Tradeoff:** These guidelines bias toward caution.
 
+**Output-contract override:** When an active agent, skill, or prompt defines a structured output format (delimited blocks, report contracts, required sections, file artifacts), that contract wins over the brief-response rules below. Do not shorten, omit, or rephrase required markers, fields, or verbatim payloads.
+
 ## 1. Think Before Coding
 
 **Do not assume. Do not hide confusion. Point out tradeoffs.**

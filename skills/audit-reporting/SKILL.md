@@ -13,20 +13,23 @@ Produce audit findings that automated workflows can validate and publish safely.
 - An audit agent must return deterministic, validated Markdown findings.
 - A CI workflow must publish AI findings to an issue or artifact safely.
 
+## Path resolution
+
+Resolve `references/` and `scripts/` relative to **this skill's install directory** (the folder that contains this `SKILL.md`), not the consumer repository root or the current shell cwd. If the skill was installed under e.g. `.github/skills/audit-reporting/` or `.copilot/skills/audit-reporting/`, use that base path.
+
 ## Workflow
 
-1. **Read the contract file now before proceeding** — use your file-reading tool on `./references/report-contract.md`. Do not skip this step.
-2. Examine every file in the configured scope.
-3. Write findings following the contract: report only evidenced problems, no positive findings, prioritize by severity.
-4. Return **only** the delimited Markdown fragment specified in the contract — nothing outside the markers, structure and headings exactly as defined.
-5. When command execution is available, validate and normalize before publishing:
+1. **Read the contract file now before proceeding** — open `references/report-contract.md` under this skill's directory. Do not skip this step.
+2. Structure findings following the contract: report only evidenced problems, no positive findings, prioritize by severity. Scope examination and layer review are owned by the calling agent.
+3. Return **only** the delimited Markdown fragment specified in the contract — nothing outside the markers, structure and headings exactly as defined.
+4. When command execution is available, validate and normalize before publishing. From the skill directory:
 
 ```bash
-node scripts/audit-report.mjs --input raw-audit.md --output audit.md --scope src --scope db/liquibase
+node scripts/audit-report.mjs --input /path/to/raw-audit.md --output /path/to/audit.md --scope src --scope db/liquibase
 ```
 
 Treat a nonzero validator exit as an invalid report and regenerate rather than publishing raw output.
-6. After a zero validator exit, read the normalized output file and **print its full contents verbatim as the final response** — do not summarize it, do not reference the file path, do not write a narrative instead. The CI pipeline reads your stdout; it cannot access files you wrote to `/tmp/` or any other path.
+5. After a zero validator exit, read the normalized output file and **print its full contents verbatim as the final response** — do not summarize it, do not reference the file path, do not write a narrative instead. The CI pipeline reads your stdout; it cannot access files you wrote to `/tmp/` or any other path.
 
 ## Done When
 

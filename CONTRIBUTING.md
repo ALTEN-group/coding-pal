@@ -53,6 +53,8 @@ applyTo: "src/**/*.js"
 
 Use the narrowest practical `applyTo` glob. `"**"` is reserved for rules that genuinely apply to all work. Do not put task-specific output formats, release procedures, or agent-only steps in an instruction.
 
+Keep instructions imperative and short (rules, constraints, checklists). Put long code samples and scaffolding templates in a paired skill under `skills/<name>-examples/` (`SKILL.md` + `references/`). The instruction points at that skill for on-demand reads; examples must not duplicate ownership of normative rules.
+
 ### Agents Own Task Scope and Method
 
 Put named specialists in `agents/*.agent.md`.

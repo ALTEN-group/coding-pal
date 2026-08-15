@@ -16,7 +16,7 @@ Stable standards that apply when matching files are in context.
 | [node-express](instructions/node-express.instructions.md) | `src/**/*.js` | Node.js Express service conventions: structure, libraries, flow, caching, errors, and security. |
 | [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Jest / Supertest conventions and formatting for Node.js unit tests. |
 | [postgres-liquibase](instructions/postgres-liquibase.instructions.md) | `db/**/*.sql` | PostgreSQL + Liquibase audited schemas: history trail, soft-delete, view triggers, and seed data. |
-| [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, `scripts/*.sh` | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
+| [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, docker lifecycle `scripts/` | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
 | [angular-admin](instructions/angular-admin.instructions.md) | `admin/src/**/*.ts` | Angular admin CRUD pattern: feature-sliced entities, ACL, PrimeNG, and app-config registries. |
 
 ### Agents
@@ -32,11 +32,15 @@ Named specialists selected explicitly for a bounded kind of work.
 
 ### Skills
 
-On-demand workflows with contracts, scripts, and reusable assets.
+On-demand workflows with contracts, scripts, and reusable assets. Scaffolding example packs are skills too: install them with the matching domain instruction so templates ship as a folder (`SKILL.md` + `references/`).
 
 | Name | Path | Description |
 |---|---|---|
 | [audit-reporting](skills/audit-reporting/SKILL.md) | `skills/audit-reporting/` | Produce deterministic Markdown audit reports and validate them before CI publication. |
+| [node-express-examples](skills/node-express-examples/SKILL.md) | `skills/node-express-examples/` | Express scaffolding templates (pairs with `node-express` instruction). |
+| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | `skills/postgres-liquibase-examples/` | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
+| [docker-examples](skills/docker-examples/SKILL.md) | `skills/docker-examples/` | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
+| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | `skills/angular-admin-examples/` | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
 
 ### Prompts
 
@@ -48,7 +52,7 @@ Focused, parameterized commands invoked explicitly.
 
 ## Install with APM
 
-To install this collection in an APM-enabled project, first create an `apm.yml` file:
+Declare what you need in the consumer project's `apm.yml`, then run `apm install`.
 
 ```yml
 # apm.yml — ships with your project
@@ -56,24 +60,42 @@ name: your-project
 version: 1.0.0
 author: your-name
 targets:
-- copilot
+  - copilot
 dependencies:
-  apm: {}
+  apm:
+    - git: ALTEN-group/coding-pal
+      agents:
+        - agents/unit-test.agent.md
+        - agents/node-express-back-end-code-audit.agent.md
+        - agents/node-express-audit-fix.agent.md
+      instructions:
+        - instructions/sharp-agent.instructions.md
+        - instructions/node-express.instructions.md
+        - instructions/node-unit-tests.instructions.md
+        - instructions/postgres-liquibase.instructions.md
+        - instructions/docker.instructions.md
+        - instructions/angular-admin.instructions.md
+      skills:
+        - audit-reporting
+        - node-express-examples
+        - postgres-liquibase-examples
+        - docker-examples
+        - angular-admin-examples
   mcp: {}
-
 ```
 
-### Then install a package
+```bash
+apm install --target copilot
+```
+
+Pick only the agents, instructions, and skills your project needs. Pair each domain instruction with its `*-examples` skill when you want scaffolding templates (e.g. `node-express` + `node-express-examples`). Skills install as whole folders (`SKILL.md` + `references/` + any scripts).
+
+### One-off installs
+
+You can also add a single primitive by path or skill name:
 
 ```bash
 apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --target copilot
-```
-
-This installs the `instructions/sharp-agent.instructions.md` file to your project so your coding assistant can use it.
-
-Install a named skill from the package bundle:
-
-```bash
 apm install ALTEN-group/coding-pal --skill audit-reporting --target copilot
 ```
 
