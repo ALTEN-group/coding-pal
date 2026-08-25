@@ -55,7 +55,7 @@ PERFORM set_archived('<table>', NEW.id, NEW.archived, OLD.archived);
 
 ## Audit columns
 
-DDL fragment only. Required column set and system-author values: see the installed PostgreSQL / Liquibase instruction.
+Column types for scaffolding. Which columns are required, and the system author values, are in the PostgreSQL / Liquibase instruction.
 
 ```sql
 "createdAt" TIMESTAMP DEFAULT NOW(), "creatorId" INT, "creatorName" TEXT,

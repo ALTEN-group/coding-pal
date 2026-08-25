@@ -21,4 +21,4 @@ Map `src/<path>/<file>.js` → `tests/<path>/<file>.test.js` (create missing dir
 
 ## Run
 
-Hand the resolved source and mapped test path to Unit Tester. Verify with the **narrowest** project test command in the **service container**.
+Hand the resolved source and mapped test path to Unit Tester. Verify with the **narrowest** project test command, executed per the installed Node.js unit-test instructions.

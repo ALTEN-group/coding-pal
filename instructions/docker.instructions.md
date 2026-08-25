@@ -1,6 +1,6 @@
 ---
 description: "Docker/Compose workflow pattern for a multi-service Node.js stack (API + migrations + Angular admin + docs site + mocks) behind Traefik, with dev/prod dockerfile pairs, BuildKit secrets for private registries, and env-driven naming. Use when scaffolding or modifying docker/, dockerfile(s), or docker lifecycle scripts."
-applyTo: "docker/**,**/dockerfile*,scripts/setup-env.sh,scripts/start-*.sh,scripts/stop-*.sh,scripts/build-*.sh,scripts/reset-*.sh"
+applyTo: "docker/**,**/dockerfile*,**/.dockerignore,scripts/**/*.sh"
 ---
 
 # Docker Workflow Instructions

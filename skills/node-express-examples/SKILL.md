@@ -21,7 +21,7 @@ Resolve `references/` relative to **this skill's install directory** (the folder
 
 1. Follow the installed Node.js Express instruction for rules and checklists.
 2. **Read `references/examples.md` now** before writing scaffolding code.
-3. Adapt the templates to the resource name and fields; do not invent folders outside the instruction's structure.
+3. Adapt the templates to the resource name and fields.
 
 ## Done When
 

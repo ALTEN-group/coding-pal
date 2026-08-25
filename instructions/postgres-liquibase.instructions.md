@@ -1,13 +1,13 @@
 ---
 description: "PostgreSQL + Liquibase pattern for building audited, view-backed schemas: history/audit trail, soft-delete/archival, triggers on views, and seed data. Use when working on PostgreSQL database."
-applyTo: "db/**/*.sql"
+applyTo: "db/**/*.sql,db/**/*.xml,db/**/*.yml,db/**/*.yaml"
 ---
 
 # PostgreSQL + Liquibase Audit/View Pattern
 
 Target: `db/liquibase/<serviceName>/versions/`.
 
-When scaffolding schema objects or matching SQL templates, follow the installed `postgres-liquibase-examples` skill (read its `references/examples.md`).
+When scaffolding schema objects or matching SQL templates, follow the installed `postgres-liquibase-examples` skill (read its `references/examples.md`). How schema tests are written and run is owned by the installed PostgreSQL / Liquibase test instructions.
 
 ## Changeset immutability
 

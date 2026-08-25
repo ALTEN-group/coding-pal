@@ -122,9 +122,7 @@ Use `@dwtechs/winstan`. Prefer lazy `log.debug(() => ...)` strings. Sanitize dyn
 
 ## Database consumption
 
-Follow the installed PostgreSQL / Liquibase instructions for views, `log.history`, and retention deletes. From the service, consume those objects — do not duplicate schema rules here.
-
-- App wiring: `GET /:id/history` via `history.get("resourceName")` for every audited resource (see Routes).
+Follow the installed PostgreSQL / Liquibase instructions for views, `log.history`, and retention deletes. From the service, consume those objects. History HTTP wiring is in Routes.
 
 ## Adding a New Resource — Checklist
 

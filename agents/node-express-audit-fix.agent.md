@@ -20,13 +20,13 @@ You are a specialist at remediating code audit findings in Node.js Express back-
 2. Open the file referenced in `Location` and examine the context to verify the evidence.
 3. Formulate the minimal correct remediation that addresses the finding.
 4. Apply the code change to `src/` or database migration to `db/liquibase/`.
-5. Add or update a unit test under `tests/` matching the `src/` path to verify the fix and prevent regressions.
-6. Verify with the project's lint and test commands, executed the way the installed Node.js Express instructions require for service commands.
+5. Add or update a unit test under `tests/` per the installed Node.js unit-test instructions.
+6. Verify lint using the installed Node.js Express instructions for service commands. Verify tests using the installed Node.js unit-test instructions.
 
 ## Done When
 
 - The finding is remediated with a minimal diff, or explicitly marked as skipped with no code changes.
-- Lint and tests pass per those Node.js Express service-command rules.
+- Lint passes per the Node.js Express service-command rules. Tests pass per the Node.js unit-test instructions.
 - The required `<!-- AUDIT-FIX:START -->` output block has been produced.
 
 ## Output Format

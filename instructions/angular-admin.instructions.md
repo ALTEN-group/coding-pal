@@ -1,6 +1,6 @@
 ---
 description: "Angular pattern for building a standalone, ACL-protected admin CRUD app on top of @dwtechs/crud-builder + PrimeNG: feature-sliced entity folders, centralized app-config registries, permission-aware field configs, and lazy-loaded routes with resolvers. Use when working on an Angular admin app."
-applyTo: "admin/src/**/*.ts"
+applyTo: "**/src/app/**/*.ts"
 ---
 
 # Angular Admin CRUD Pattern
@@ -9,7 +9,7 @@ Target: `<app>/src/app/`. One domain folder per business area, each split into `
 
 HTML/SCSS templates are thin wrappers around these TS conventions — edit them only to bind the table/component inputs defined here.
 
-When scaffolding an entity slice, follow the installed `angular-admin-examples` skill (read its `references/examples.md`).
+When scaffolding an entity slice, follow the installed `angular-admin-examples` skill (read its `references/examples.md`). How unit specs are written is owned by the Angular unit-test instructions; how browser tests are written is owned by the Angular e2e instructions.
 
 ## 1. Bootstrap (`main.ts`, `angular.json`)
 
@@ -17,7 +17,7 @@ When scaffolding an entity slice, follow the installed `angular-admin-examples` 
 - PrimeNG via `providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: ".dark" } } })`.
 - `provideHttpClient` + `withXsrfConfiguration` matching backend CSRF cookie/header names — no custom XSRF interceptor.
 - Global providers: `MessageService`, `ConfirmationService`, `DialogService`, `provideAppConfig()`.
-- Schematics defaults: `standalone: true`, `OnPush`, `scss`, `skipTests: true`.
+- Schematics defaults: `standalone: true`, `OnPush`, `scss`, `skipTests: false`.
 - Path aliases: `@core/*` → `app/core/*`; other app imports via bare `app/...` (not deep `../../`).
 - All user-facing strings use `$localize` with ids `@@<Area>_<Key>`.
 
