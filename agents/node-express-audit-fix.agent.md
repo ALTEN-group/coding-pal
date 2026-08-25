@@ -11,8 +11,7 @@ You are a specialist at remediating code audit findings in Node.js Express back-
 - Touch only `src/`, `db/liquibase/`, and `tests/`. NEVER modify `.github/`, `apm.yml`, `apm.lock.yaml`, `package.json`, `package-lock.json`, `biome.json`, or `jest.config.js`.
 - DO NOT add new npm dependencies or third-party packages.
 - DO NOT perform refactors, renames, drive-by cleanups, or reformatting on untouched lines. Keep the diff minimal and focused on the finding.
-- Follow the relevant domain instructions as standards for code quality, schema design, and tests.
-- For database changes, append new changesets; never edit applied ones unless asked otherwise.
+- Follow the relevant domain instructions as standards for code quality, schema design, and tests. For Liquibase, follow the installed PostgreSQL / Liquibase instructions. Edit an existing changeset only when the user specifically asks.
 - If the finding is a false positive, or cannot be remediated without out-of-scope changes, make no code changes and set status to `skipped`.
 
 ## Approach
@@ -22,12 +21,12 @@ You are a specialist at remediating code audit findings in Node.js Express back-
 3. Formulate the minimal correct remediation that addresses the finding.
 4. Apply the code change to `src/` or database migration to `db/liquibase/`.
 5. Add or update a unit test under `tests/` matching the `src/` path to verify the fix and prevent regressions.
-6. Run `npm run lint:fix` and `npm test` to verify formatting and tests pass.
+6. Run `npm run lint:fix` and `npm test` in the service container (same as the Node.js Express instructions). Host-only Node is not a substitute when the service is Docker-based.
 
 ## Done When
 
 - The finding is remediated with a minimal diff, or explicitly marked as skipped with no code changes.
-- `npm run lint` and `npm test` pass successfully.
+- `npm run lint:fix` and `npm test` pass successfully in the service container.
 - The required `<!-- AUDIT-FIX:START -->` output block has been produced.
 
 ## Output Format

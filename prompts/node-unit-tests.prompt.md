@@ -1,17 +1,24 @@
 ---
-description: Generate a unit test suite using Jest and Supertest for any node.js project
+name: node-unit-tests
+description: "Generate or update a Jest + Supertest unit test file for a Node.js module. Use when the user wants tests for an open file, a selection, or a src/ path."
 agent: Unit Tester
+argument-hint: "optional src path, e.g. src/routes/application.js"
 ---
 
-Generate a unit test suite for the target file or module under the **Unit Tester** agent.
+Slash command for the **Unit Tester** agent on one Node.js `src/` module.
 
-### Inputs
+## Resolve the target
 
-- Target: currently open file, active selection, or path given in the request.
-- Test file location: per the installed Node.js unit-test instructions.
+Use the first that is a source module:
 
-### Do
+1. A `src/**/*.js` path in this message
+2. The current selection
+3. The currently open file
 
-1. Follow the Unit Tester agent constraints and approach.
-2. Follow the installed Node.js unit-test instructions for format, mocking, and execution.
-3. Run tests in the service container and leave them passing.
+If none of those is source under `src/`, ask which file to test. Do not guess.
+
+Map `src/<path>/<file>.js` → `tests/<path>/<file>.test.js` (create missing directories). Path layout, Jest/Supertest, and container execution are owned by the installed Node.js unit-test instructions — follow them; do not restate or override them.
+
+## Run
+
+Hand the resolved source and mapped test path to Unit Tester. Verify with the **narrowest** project test command in the **service container**.

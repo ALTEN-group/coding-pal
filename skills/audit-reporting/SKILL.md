@@ -21,7 +21,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 
 1. **Read the contract file now before proceeding** — open `references/report-contract.md` under this skill's directory. Do not skip this step.
 2. Structure findings following the contract: report only evidenced problems, no positive findings, prioritize by severity. Scope examination and layer review are owned by the calling agent.
-3. Return **only** the delimited Markdown fragment specified in the contract — nothing outside the markers, structure and headings exactly as defined.
+3. Draft **only** the delimited Markdown fragment specified in the contract — nothing outside the markers, structure and headings exactly as defined. Do not treat this draft as the published report until the validator below has accepted it (or command execution is unavailable).
 4. When command execution is available, validate and normalize before publishing. From the skill directory:
 
 ```bash

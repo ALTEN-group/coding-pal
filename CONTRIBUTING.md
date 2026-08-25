@@ -6,12 +6,12 @@ This guide defines where reusable Copilot guidance belongs and the standard for 
 
 Start with the behavior you need to add, not the file type you want to create.
 
-| Primitive | Use it for | Loads when | Owns |
-|---|---|---|---|
-| Instruction | Stable standards that affect code or files matching a path | A matching file is in context | Rules, conventions, security, architecture, and coding standards |
-| Agent | A named specialist that performs a bounded kind of work | Explicitly selected with `--agent` or by a user | Scope, method, constraints, and task completion |
-| Skill | A reusable on-demand workflow with assets and tools | Its description matches the task | Procedures, contracts, templates, scripts, fixtures, and artifact validation |
-| Prompt | A single focused command with parameters | Explicitly invoked | One repeatable request or operation |
+| Primitive | Use it for | Load | Loads when | Owns |
+|---|---|---|---|---|
+| Instruction | Stable standards that affect code or files matching a path | Always-on | A matching file is in context (`applyTo`) | Rules, conventions, security, architecture, and coding standards |
+| Agent | A named specialist that performs a bounded kind of work | On-demand | Explicitly selected with `--agent` or by a user | Scope, method, constraints, and task completion |
+| Skill | A reusable on-demand workflow with assets and tools | On-demand | Its description matches the task, or a user/agent opens it | Procedures, contracts, templates, scripts, fixtures, and artifact validation |
+| Prompt | A single focused command with parameters | On-demand | Explicitly invoked | One repeatable request or operation |
 
 Use the smallest primitive that owns the behavior without forcing unrelated work to load it.
 
@@ -129,7 +129,7 @@ Keep the skill portable. Avoid repository-specific paths and scopes unless they 
 
 ### Prompts Own Single Operations
 
-Put user-invocable focused commands in `.github/prompts/*.prompt.md` when a project needs them. Prompts are appropriate for requests such as “generate a release note for this PR” or “draft a migration checklist for this change.”
+Put user-invocable focused commands in `prompts/*.prompt.md`. APM deploys them to the harness path (e.g. `.github/prompts/` for Copilot). Prompts are appropriate for requests such as “generate a release note for this PR” or “draft a migration checklist for this change.”
 
 Use a prompt when the operation is short and parameterized. Promote it to a skill when it gains a multi-step process, scripts, templates, fixtures, or substantial reference material.
 

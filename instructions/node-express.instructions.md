@@ -33,7 +33,9 @@ src/
 │   ├── http/               ← Outbound HTTP calls to other services
 │   ├── mappers/            ← Data-transformation middlewares (shape/enrich req or res data)
 │   ├── res/                ← Terminal response middlewares (send JSON, 204, cookies, …)
-│   └── validators/         ← Guards for data validation
+│   ├── validators/         ← Guards for data validation
+│   ├── history.js          ← GET /:id/history factory (`history.get("resourceName")`)
+│   └── schema.js           ← GET /schema factory (`schema.get(rEnt)`)
 ├── routes/                 ← One express.Router() per resource — wiring only, no logic
 ├── services/               ← In-memory caches and database helpers using @dwtechs/antity-pgsql
 └── utils/                  ← Pure, stateless helper functions
