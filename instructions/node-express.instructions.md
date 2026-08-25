@@ -5,7 +5,7 @@ applyTo: "src/**/*.js"
 
 # Node.js / Express Coding Instructions
 
-Services always run in Docker. Execute service commands in the container (`npm test`, `npm run lint`, `npm run build`).
+Services always run in Docker. Execute service commands in the container (`npm run lint`, `npm run build`, start/dev). How tests are run is owned by the installed Node.js unit-test instructions.
 
 When scaffolding a resource or matching a full template, follow the installed `node-express-examples` skill (read its `references/examples.md`).
 
@@ -47,12 +47,11 @@ Use `@dwtechs/checkard` for **all** runtime type checks — never `typeof`, `ins
 
 ## App vs Entry Point
 
-Split assembly from bootstrap so `app.js` stays side-effect-free for tests (supertest).
+Split assembly from bootstrap.
 
 - `src/app.js`: build Express app, register global middleware and routes, then `errorHandler(app)` from `@dwtechs/errandler-express` **after** routes. `export default app;` — no cache init, no cron jobs, no `listen()`.
 - `src/server.js`: import `app`, `Promise.all([svc.init(), ...])`, start cron jobs, then `listen(app)`.
 - Point `package.json` `main`/`start`/`dev` at `src/server.js`.
-- Exclude `src/server.js` (not `src/app.js`) from Jest `collectCoverageFrom`.
 
 ## Routes (`src/routes/<resource>.js`)
 
@@ -81,23 +80,22 @@ Field rules:
 
 - Own the in-memory `Map` cache and DB helpers.
 - Export `init()`, `getOne()`, `deleteArchived(date)`, and cache mutators as needed.
-- Call `init()` from `server.js` `Promise.all([...])` at startup — never from `app.js`.
 - Index `Map` by the most-used lookup key.
+- Register `init()` from `server.js` only — see App vs Entry Point.
 
 ## Middlewares
 
 - Prefer mapper middlewares writing to `res.locals.rows`; let terminal `send` format the response.
 - Use `src/controllers/` only when a handler must own the full request/response itself — outbound call plus `res.status(...).send(...)` — because the mapper → `send` pipeline cannot express it (e.g. gateway proxy forward). Controllers are terminal Express handlers, not multi-step orchestrators; do not put ordinary CRUD there.
-- Folders: `validators/`, `cache/`, `http/`, `mappers/`, `res/`.
-- Pass errors with `next({ statusCode: 4xx, message: "..." })` — never throw.
 - Pass data downstream via `res.locals`.
 - Use `req.body.rows` as the standard insert/update array payload.
 - After DB insert, use the generated `id` on `req.body.rows[0]` to update cache.
 - Register `send` at `app.use(...)` level when possible.
+- Errors: see Error Handling.
 
 ## Caching
 
-- Load reference data into `Map`s at startup (`server.js`).
+- Load reference data into `Map`s in `init()` (see App vs Entry Point).
 - After insert → `addToCache`; update → `updateCache`; archive/delete → `deleteFromCache`.
 - Cache middlewares live in `middlewares/cache/<resource>.js` and call the matching service method.
 
@@ -119,22 +117,20 @@ Use `@dwtechs/winstan`. Prefer lazy `log.debug(() => ...)` strings. Sanitize dyn
 ## Scheduled Jobs (`src/jobs/`)
 
 - Use `scheduleDailyAt(utcHour, fn)` — no external cron libraries.
-- Register new jobs in `server.js` (not `app.js`).
+- Register jobs from `server.js` only — see App vs Entry Point.
 - Every archivable service must expose `deleteArchived(date)`.
 
 ## Database consumption
 
-- Query the **view** when one exists; otherwise the base table.
-- History endpoints query `log.history` directly (`schemaName`, `tableName`, `CAST(record->>'id' AS INT)`, `ORDER BY tstamp ASC`) — no per-entity history table.
-- Retention jobs call the generic SQL `delete()` helper — not raw `DELETE` statements.
-- Schema standards: follow the installed PostgreSQL / Liquibase instructions.
+Follow the installed PostgreSQL / Liquibase instructions for views, `log.history`, and retention deletes. From the service, consume those objects — do not duplicate schema rules here.
+
+- App wiring: `GET /:id/history` via `history.get("resourceName")` for every audited resource (see Routes).
 
 ## Adding a New Resource — Checklist
 
 1. **Entity** → `src/entities/<resource>.js`
-2. **Service** → `src/services/<resource>.js` — `init()`, `getOne()`, `deleteArchived()`, cache mutators
-3. **Router** → `src/routes/<resource>.js` — `POST /search`, `GET /:id/history`, `POST /`, `PUT /`, `POST /archive`
-4. **Cache middlewares** → `src/middlewares/cache/<resource>.js`
-5. **Register in `app.js`** — import, `app.use(...)` with `send`
-6. **Register in `server.js`** — `svc.init()` in startup `Promise.all`; start any new jobs
-7. **Register in delete-archived job** — add the service to the `entities` array
+2. **Service** → `src/services/<resource>.js` (exports per Services)
+3. **Router** → `src/routes/<resource>.js` (verbs per Routes)
+4. **Cache middlewares** → `src/middlewares/cache/<resource>.js` when mutations must refresh cache
+5. **Register** the router in `app.js`; register `svc.init()` and any jobs per App vs Entry Point
+6. **Retention** — add the service to the delete-archived job if it is archivable

@@ -21,7 +21,6 @@ Resolve `references/` relative to **this skill's install directory** (the folder
 
 1. Follow the installed PostgreSQL / Liquibase instruction for rules and changeset immutability.
 2. **Read `references/examples.md` now** before writing SQL.
-3. Append new changesets only; never edit applied ones.
 
 ## Done When
 

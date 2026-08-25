@@ -11,7 +11,7 @@ When scaffolding schema objects or matching SQL templates, follow the installed 
 
 ## Changeset immutability
 
-- ALWAYS append a new changeset; NEVER modify an existing or already-applied changeset.
+- ALWAYS append a new changeset. NEVER edit an existing or already-applied changeset unless the user specifically asks.
 - Each numbered folder maps to one Liquibase `<changeSet>` per file (`sqlFile` with `splitStatements="false"`, id = `"<folder>-<NN>"`). `splitStatements="false"` is required because function bodies contain `$$ ... $$` blocks.
 
 ## Folder layout (order = dependency order = changelog order)

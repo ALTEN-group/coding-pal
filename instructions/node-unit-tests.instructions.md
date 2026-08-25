@@ -22,11 +22,12 @@ applyTo: "tests/**/*.js"
 ## Framework & Stack
 
 - Use **Jest** (`describe`, `it`, `expect`, `jest.fn()`, `jest.spyOn()`) for middlewares and functions.
-- Use **Supertest** (`supertest(app)`) for Express routes — import the side-effect-free `src/app.js`, not `src/server.js`.
+- Use **Supertest** (`supertest(app)`) for Express routes — import `src/app.js` (the assembled app, no `listen()`), not `src/server.js`. App vs entry-point assembly is owned by the Node.js Express instructions.
+- Exclude `src/server.js` (not `src/app.js`) from Jest `collectCoverageFrom`.
 
 ## Execution
 
-- Services run in Docker. Run tests in the service container (same as `npm test` / project test script), not against a host-only Node that lacks service deps.
+- Run tests in the service container (same as `npm test` / project test script), not against a host-only Node that lacks service deps.
 
 ## Structure & Formatting
 

@@ -21,7 +21,15 @@ ARG NPMRC_PATH
 RUN --mount=type=secret,id=npmrc,target=${NPMRC_PATH},required=true,uid=${UID}
 ```
 
-Compose: top-level `secrets:` from env vars (`APK_REPOSITORY`, `NPMRC`), never committed files.
+Compose `secrets:` from environment variables. Secret sourcing rules: see the Docker instruction.
+
+```yaml
+secrets:
+  apk_repository:
+    environment: APK_REPOSITORY
+  npmrc:
+    environment: NPMRC
+```
 
 Plain `docker build` (from `scripts/build-prod.sh`):
 
@@ -42,4 +50,12 @@ Plain `docker build` (from `scripts/build-prod.sh`):
 --providers.docker.constraints=Label(`stack.name`,`${APP_NAME}-${ENV_NAME}`)
 ```
 
-Routed service labels: `traefik.enable=true`, `stack.name=${STACK_NAME}`, `PathPrefix` rules, `web` entrypoint, optional `stripprefix`.
+Routed-service label names and Traefik options: see the Docker instruction.
+
+```yaml
+labels:
+  - traefik.enable=true
+  - stack.name=${STACK_NAME}
+  - "traefik.http.routers.app.rule=PathPrefix(`/api`)"
+  - traefik.http.routers.app.entrypoints=web
+```

@@ -21,7 +21,6 @@ Resolve `references/` relative to **this skill's install directory** (the folder
 
 1. Follow the installed Angular admin instruction for bootstrap, ACL, and registry rules.
 2. **Read `references/examples.md` now** before scaffolding.
-3. Extend central app-config registries once; do not scatter entity lists.
 
 ## Done When
 

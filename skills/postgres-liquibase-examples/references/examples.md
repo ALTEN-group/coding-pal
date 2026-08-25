@@ -55,9 +55,9 @@ PERFORM set_archived('<table>', NEW.id, NEW.archived, OLD.archived);
 
 ## Audit columns
 
+DDL fragment only. Required column set and system-author values: see the installed PostgreSQL / Liquibase instruction.
+
 ```sql
 "createdAt" TIMESTAMP DEFAULT NOW(), "creatorId" INT, "creatorName" TEXT,
 "updatedAt" TIMESTAMP NULL,          "updaterId" INT, "updaterName" TEXT
 ```
-
-System writes: `"creatorId" = -1`, `"creatorName" = 'system'`.

@@ -21,7 +21,6 @@ Resolve `references/` relative to **this skill's install directory** (the folder
 
 1. Follow the installed Docker instruction for naming, layout, and script conventions.
 2. **Read `references/examples.md` now** before scaffolding.
-3. Match env-driven naming and secret-from-env patterns; do not commit secret files.
 
 ## Done When
 
