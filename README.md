@@ -85,17 +85,14 @@ targets:
   - copilot   # and/or: cursor
 dependencies:
   apm:
-    # Agents (virtual paths — single-file primitives)
+    # Agents
     - ALTEN-group/coding-pal/agents/unit-test.agent.md
-    - ALTEN-group/coding-pal/agents/node-express-back-end-code-audit.agent.md
-    - ALTEN-group/coding-pal/agents/node-express-audit-fix.agent.md
-    - ALTEN-group/coding-pal/agents/spec-from-code.agent.md
-    # Prompts (virtual paths — single-file primitives)
+    # Prompts
     - ALTEN-group/coding-pal/prompts/node-unit-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-unit-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
-    # Instructions (virtual paths — single-file primitives)
+    # Instructions
     - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
     - ALTEN-group/coding-pal/instructions/node-express.instructions.md
     - ALTEN-group/coding-pal/instructions/node-unit-tests.instructions.md
@@ -108,8 +105,6 @@ dependencies:
     # Skills (folder bundles — SKILL.md + references/ + scripts/)
     - git: ALTEN-group/coding-pal
       skills:
-        - audit-reporting
-        - spec-reporting
         - node-express-examples
         - postgres-liquibase-examples
         - docker-examples
