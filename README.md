@@ -17,7 +17,7 @@ Stable standards that apply when matching files are in context.
 |---|---|---|---|
 | [sharp-agent](instructions/sharp-agent.instructions.md) | `**` | Always-on | Avoid overengineering and reduce token use. Prefer surgical changes and clear problem-solving. |
 | [node-express](instructions/node-express.instructions.md) | `src/**/*.js` | Always-on | Node.js Express service conventions: structure, libraries, flow, caching, errors, and security. |
-| [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Always-on | Jest / Supertest conventions and formatting for Node.js unit tests. |
+| [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Always-on | Jest tests under `tests/`: unit tests for modules, HTTP API tests (Supertest) for routes. |
 | [postgres-liquibase](instructions/postgres-liquibase.instructions.md) | `db/**/*.sql`, `db/**/*.xml`, `db/**/*.yml`, `db/**/*.yaml` | Always-on | PostgreSQL + Liquibase audited schemas: history trail, soft-delete, view triggers, and seed data. |
 | [postgres-liquibase-tests](instructions/postgres-liquibase-tests.instructions.md) | `tests/db/**/*.sql` | Always-on | SQL assertions against a migrated database in the Docker stack. |
 | [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, `**/.dockerignore`, `scripts/**/*.sh` | Always-on | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
@@ -55,7 +55,7 @@ Focused, parameterized commands invoked explicitly.
 
 | Name | File | Load | Description |
 |---|---|---|---|
-| Node unit tests | [node-unit-tests](prompts/node-unit-tests.prompt.md) | On-demand | Slash command: resolve a `src/` module, map its test file, run Unit Tester. |
+| Node unit tests | [node-unit-tests](prompts/node-unit-tests.prompt.md) | On-demand | Slash command: resolve a `src/` module, map its test file, run Unit Tester (unit vs HTTP API by path). |
 | Angular unit tests | [angular-unit-tests](prompts/angular-unit-tests.prompt.md) | On-demand | Slash command: resolve a `src/` module, map `*.spec.ts`, run Unit Tester (Vitest). |
 | Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | On-demand | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
 | Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | On-demand | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
