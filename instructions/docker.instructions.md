@@ -65,6 +65,7 @@ Extend official image; `COPY` init script into `/docker-entrypoint-initdb.d/` to
 - One Traefik per stack, constrained by `stack.name` = `${APP_NAME}-${ENV_NAME}`.
 - Routed services: `traefik.enable=true`, `stack.name`, `PathPrefix` rules, `web` entrypoint, optional `stripprefix`.
 - Dev-only dashboard (`--api.insecure` / `--api.dashboard`); disabled in prod.
+- Documentation site: routed in dev only. Its service, port, and publication are owned by the `vitepress-docs` instruction.
 
 ## Startup ordering
 

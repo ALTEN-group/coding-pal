@@ -59,3 +59,5 @@ labels:
   - "traefik.http.routers.app.rule=PathPrefix(`/api`)"
   - traefik.http.routers.app.entrypoints=web
 ```
+
+Documentation-site service block and its Pages workflow: see `vitepress-docs-examples`.
