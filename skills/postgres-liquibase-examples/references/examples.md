@@ -11,7 +11,7 @@ CREATE TRIGGER <entity>s_iud_trigger
 
 CREATE TRIGGER <entity>_history_trigger
   AFTER INSERT OR UPDATE OR DELETE ON "<entity>"
-  FOR EACH ROW EXECUTE PROCEDURE change_trigger();
+  FOR EACH ROW EXECUTE PROCEDURE iud_history();
 ```
 
 ## Immutable column guard
