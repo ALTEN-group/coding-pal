@@ -13,7 +13,7 @@ How the admin app is structured is owned by the installed Angular admin instruct
 - Shared helpers: `e2e/helpers/` (login, credentials, navigation). Do not duplicate login or sidenav clicks in every spec.
 - Do not put Playwright tests next to `src/` as `*.spec.ts` — those files are Vitest.
 
-## Tools (match Gatelin admin)
+## Tools
 
 - Runner: **Playwright** (`@playwright/test`). Import `test` and `expect` from `@playwright/test` (not Vitest globals, not `vi`).
 - Config: existing `playwright.config.ts` (`testDir: ./e2e`, Chromium, `baseURL`).

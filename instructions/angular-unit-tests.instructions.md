@@ -12,7 +12,7 @@ How the admin app is structured is owned by the installed Angular admin instruct
 - Colocate with source: `<name>.ts` → `<name>.spec.ts` in the same folder.
 - `tsconfig.spec.json` includes `src/**/*.spec.ts`. Do not put unit specs under `e2e/` or a parallel `tests/` tree.
 
-## Tools (match Gatelin admin)
+## Tools
 
 - Runner: **Vitest** via Angular `ng test` (`@angular/build:unit-test`, `runnerConfig: vitest.config.ts`).
 - Scripts: `npm test` → `ng test`; CI/coverage → `npm run test:ci` or `npm run test:coverage` (`ng test --no-watch --coverage`).

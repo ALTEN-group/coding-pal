@@ -25,6 +25,8 @@ Stable standards that apply when matching files are in context.
 | [angular-unit-tests](instructions/angular-unit-tests.instructions.md) | `**/src/**/*.spec.ts` | Always-on | Vitest unit specs (`ng test`), colocated with source. |
 | [angular-e2e-tests](instructions/angular-e2e-tests.instructions.md) | `**/e2e/**/*.ts` | Always-on | Playwright e2e for the admin app (`e2e/`, stack baseURL). |
 | [vitepress-docs](instructions/vitepress-docs.instructions.md) | `**/.vitepress/**`, `**/docs/guide/**/*.md`, `**/docs/index.md`, `**/docs/public/**` | Always-on | VitePress product docs: user-named docs root, Mermaid, Traefik `/docs` in dev, GitHub Pages in prod. |
+| [k6-performance-tests](instructions/k6-performance-tests.instructions.md) | `tests/perf/`, perf Compose, runner, workflow | Always-on | K6 API performance scenarios, Docker execution, reports, thresholds, and CI benchmarks. |
+| [restler-fuzzing-tests](instructions/restler-fuzzing-tests.instructions.md) | `tests/restler/`, restler Compose/docker, runner, workflow | Always-on | RESTler API fuzzing: spec-driven grammar compilation, authentication, Docker execution, reports, and CI gating. |
 
 ### Agents
 
@@ -37,6 +39,8 @@ Named specialists selected explicitly for a bounded kind of work.
 | Spec from Code | [spec-from-code](agents/spec-from-code.agent.md) | On-demand | Generate technical specifications from existing code — nothing left undocumented. |
 | Unit Tester | [unit-test](agents/unit-test.agent.md) | On-demand | Create or update unit tests with full edge-case coverage and meaningful assertions. |
 | VitePress Docs | [vitepress-docs](agents/vitepress-docs.agent.md) | On-demand | Scaffold or write a VitePress product guide from code in a user-named docs root. |
+| K6 Performance Tester | [k6-performance-tests](agents/k6-performance-tests.agent.md) | On-demand | Scaffold, adapt, or extend a Dockerized k6 API performance-test suite. |
+| RESTler Fuzz Tester | [restler-fuzzing-tests](agents/restler-fuzzing-tests.agent.md) | On-demand | Scaffold, adapt, or extend a Dockerized RESTler API fuzzing suite. |
 
 ### Skills
 
@@ -51,6 +55,8 @@ On-demand workflows with contracts, scripts, and reusable assets. Scaffolding ex
 | [docker-examples](skills/docker-examples/SKILL.md) | `skills/docker-examples/` | On-demand | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
 | [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | `skills/angular-admin-examples/` | On-demand | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
 | [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | `skills/vitepress-docs-examples/` | On-demand | VitePress site templates (pairs with `vitepress-docs` instruction). |
+| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | `skills/k6-performance-examples/` | On-demand | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
+| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | `skills/restler-fuzzing-examples/` | On-demand | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
 
 ### Prompts
 
@@ -63,6 +69,8 @@ Focused, parameterized commands invoked explicitly.
 | Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | On-demand | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
 | Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | On-demand | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
 | VitePress docs | [vitepress-docs](prompts/vitepress-docs.prompt.md) | On-demand | Slash command: require a docs-root folder, run VitePress Docs. |
+| K6 performance tests | [k6-performance-tests](prompts/k6-performance-tests.prompt.md) | On-demand | Slash command: implement a Dockerized k6 suite for a named service. |
+| RESTler fuzzing tests | [restler-fuzzing-tests](prompts/restler-fuzzing-tests.prompt.md) | On-demand | Slash command: implement a Dockerized RESTler fuzzing suite for a named service. |
 
 ## Install with APM
 
@@ -94,6 +102,8 @@ dependencies:
     # Agents
     - ALTEN-group/coding-pal/agents/unit-test.agent.md
     - ALTEN-group/coding-pal/agents/vitepress-docs.agent.md
+    - ALTEN-group/coding-pal/agents/k6-performance-tests.agent.md
+    - ALTEN-group/coding-pal/agents/restler-fuzzing-tests.agent.md
     # Pipelines Agents
     - ALTEN-group/coding-pal/agents/node-express-back-end-code-audit.agent.md
     - ALTEN-group/coding-pal/agents/node-express-audit-fix.agent.md
@@ -103,6 +113,8 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/vitepress-docs.prompt.md
+    - ALTEN-group/coding-pal/prompts/k6-performance-tests.prompt.md
+    - ALTEN-group/coding-pal/prompts/restler-fuzzing-tests.prompt.md
     # Instructions
     - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
     - ALTEN-group/coding-pal/instructions/node-express.instructions.md
@@ -114,6 +126,8 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/angular-unit-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/angular-e2e-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
+    - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
+    - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
     # Skills (folder bundles — SKILL.md + references/ + scripts/)
     - git: ALTEN-group/coding-pal
       skills:
@@ -122,6 +136,8 @@ dependencies:
         - docker-examples
         - angular-admin-examples
         - vitepress-docs-examples
+        - k6-performance-examples
+        - restler-fuzzing-examples
         - audit-reporting
   mcp: {}
 ```
