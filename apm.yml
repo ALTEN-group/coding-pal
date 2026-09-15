@@ -1,0 +1,10 @@
+name: coding-pal
+version: 1.0.0
+author: ALTEN Group
+targets:
+  - copilot
+  - cursor
+  - claude
+dependencies:
+  apm: []
+  mcp: {}
