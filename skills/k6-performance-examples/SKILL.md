@@ -6,7 +6,7 @@ license: MIT
 
 # K6 Performance Examples
 
-On-demand scaffolding examples for the `k6-performance-tests` instruction. Normative rules stay in the instruction, while task discovery and validation stay with the `K6 Performance Tester` agent.
+On-demand scaffolding examples for the `k6-performance-tests` instruction. Normative rules stay in the instruction, while task discovery and validation stay with the `Performance Tester` agent.
 
 ## Path Resolution
 

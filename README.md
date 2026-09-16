@@ -34,13 +34,13 @@ Named specialists selected explicitly for a bounded kind of work.
 
 | Name | File | Load | Description |
 |---|---|---|---|
-| Node.js Express.js Back-end Code Audit | [node-express-back-end-code-audit](agents/node-express-back-end-code-audit.agent.md) | On-demand | Audit every file, class, function, and endpoint in a Node.js Express service and PostgreSQL schema. |
-| Node.js Express.js Audit Fix | [node-express-audit-fix](agents/node-express-audit-fix.agent.md) | On-demand | Remediate a single audit finding in a Node.js Express service or PostgreSQL schema. |
+| Code Auditor | [code-audit](agents/code-audit.agent.md) | On-demand | Audit every file, interface, and relevant architectural layer in an explicitly scoped codebase. |
+| Audit Finding Fixer | [audit-fix](agents/audit-fix.agent.md) | On-demand | Remediate a single finding from a validated code audit report. |
 | Spec from Code | [spec-from-code](agents/spec-from-code.agent.md) | On-demand | Generate technical specifications from existing code — nothing left undocumented. |
 | Unit Tester | [unit-test](agents/unit-test.agent.md) | On-demand | Create or update unit tests with full edge-case coverage and meaningful assertions. |
 | VitePress Docs | [vitepress-docs](agents/vitepress-docs.agent.md) | On-demand | Scaffold or write a VitePress product guide from code in a user-named docs root. |
-| K6 Performance Tester | [k6-performance-tests](agents/k6-performance-tests.agent.md) | On-demand | Scaffold, adapt, or extend a Dockerized k6 API performance-test suite. |
-| RESTler Fuzz Tester | [restler-fuzzing-tests](agents/restler-fuzzing-tests.agent.md) | On-demand | Scaffold, adapt, or extend a Dockerized RESTler API fuzzing suite. |
+| Performance Tester | [performance-tests](agents/performance-tests.agent.md) | On-demand | Design, scaffold, adapt, or extend a performance-test suite using the available implementation tooling. |
+| Fuzz Tester | [fuzz-tests](agents/fuzz-tests.agent.md) | On-demand | Design, scaffold, adapt, or extend a fuzz-testing suite using the available implementation tooling. |
 
 ### Skills
 
@@ -69,8 +69,8 @@ Focused, parameterized commands invoked explicitly.
 | Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | On-demand | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
 | Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | On-demand | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
 | VitePress docs | [vitepress-docs](prompts/vitepress-docs.prompt.md) | On-demand | Slash command: require a docs-root folder, run VitePress Docs. |
-| K6 performance tests | [k6-performance-tests](prompts/k6-performance-tests.prompt.md) | On-demand | Slash command: implement a Dockerized k6 suite for a named service. |
-| RESTler fuzzing tests | [restler-fuzzing-tests](prompts/restler-fuzzing-tests.prompt.md) | On-demand | Slash command: implement a Dockerized RESTler fuzzing suite for a named service. |
+| Performance tests | [performance-tests](prompts/performance-tests.prompt.md) | On-demand | Slash command: implement a performance-test suite for a named service or application. |
+| Fuzz tests | [fuzz-tests](prompts/fuzz-tests.prompt.md) | On-demand | Slash command: implement a fuzz-testing suite for a named service or application. |
 
 ## Install with APM
 
@@ -102,19 +102,19 @@ dependencies:
     # Agents
     - ALTEN-group/coding-pal/agents/unit-test.agent.md
     - ALTEN-group/coding-pal/agents/vitepress-docs.agent.md
-    - ALTEN-group/coding-pal/agents/k6-performance-tests.agent.md
-    - ALTEN-group/coding-pal/agents/restler-fuzzing-tests.agent.md
+    - ALTEN-group/coding-pal/agents/performance-tests.agent.md
+    - ALTEN-group/coding-pal/agents/fuzz-tests.agent.md
     # Pipelines Agents
-    - ALTEN-group/coding-pal/agents/node-express-back-end-code-audit.agent.md
-    - ALTEN-group/coding-pal/agents/node-express-audit-fix.agent.md
+    - ALTEN-group/coding-pal/agents/code-audit.agent.md
+    - ALTEN-group/coding-pal/agents/audit-fix.agent.md
     # Prompts
     - ALTEN-group/coding-pal/prompts/node-unit-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-unit-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/vitepress-docs.prompt.md
-    - ALTEN-group/coding-pal/prompts/k6-performance-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/restler-fuzzing-tests.prompt.md
+    - ALTEN-group/coding-pal/prompts/performance-tests.prompt.md
+    - ALTEN-group/coding-pal/prompts/fuzz-tests.prompt.md
     # Instructions
     - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
     - ALTEN-group/coding-pal/instructions/node-express.instructions.md

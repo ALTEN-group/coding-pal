@@ -6,7 +6,7 @@ license: MIT
 
 # RESTler Fuzzing Examples
 
-On-demand scaffolding examples for the `restler-fuzzing-tests` instruction. Normative rules stay in the instruction, while task discovery and validation stay with the `RESTler Fuzz Tester` agent.
+On-demand scaffolding examples for the `restler-fuzzing-tests` instruction. Normative rules stay in the instruction, while task discovery and validation stay with the `Fuzz Tester` agent.
 
 ## Path Resolution
 
