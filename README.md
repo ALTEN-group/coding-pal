@@ -13,64 +13,64 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the golden standard on choosing and c
 
 Stable standards that apply when matching files are in context.
 
-| Name | Applies to | Load | Description |
-|---|---|---|---|
-| [sharp-agent](instructions/sharp-agent.instructions.md) | `**` | Always-on | Avoid overengineering and reduce token use. Prefer surgical changes and clear problem-solving. |
-| [node-express](instructions/node-express.instructions.md) | `src/**/*.js` | Always-on | Node.js Express service conventions: structure, libraries, flow, caching, errors, and security. |
-| [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Always-on | Jest tests under `tests/`: unit tests for modules, HTTP API tests (Supertest) for routes. |
-| [postgres-liquibase](instructions/postgres-liquibase.instructions.md) | `db/**/*.sql`, `db/**/*.xml`, `db/**/*.yml`, `db/**/*.yaml` | Always-on | PostgreSQL + Liquibase audited schemas: history trail, soft-delete, view triggers, and seed data. |
-| [postgres-liquibase-tests](instructions/postgres-liquibase-tests.instructions.md) | `tests/db/**/*.sql` | Always-on | SQL assertions against a migrated database in the Docker stack. |
-| [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, `**/.dockerignore`, `scripts/**/*.sh` | Always-on | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
-| [angular-admin](instructions/angular-admin.instructions.md) | `**/src/app/**/*.ts` | Always-on | Angular admin CRUD pattern: feature-sliced entities, ACL, PrimeNG, and app-config registries. |
-| [angular-unit-tests](instructions/angular-unit-tests.instructions.md) | `**/src/**/*.spec.ts` | Always-on | Vitest unit specs (`ng test`), colocated with source. |
-| [angular-e2e-tests](instructions/angular-e2e-tests.instructions.md) | `**/e2e/**/*.ts` | Always-on | Playwright e2e for the admin app (`e2e/`, stack baseURL). |
-| [vitepress-docs](instructions/vitepress-docs.instructions.md) | `**/.vitepress/**`, `**/docs/guide/**/*.md`, `**/docs/index.md`, `**/docs/public/**` | Always-on | VitePress product docs: user-named docs root, Mermaid, Traefik `/docs` in dev, GitHub Pages in prod. |
-| [k6-performance-tests](instructions/k6-performance-tests.instructions.md) | `tests/perf/`, perf Compose, runner, workflow | Always-on | K6 API performance scenarios, Docker execution, reports, thresholds, and CI benchmarks. |
-| [restler-fuzzing-tests](instructions/restler-fuzzing-tests.instructions.md) | `tests/restler/`, restler Compose/docker, runner, workflow | Always-on | RESTler API fuzzing: spec-driven grammar compilation, authentication, Docker execution, reports, and CI gating. |
+| Name | Applies to | Description |
+|---|---|---|
+| [sharp-agent](instructions/sharp-agent.instructions.md) | `**` | Avoid overengineering and reduce token use. Prefer surgical changes and clear problem-solving. |
+| [node-express](instructions/node-express.instructions.md) | `src/**/*.js` | Node.js Express service conventions: structure, libraries, flow, caching, errors, and security. |
+| [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Jest tests under `tests/`: unit tests for modules, HTTP API tests (Supertest) for routes. |
+| [postgres-liquibase](instructions/postgres-liquibase.instructions.md) | `db/**/*.sql`, `db/**/*.xml`, `db/**/*.yml`, `db/**/*.yaml` | PostgreSQL + Liquibase audited schemas: history trail, soft-delete, view triggers, and seed data. |
+| [postgres-liquibase-tests](instructions/postgres-liquibase-tests.instructions.md) | `tests/db/**/*.sql` | SQL assertions against a migrated database in the Docker stack. |
+| [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, `**/.dockerignore`, `scripts/**/*.sh` | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
+| [angular-admin](instructions/angular-admin.instructions.md) | `**/src/app/**/*.ts` | Angular admin CRUD pattern: feature-sliced entities, ACL, PrimeNG, and app-config registries. |
+| [angular-unit-tests](instructions/angular-unit-tests.instructions.md) | `**/src/**/*.spec.ts` | Vitest unit specs (`ng test`), colocated with source. |
+| [angular-e2e-tests](instructions/angular-e2e-tests.instructions.md) | `**/e2e/**/*.ts` | Playwright e2e for the admin app (`e2e/`, stack baseURL). |
+| [vitepress-docs](instructions/vitepress-docs.instructions.md) | `**/.vitepress/**`, `**/docs/guide/**/*.md`, `**/docs/index.md`, `**/docs/public/**` | VitePress product docs: user-named docs root, Mermaid, Traefik `/docs` in dev, GitHub Pages in prod. |
+| [k6-performance-tests](instructions/k6-performance-tests.instructions.md) | `tests/perf/`, perf Compose, runner, workflow | K6 API performance scenarios, Docker execution, reports, thresholds, and CI benchmarks. |
+| [restler-fuzzing-tests](instructions/restler-fuzzing-tests.instructions.md) | `tests/restler/`, restler Compose/docker, runner, workflow | RESTler API fuzzing: spec-driven grammar compilation, authentication, Docker execution, reports, and CI gating. |
 
 ### Agents
 
 Named specialists selected explicitly for a bounded kind of work.
 
-| Name | File | Load | Description |
-|---|---|---|---|
-| Code Auditor | [code-audit](agents/code-audit.agent.md) | On-demand | Audit every file, interface, and relevant architectural layer in an explicitly scoped codebase. |
-| Audit Finding Fixer | [audit-fix](agents/audit-fix.agent.md) | On-demand | Remediate a single finding from a validated code audit report. |
-| Spec from Code | [spec-from-code](agents/spec-from-code.agent.md) | On-demand | Generate technical specifications from existing code — nothing left undocumented. |
-| Unit Tester | [unit-test](agents/unit-test.agent.md) | On-demand | Create or update unit tests with full edge-case coverage and meaningful assertions. |
-| VitePress Docs | [vitepress-docs](agents/vitepress-docs.agent.md) | On-demand | Scaffold or write a VitePress product guide from code in a user-named docs root. |
-| Performance Tester | [performance-tests](agents/performance-tests.agent.md) | On-demand | Design, scaffold, adapt, or extend a performance-test suite using the available implementation tooling. |
-| Fuzz Tester | [fuzz-tests](agents/fuzz-tests.agent.md) | On-demand | Design, scaffold, adapt, or extend a fuzz-testing suite using the available implementation tooling. |
+| Name | File | Description |
+|---|---|---|
+| Code Auditor | [code-audit](agents/code-audit.agent.md) | Audit every file, interface, and relevant architectural layer in an explicitly scoped codebase. |
+| Audit Finding Fixer | [audit-fix](agents/audit-fix.agent.md) | Remediate a single finding from a validated code audit report. |
+| Spec from Code | [spec-from-code](agents/spec-from-code.agent.md) | Generate technical specifications from existing code — nothing left undocumented. |
+| Unit Tester | [unit-test](agents/unit-test.agent.md) | Create or update unit tests with full edge-case coverage and meaningful assertions. |
+| VitePress Docs | [vitepress-docs](agents/vitepress-docs.agent.md) | Scaffold or write a VitePress product guide from code in a user-named docs root. |
+| Performance Tester | [performance-tests](agents/performance-tests.agent.md) | Design, scaffold, adapt, or extend a performance-test suite using the available implementation tooling. |
+| Fuzz Tester | [fuzz-tests](agents/fuzz-tests.agent.md) | Design, scaffold, adapt, or extend a fuzz-testing suite using the available implementation tooling. |
 
 ### Skills
 
 On-demand workflows with contracts, scripts, and reusable assets. Scaffolding example packs are skills too: install them with the matching domain instruction so templates ship as a folder (`SKILL.md` + `references/`).
 
-| Name | Load | Description |
-|---|---|---|
-| [audit-reporting](skills/audit-reporting/SKILL.md) | On-demand | Produce deterministic Markdown audit reports and validate them before CI publication. |
-| [spec-reporting](skills/spec-reporting/SKILL.md) | On-demand | Produce structured Markdown specs under `docs/specs/` and validate them (pairs with Spec from Code). |
-| [node-express-examples](skills/node-express-examples/SKILL.md) | On-demand | Express scaffolding templates (pairs with `node-express` instruction). |
-| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | On-demand | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
-| [docker-examples](skills/docker-examples/SKILL.md) | On-demand | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
-| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | On-demand | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
-| [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | On-demand | VitePress site templates (pairs with `vitepress-docs` instruction). |
-| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | On-demand | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
-| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | On-demand | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
+| Name | Description |
+|---|---|
+| [audit-reporting](skills/audit-reporting/SKILL.md) | Produce deterministic Markdown audit reports and validate them before CI publication. |
+| [spec-reporting](skills/spec-reporting/SKILL.md) | Produce structured Markdown specs under `docs/specs/` and validate them (pairs with Spec from Code). |
+| [node-express-examples](skills/node-express-examples/SKILL.md) | Express scaffolding templates (pairs with `node-express` instruction). |
+| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
+| [docker-examples](skills/docker-examples/SKILL.md) | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
+| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
+| [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | VitePress site templates (pairs with `vitepress-docs` instruction). |
+| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
+| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
 
 ### Prompts
 
 Focused, parameterized commands invoked explicitly.
 
-| Name | File | Load | Description |
-|---|---|---|---|
-| Node unit tests | [node-unit-tests](prompts/node-unit-tests.prompt.md) | On-demand | Slash command: resolve a `src/` module, map its test file, run Unit Tester (unit vs HTTP API by path). |
-| Angular unit tests | [angular-unit-tests](prompts/angular-unit-tests.prompt.md) | On-demand | Slash command: resolve a `src/` module, map `*.spec.ts`, run Unit Tester (Vitest). |
-| Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | On-demand | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
-| Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | On-demand | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
-| VitePress docs | [vitepress-docs](prompts/vitepress-docs.prompt.md) | On-demand | Slash command: require a docs-root folder, run VitePress Docs. |
-| Performance tests | [performance-tests](prompts/performance-tests.prompt.md) | On-demand | Slash command: implement a performance-test suite for a named service or application. |
-| Fuzz tests | [fuzz-tests](prompts/fuzz-tests.prompt.md) | On-demand | Slash command: implement a fuzz-testing suite for a named service or application. |
+| Name | File | Description |
+|---|---|---|
+| Node unit tests | [node-unit-tests](prompts/node-unit-tests.prompt.md) | Slash command: resolve a `src/` module, map its test file, run Unit Tester (unit vs HTTP API by path). |
+| Angular unit tests | [angular-unit-tests](prompts/angular-unit-tests.prompt.md) | Slash command: resolve a `src/` module, map `*.spec.ts`, run Unit Tester (Vitest). |
+| Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
+| Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
+| VitePress docs | [vitepress-docs](prompts/vitepress-docs.prompt.md) | Slash command: require a docs-root folder, run VitePress Docs. |
+| Performance tests | [performance-tests](prompts/performance-tests.prompt.md) | Slash command: implement a performance-test suite for a named service or application. |
+| Fuzz tests | [fuzz-tests](prompts/fuzz-tests.prompt.md) | Slash command: implement a fuzz-testing suite for a named service or application. |
 
 ## Install with APM
 
