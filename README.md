@@ -46,17 +46,17 @@ Named specialists selected explicitly for a bounded kind of work.
 
 On-demand workflows with contracts, scripts, and reusable assets. Scaffolding example packs are skills too: install them with the matching domain instruction so templates ship as a folder (`SKILL.md` + `references/`).
 
-| Name | Path | Load | Description |
-|---|---|---|---|
-| [audit-reporting](skills/audit-reporting/SKILL.md) | `skills/audit-reporting/` | On-demand | Produce deterministic Markdown audit reports and validate them before CI publication. |
-| [spec-reporting](skills/spec-reporting/SKILL.md) | `skills/spec-reporting/` | On-demand | Produce structured Markdown specs under `docs/specs/` and validate them (pairs with Spec from Code). |
-| [node-express-examples](skills/node-express-examples/SKILL.md) | `skills/node-express-examples/` | On-demand | Express scaffolding templates (pairs with `node-express` instruction). |
-| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | `skills/postgres-liquibase-examples/` | On-demand | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
-| [docker-examples](skills/docker-examples/SKILL.md) | `skills/docker-examples/` | On-demand | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
-| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | `skills/angular-admin-examples/` | On-demand | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
-| [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | `skills/vitepress-docs-examples/` | On-demand | VitePress site templates (pairs with `vitepress-docs` instruction). |
-| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | `skills/k6-performance-examples/` | On-demand | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
-| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | `skills/restler-fuzzing-examples/` | On-demand | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
+| Name | Load | Description |
+|---|---|---|
+| [audit-reporting](skills/audit-reporting/SKILL.md) | On-demand | Produce deterministic Markdown audit reports and validate them before CI publication. |
+| [spec-reporting](skills/spec-reporting/SKILL.md) | On-demand | Produce structured Markdown specs under `docs/specs/` and validate them (pairs with Spec from Code). |
+| [node-express-examples](skills/node-express-examples/SKILL.md) | On-demand | Express scaffolding templates (pairs with `node-express` instruction). |
+| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | On-demand | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
+| [docker-examples](skills/docker-examples/SKILL.md) | On-demand | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
+| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | On-demand | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
+| [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | On-demand | VitePress site templates (pairs with `vitepress-docs` instruction). |
+| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | On-demand | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
+| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | On-demand | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
 
 ### Prompts
 
