@@ -28,7 +28,7 @@ node scripts/audit-report.mjs --input /path/to/raw-audit.md --output /path/to/au
 ```
 
 Treat a nonzero validator exit as an invalid report and regenerate rather than publishing raw output. Prompt compliance is advisory; the validator is the enforcement boundary.
-4. After a zero validator exit, read the normalized output file and **print its full contents verbatim as the final response**. Do not summarize, do not cite the file path, do not write a narrative instead. The CI pipeline reads stdout; it cannot read `/tmp/` or any other path you wrote.
+4. After a zero validator exit, read the normalized output file and make its full contents — starting at `<!-- AUDIT-REPORT:START -->` and ending at `<!-- AUDIT-REPORT:END -->` — your entire final response, with nothing before or after it: no acknowledgement, no "printing below," no summary of what you found. The first characters of your final response must be `<!-- AUDIT-REPORT:START -->`. A response that describes the report instead of containing it is a contract violation, even if you validated successfully. The CI pipeline reads stdout; it cannot read `/tmp/` or any other path you wrote.
 
 ## Done When
 
