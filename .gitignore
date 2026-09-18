@@ -1,0 +1,10 @@
+# Node / VitePress
+website/node_modules/
+website/docs/.vitepress/cache/
+website/docs/.vitepress/dist/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

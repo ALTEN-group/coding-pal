@@ -1,0 +1,25 @@
+{
+  "name": "coding-pal-docs",
+  "version": "1.0.0",
+  "description": "Documentation website for Coding Pal persistent context catalog.",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev docs --host",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs"
+  },
+  "author": "ALTEN",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ALTEN-group/coding-pal.git",
+    "directory": "website"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.4"
+  },
+  "dependencies": {
+    "mermaid": "11.17.0",
+    "vitepress-plugin-mermaid": "2.0.17"
+  }
+}

@@ -1,0 +1,179 @@
+/**
+ * Custom Theme Styles: ALTEN Royal Blue Palette & Mermaid Diagram Styling
+ */
+
+:root {
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #1d4ed8;
+  --vp-c-brand-3: #1e40af;
+  --vp-c-brand-soft: rgba(37, 99, 235, 0.14);
+}
+
+.dark {
+  --vp-c-brand-1: #3b82f6;
+  --vp-c-brand-2: #60a5fa;
+  --vp-c-brand-3: #1d4ed8;
+  --vp-c-brand-soft: rgba(59, 130, 246, 0.16);
+}
+
+/* ==========================================================================
+   Mermaid Diagrams: Aesthetic Styling, Typography & Layout Fixes
+   ========================================================================== */
+
+.vp-doc .mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(180deg, var(--vp-c-bg-soft) 0%, var(--vp-c-bg-alt) 100%);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.06);
+}
+
+.dark .vp-doc .mermaid {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.6) 100%);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.35);
+}
+
+.vp-doc .mermaid svg {
+  max-width: 100%;
+  height: auto;
+  overflow: visible !important;
+}
+
+/* Normalize typography inside foreignObject */
+.vp-doc .mermaid .nodeLabel,
+.vp-doc .mermaid .label,
+.vp-doc .mermaid foreignObject,
+.vp-doc .mermaid foreignObject div,
+.vp-doc .mermaid foreignObject span,
+.vp-doc .mermaid foreignObject p {
+  line-height: 1.35 !important;
+  font-family: var(--vp-font-family-base) !important;
+  font-size: 13.5px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* Modern Card Geometry: Rounded corners, sleek borders, smooth drop-shadow */
+.vp-doc .mermaid .node rect,
+.vp-doc .mermaid .node polygon {
+  rx: 8px !important;
+  ry: 8px !important;
+  stroke-width: 1.75px !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+/* Subgraph Containers */
+.vp-doc .mermaid .cluster rect {
+  rx: 12px !important;
+  ry: 12px !important;
+  stroke-dasharray: 4 4 !important;
+  stroke-width: 1.5px !important;
+  fill-opacity: 0.45 !important;
+}
+
+/* Edge / Connector Paths & Arrow Markers */
+.vp-doc .mermaid .edgePath path.path {
+  stroke: #3b82f6 !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+}
+
+.vp-doc .mermaid .marker {
+  fill: #3b82f6 !important;
+  stroke: #3b82f6 !important;
+}
+
+.vp-doc .mermaid .edgeLabel {
+  font-size: 12px !important;
+  background-color: var(--vp-c-bg) !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--vp-c-divider) !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+/* ==========================================================================
+   Semantic Primitive Color Themes (Light Mode Adaptations)
+   ========================================================================== */
+
+/* 1. Instruction (Cyan / Sky) */
+:root:not(.dark) .vp-doc .mermaid .node.instruction rect,
+:root:not(.dark) .vp-doc .mermaid .node.instruction polygon {
+  fill: #f0f9ff !important;
+  stroke: #0284c7 !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.instruction .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.instruction foreignObject div {
+  color: #0369a1 !important;
+}
+
+/* 2. Agent (Royal Blue) */
+:root:not(.dark) .vp-doc .mermaid .node.agent rect,
+:root:not(.dark) .vp-doc .mermaid .node.agent polygon {
+  fill: #eff6ff !important;
+  stroke: #2563eb !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.agent .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.agent foreignObject div {
+  color: #1d4ed8 !important;
+}
+
+/* 3. Skill (Purple / Violet) */
+:root:not(.dark) .vp-doc .mermaid .node.skill rect,
+:root:not(.dark) .vp-doc .mermaid .node.skill polygon {
+  fill: #faf5ff !important;
+  stroke: #7c3aed !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.skill .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.skill foreignObject div {
+  color: #6d28d9 !important;
+}
+
+/* 4. Prompt (Amber / Gold) */
+:root:not(.dark) .vp-doc .mermaid .node.prompt rect,
+:root:not(.dark) .vp-doc .mermaid .node.prompt polygon {
+  fill: #fffbeb !important;
+  stroke: #d97706 !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.prompt .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.prompt foreignObject div {
+  color: #b45309 !important;
+}
+
+/* 5. Verification / Success (Emerald Green) */
+:root:not(.dark) .vp-doc .mermaid .node.verify rect,
+:root:not(.dark) .vp-doc .mermaid .node.verify polygon {
+  fill: #ecfdf5 !important;
+  stroke: #059669 !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.verify .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.verify foreignObject div {
+  color: #047857 !important;
+}
+
+/* 6. Decision / Question (Indigo) */
+:root:not(.dark) .vp-doc .mermaid .node.decision rect,
+:root:not(.dark) .vp-doc .mermaid .node.decision polygon {
+  fill: #eef2ff !important;
+  stroke: #4f46e5 !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.decision .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.decision foreignObject div {
+  color: #3730a3 !important;
+}
+
+/* ==========================================================================
+   Hero Section: Animated Logo Layout
+   ========================================================================== */
+
+.VPHero .image-container {
+  overflow: visible !important;
+}
+

@@ -1,0 +1,24 @@
+services:
+  website:
+    build:
+      context: ../website
+      dockerfile: dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-22-alpine}
+        NODE_ENV: ${NODE_ENV:-development}
+        TZ: ${TZ:-UTC}
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: coding-pal-docs
+    hostname: coding-pal-docs
+    ports:
+      - "${PORT:-5173}:5173"
+    volumes:
+      - ../website/package.json:/usr/src/app/package.json:ro
+      - ../website/package-lock.json:/usr/src/app/package-lock.json
+      - ../website/docs:/usr/src/app/docs
+      - website_node_modules:/usr/src/app/node_modules
+    command: sh -c "npm i --loglevel=error --ignore-scripts --no-fund && node --run dev"
+
+volumes:
+  website_node_modules:

@@ -1,0 +1,25 @@
+<svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;800&amp;display=swap');
+      .brand-title { fill: #2563EB; }
+      .brand-subtitle { fill: #475569; }
+      @media (prefers-color-scheme: dark) {
+        .brand-title { fill: #60A5FA; }
+        .brand-subtitle { fill: #CBD5E1; }
+      }
+    </style>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon Badge -->
+  <rect x="0" y="0" width="40" height="40" rx="10" fill="url(#logoGrad)"/>
+  <!-- Terminal / Code Prompt Glyph -->
+  <path d="M12 14L18 20L12 26" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M21 26H28" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Title Typography -->
+  <text x="50" y="27" class="brand-title" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800" font-size="20">Coding</text>
+  <text x="127" y="27" class="brand-subtitle" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="20">Pal</text>
+</svg>

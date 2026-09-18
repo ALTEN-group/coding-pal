@@ -189,6 +189,64 @@ apm install ALTEN-group/coding-pal --skill audit-reporting --target copilot
 
 Run `apm update` after a shared package release, then commit the regenerated lockfile. Do not hand-edit generated APM hashes or lock entries.
 
+## Documentation Website (Local Development)
+
+Coding Pal includes a VitePress documentation website under `website/` describing the persistent context catalog, markdown file schemas, and distribution model.
+
+### 1. Using Development Scripts (Recommended)
+
+Start the documentation website in development mode:
+
+```bash
+./scripts/start-dev.sh
+```
+
+This builds and runs the containerized VitePress server with live hot-reload at:
+**`http://localhost:5173/docs/`**
+
+To view logs:
+
+```bash
+docker compose -f docker/docker-compose.yml logs -f
+```
+
+To stop the development environment:
+
+```bash
+./scripts/stop-dev.sh
+```
+
+To stop and remove built Docker images:
+
+```bash
+./scripts/stop-dev.sh --rmi
+```
+
+### 2. Using Node.js directly
+
+From the repository root:
+
+```bash
+# Navigate to website folder and install dependencies
+cd website
+npm install
+
+# Start local development server with hot-reload
+npm run dev
+```
+
+The site will start at `http://localhost:5173/docs/`.
+
+To test the production build locally:
+
+```bash
+# Build static site
+npm run build
+
+# Preview production build
+npm run preview
+```
+
 ## Review Checklist
 
 - [ ] Correct primitive selected by the decision tree.
@@ -201,3 +259,5 @@ Run `apm update` after a shared package release, then commit the regenerated loc
 - [ ] Machine-consumed artifacts have deterministic validation.
 - [ ] Tests cover valid input, invalid input, and deterministic output.
 - [ ] APM installation and lockfile behavior have been verified.
+- [ ] Documentation site builds cleanly (`npm run build` in `website/`) if docs or catalog entries were modified.
+

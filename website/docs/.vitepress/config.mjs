@@ -1,0 +1,79 @@
+import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
+
+const base = process.env.VITEPRESS_BASE || (process.env.NODE_ENV === 'production' ? '/' : '/docs/')
+
+export default withMermaid(defineConfig({
+  title: 'Coding Pal',
+  description: 'Persistent context catalog and AI guidance primitives for GitHub Copilot, Claude Code, and Cursor',
+  base,
+  vite: {
+    // mermaid >= 11.16 pulls CJS-only fastdom, which vitepress-plugin-mermaid does not pre-bundle
+    optimizeDeps: {
+      include: ['fastdom', 'fastdom/extensions/fastdom-promised.js'],
+    },
+  },
+  mermaid: {
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    flowchart: {
+      htmlLabels: true,
+      padding: 18,
+      nodeSpacing: 50,
+      rankSpacing: 45,
+      curve: 'basis',
+    },
+    themeVariables: {
+      fontSize: '13.5px',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    },
+  },
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
+  ],
+  themeConfig: {
+    logo: '/logo.svg',
+    siteTitle: false,
+    sidebar: [
+      {
+        items: [
+          { text: 'Overview', link: '/guide/overview' },
+          { text: 'Persistent Context', link: '/guide/persistent-context' },
+        ],
+      },
+      {
+        text: 'Catalog Reference',
+        collapsed: false,
+        items: [
+          { text: 'Prompts Catalog', link: '/guide/catalog-prompts' },
+          { text: 'Agents Catalog', link: '/guide/catalog-agents' },
+          { text: 'Instructions Catalog', link: '/guide/catalog-instructions' },
+          { text: 'Skills Catalog', link: '/guide/catalog-skills' },
+        ],
+      },
+      {
+        text: 'Markdown Schemas',
+        collapsed: false,
+        items: [
+          { text: 'Prompts Schema', link: '/guide/schema-prompts' },
+          { text: 'Agents Schema', link: '/guide/schema-agents' },
+          { text: 'Instructions Schema', link: '/guide/schema-instructions' },
+          { text: 'Skills Schema', link: '/guide/schema-skills' },
+        ],
+      },
+      {
+        text: 'Distribution & Tooling',
+        collapsed: false,
+        items: [
+          { text: 'APM Distribution', link: '/guide/apm-distribution' },
+          { text: 'Authoring Guide', link: '/guide/authoring-guide' },
+        ],
+      },
+    ],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/ALTEN-group/coding-pal' },
+    ],
+    footer: {
+      message: 'Published and maintained by ALTEN',
+    },
+  },
+}))

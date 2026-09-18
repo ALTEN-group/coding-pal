@@ -1,0 +1,25 @@
+ARG NODE_VERSION=22-alpine
+FROM node:${NODE_VERSION}
+
+LABEL org.opencontainers.image.description="Coding Pal documentation site (VitePress, development)"
+
+ARG NODE_ENV=development
+ENV NODE_ENV=${NODE_ENV}
+
+# install tzdata from default Alpine repos
+RUN apk add --no-cache tzdata
+
+ARG TZ=UTC
+ENV TZ=${TZ}
+
+ARG UID=1000
+ARG GID=1000
+RUN deluser --remove-home node && addgroup -S usergroup -g ${GID} && adduser -G usergroup -S user -u ${UID}
+USER user
+
+WORKDIR /usr/src/app
+COPY --chown=user:usergroup --chmod=640 package*.json ./
+
+RUN npm i --loglevel=error --ignore-scripts --no-fund
+
+CMD [ "node", "--run", "dev" ]
