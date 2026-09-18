@@ -33,16 +33,19 @@ jobs:
           cache: npm
           cache-dependency-path: website/package-lock.json
 
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         working-directory: website
         run: npm ci
 
       - name: Build
         working-directory: website
+        env:
+          VITEPRESS_BASE: ${{ steps.pages.outputs.base_path || '/coding-pal/' }}
         run: npm run build
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

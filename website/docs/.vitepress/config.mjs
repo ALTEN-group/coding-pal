@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
-const base = process.env.VITEPRESS_BASE || (process.env.NODE_ENV === 'production' ? '/' : '/docs/')
+const defaultBase = process.env.NODE_ENV === 'production'
+  ? (process.env.GITHUB_REPOSITORY ? `/${process.env.GITHUB_REPOSITORY.split('/')[1]}/` : '/coding-pal/')
+  : '/docs/'
+const rawBase = process.env.VITEPRESS_BASE || defaultBase
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
 
 export default withMermaid(defineConfig({
   title: 'Coding Pal',
