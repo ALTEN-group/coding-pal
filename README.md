@@ -2,7 +2,15 @@
 
 Instructions, skills, agents, and prompts to improve your AI coding assistant.
 
+Documentation website: **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the golden standard on choosing and creating each primitive.
+
+## Documentation
+
+Full documentation, architecture guides, catalog references, and markdown schemas are available at:  
+👉 **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
+
 
 ## Catalog
 
