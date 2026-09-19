@@ -45,7 +45,17 @@ export default withMermaid(defineConfig({
         ],
       },
       {
-        text: 'Catalog Reference',
+        text: 'Capabilities (By Domain)',
+        collapsed: false,
+        items: [
+          { text: 'Testing & Verification', link: '/guide/domain-testing' },
+          { text: 'Auditing & Remediation', link: '/guide/domain-audit' },
+          { text: 'Architecture & Docs', link: '/guide/domain-docs' },
+          { text: 'Stacks & Infrastructure', link: '/guide/domain-stacks' },
+        ],
+      },
+      {
+        text: 'Primitives (By Type)',
         collapsed: false,
         items: [
           { text: 'Prompts Catalog', link: '/guide/catalog-prompts' },

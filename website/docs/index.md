@@ -14,7 +14,7 @@ hero:
       link: /guide/overview
     - theme: alt
       text: Browse Catalog
-      link: /guide/catalog-prompts
+      link: /guide/domain-testing
 
 features:
   - icon: 🧠
