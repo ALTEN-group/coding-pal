@@ -12,6 +12,9 @@ hero:
     - theme: brand
       text: Get Started
       link: /guide/overview
+    - theme: alt
+      text: Browse Catalog
+      link: /guide/catalog-prompts
 
 features:
   - icon: 🧠
