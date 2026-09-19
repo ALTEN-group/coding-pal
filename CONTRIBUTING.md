@@ -202,12 +202,12 @@ Start the documentation website in development mode:
 ```
 
 This builds and runs the containerized VitePress server with live hot-reload at:
-**`http://localhost:5173/docs/`**
+**`http://localhost:5174/docs/`**
 
 To view logs:
 
 ```bash
-docker compose -f docker/docker-compose.yml logs -f
+docker compose -p coding-pal -f docker/docker-compose.yml logs -f
 ```
 
 To stop the development environment:
@@ -235,7 +235,7 @@ npm install
 npm run dev
 ```
 
-The site will start at `http://localhost:5173/docs/`.
+The site will start at `http://localhost:5174/docs/`.
 
 To test the production build locally:
 

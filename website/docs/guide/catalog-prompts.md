@@ -8,7 +8,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 |---|---|---|---|---|
 | `/node-unit-tests` | `node-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/routes/app.js` | Generates Jest unit tests or Supertest HTTP API route tests for a Node module. |
 | `/angular-unit-tests` | `angular-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/app/...` | Generates or updates Vitest unit tests colocated with an Angular component/service. |
-| `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **Unit Tester** | `optional flow name, e.g. auth-login` | Generates Playwright end-to-end tests under `e2e/`. |
+| `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **E2E Tester** | `optional flow name, e.g. auth-login` | Generates Playwright end-to-end tests under `e2e/`. |
 | `/postgres-liquibase-tests` | `postgres-liquibase-tests.prompt.md` | **Unit Tester** | `optional db area, e.g. db/changelog` | Generates SQL assertion tests validating migrations against PostgreSQL. |
 | `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | Scaffolds or updates a complete VitePress product documentation website. |
 | `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | Scaffolds or updates a k6 performance test suite. |
@@ -37,7 +37,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 - **Invocation**: `/angular-e2e-tests [flow-name]`
 - **Target Resolution**: Resolves user workflow name or target page area.
 - **Mapping**: Creates or updates `e2e/<area>.spec.ts`.
-- **Agent Handover**: Invokes **Unit Tester** with Playwright POM guidelines.
+- **Agent Handover**: Invokes **E2E Tester** with Playwright POM guidelines.
 
 ### 4. `/postgres-liquibase-tests`
 - **Invocation**: `/postgres-liquibase-tests [db/changelog/path]`

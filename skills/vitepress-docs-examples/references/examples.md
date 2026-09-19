@@ -295,7 +295,7 @@ Place this in the stack compose file. Naming, `<<: *secretArgs`, and Traefik lab
       - "traefik.http.routers.website.rule=PathPrefix(`/docs`)"
       - "traefik.http.routers.website.entrypoints=web"
       - "traefik.http.routers.website.service=website"
-      - "traefik.http.services.website.loadbalancer.server.port=5173"
+      - "traefik.http.services.website.loadbalancer.server.port=5174"
 ```
 
 Declare `website_node_modules` under the compose `volumes:` key.

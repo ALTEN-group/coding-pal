@@ -6,26 +6,67 @@ The **Architecture & Documentation** domain provides automated capabilities to r
 
 ## Domain Architecture
 
+### 1. Technical Specification Pipeline
+
 ```mermaid
 ---
-caption: Documentation & Technical Specification Architecture
+caption: Technical Specification Pipeline (spec-from-code)
 ---
 flowchart TD
-    subgraph SpecExtraction ["Technical Specification Pipeline"]
+    subgraph SpecTrack ["1. Technical Specification Pipeline"]
         direction TB
-        CODE["Existing Codebase<br/>(routes, models, schemas)"] --> AG_SPEC["<b>Spec from Code Agent</b><br/>(spec-from-code.agent.md)"]
-        AG_SPEC --> SPECS["<b>Generated Specifications</b><br/>(docs/specs/*.md)"]
-        SPECS --> S_SPEC["<b>skills/spec-reporting/</b><br/>scripts/spec-docs.mjs"]
-        S_SPEC -->|Validation| SPEC_OK{"Complete Spec?"}
+        CODE["<b>Existing Codebase</b><br/>Routes, controllers, database models"]
+        AG_SPEC["<b>Spec from Code Agent</b><br/>(spec-from-code.agent.md)"]
+        VAL_SPEC["<b>skills/spec-reporting/</b><br/>Automated contract validation"]
+        SPEC_OUT["<b>Validated Technical Specs</b><br/>docs/specs/*.md (OpenAPI & Schemas)"]
+
+        CODE --> AG_SPEC
+        AG_SPEC --> VAL_SPEC --> SPEC_OUT
     end
 
-    subgraph DocsWebsite ["VitePress Documentation Pipeline"]
+    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+
+    class AG_SPEC agent;
+    class VAL_SPEC skill;
+    class CODE input;
+    class SPEC_OUT verify;
+```
+
+### 2. Documentation Website Pipeline
+
+```mermaid
+---
+caption: Documentation Website Pipeline (vitepress-docs)
+---
+flowchart TD
+    subgraph DocsTrack ["2. Documentation Website Pipeline"]
         direction TB
-        P_DOCS["<b>/vitepress-docs</b><br/>(vitepress-docs.prompt.md)"] --> AG_DOCS["<b>VitePress Docs Agent</b><br/>(vitepress-docs.agent.md)"]
-        AG_DOCS -.-> INST_DOCS["<b>vitepress-docs.instructions.md</b><br/>Site rules, Mermaid, Base URLs"]
-        AG_DOCS === SKILL_DOCS["<b>skills/vitepress-docs-examples/</b><br/>package.json, config.mjs, docker, workflow"]
-        AG_DOCS --> SITE["<b>Static Documentation Site</b><br/>(e.g. website/docs/)"]
+        P_DOCS["<b>/vitepress-docs [docs-root]</b><br/>User Slash Command"]
+        AG_DOCS["<b>VitePress Docs Agent</b><br/>(vitepress-docs.agent.md)"]
+        INST_DOCS["<b>vitepress-docs.instructions.md</b><br/>Site rules, Mermaid, Base URLs"]
+        SKILL_DOCS["<b>skills/vitepress-docs-examples/</b><br/>Scaffolding, Docker & Pages CI"]
+        SITE_OUT["<b>Static Documentation Site</b><br/>Hot-reload dev & GitHub Pages"]
+
+        P_DOCS --> AG_DOCS
+        AG_DOCS -.->|Rules| INST_DOCS
+        AG_DOCS ===|Scaffolding Pack| SKILL_DOCS
+        AG_DOCS --> SITE_OUT
     end
+
+    classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+
+    class P_DOCS prompt;
+    class AG_DOCS agent;
+    class INST_DOCS instruction;
+    class SKILL_DOCS skill;
+    class SITE_OUT verify;
 ```
 
 ---
@@ -65,7 +106,7 @@ flowchart TD
 - **Scaffolding Bundle**: Uses [`skills/vitepress-docs-examples`](./catalog-skills.md#3-vitepress-docs-examples) to supply pre-configured scaffolding assets:
   - `package.json` with pinned VitePress, Mermaid, and Markdown plugins.
   - `.vitepress/config.mjs` pre-configured with theme settings, responsive SVG logo/favicon, Mermaid optimization, and dynamic base URL resolution for GitHub Pages / local dev.
-  - Multi-service Docker Compose files (`scripts/start-dev.sh`, `scripts/stop-dev.sh`, `docker/docker-compose.yml`) enabling hot-reloaded local editing on port 5173 without local Node.js dependencies.
+  - Multi-service Docker Compose files (`scripts/start-dev.sh`, `scripts/stop-dev.sh`, `docker/docker-compose.yml`) enabling hot-reloaded local editing on port 5174 without local Node.js dependencies.
   - GitHub Actions deployment workflow (`.github/workflows/deploy-docs.yml`) with zero-downtime GitHub Pages deployment.
 - **Falsifiable Done When**:
   - `npm run build` generates static HTML with 0 errors.

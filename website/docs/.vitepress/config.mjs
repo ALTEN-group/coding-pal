@@ -12,6 +12,10 @@ export default withMermaid(defineConfig({
   description: 'Persistent context catalog and AI guidance primitives for GitHub Copilot, Claude Code, and Cursor',
   base,
   vite: {
+    server: {
+      port: 5174,
+      host: true,
+    },
     // mermaid >= 11.16 pulls CJS-only fastdom, which vitepress-plugin-mermaid does not pre-bundle
     optimizeDeps: {
       include: ['fastdom', 'fastdom/extensions/fastdom-promised.js'],
@@ -29,6 +33,7 @@ export default withMermaid(defineConfig({
     themeVariables: {
       fontSize: '13.5px',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      edgeLabelBackground: 'transparent',
     },
   },
   head: [
@@ -45,7 +50,7 @@ export default withMermaid(defineConfig({
         ],
       },
       {
-        text: 'Capabilities (By Domain)',
+        text: 'Use cases (By Domain)',
         collapsed: false,
         items: [
           { text: 'Testing & Verification', link: '/guide/domain-testing' },

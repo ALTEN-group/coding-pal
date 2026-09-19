@@ -90,28 +90,81 @@
   stroke: #3b82f6 !important;
 }
 
-.vp-doc .mermaid .edgeLabel {
-  font-size: 12px !important;
+/* Edge Labels: Neutralize Mermaid default grey background boxes and rects */
+.vp-doc .mermaid g.edgeLabel {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.vp-doc .mermaid .edgeLabel rect,
+.vp-doc .mermaid .label rect,
+.vp-doc .mermaid rect.background {
+  fill: transparent !important;
+  stroke: none !important;
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.vp-doc .mermaid .labelBkg,
+.vp-doc .mermaid [class*="labelBkg"],
+.vp-doc .mermaid div.labelBkg,
+.vp-doc .mermaid .edgeLabel p {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Edge Label Badges: Clean, theme-adaptive pill badges */
+.vp-doc .mermaid .edgeLabel span,
+.vp-doc .mermaid span.edgeLabel,
+.vp-doc .mermaid .edgeLabel foreignObject div span {
+  display: inline-block !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
   background-color: var(--vp-c-bg) !important;
   padding: 2px 8px !important;
   border-radius: 6px !important;
   border: 1px solid var(--vp-c-divider) !important;
   color: var(--vp-c-text-2) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+.vp-doc .mermaid .edgeLabel text,
+.vp-doc .mermaid .edgeLabel tspan {
+  font-size: 11.5px !important;
+  fill: var(--vp-c-text-2) !important;
 }
 
 /* ==========================================================================
-   Semantic Primitive Color Themes (Light Mode Adaptations)
+   Semantic Primitive Color Themes (Light & Dark Mode Support)
    ========================================================================== */
 
-/* 1. Instruction (Cyan / Sky) */
+/* 1. Instruction & Standard (Cyan / Sky) */
 :root:not(.dark) .vp-doc .mermaid .node.instruction rect,
-:root:not(.dark) .vp-doc .mermaid .node.instruction polygon {
+:root:not(.dark) .vp-doc .mermaid .node.instruction polygon,
+:root:not(.dark) .vp-doc .mermaid .node.standard rect,
+:root:not(.dark) .vp-doc .mermaid .node.standard polygon {
   fill: #f0f9ff !important;
   stroke: #0284c7 !important;
 }
 :root:not(.dark) .vp-doc .mermaid .node.instruction .nodeLabel,
-:root:not(.dark) .vp-doc .mermaid .node.instruction foreignObject div {
+:root:not(.dark) .vp-doc .mermaid .node.instruction foreignObject div,
+:root:not(.dark) .vp-doc .mermaid .node.standard .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.standard foreignObject div {
   color: #0369a1 !important;
+}
+.dark .vp-doc .mermaid .node.instruction rect,
+.dark .vp-doc .mermaid .node.instruction polygon,
+.dark .vp-doc .mermaid .node.standard rect,
+.dark .vp-doc .mermaid .node.standard polygon {
+  fill: #082f49 !important;
+  stroke: #0ea5e9 !important;
+}
+.dark .vp-doc .mermaid .node.instruction .nodeLabel,
+.dark .vp-doc .mermaid .node.instruction foreignObject div,
+.dark .vp-doc .mermaid .node.standard .nodeLabel,
+.dark .vp-doc .mermaid .node.standard foreignObject div {
+  color: #e0f2fe !important;
 }
 
 /* 2. Agent (Royal Blue) */
@@ -124,6 +177,15 @@
 :root:not(.dark) .vp-doc .mermaid .node.agent foreignObject div {
   color: #1d4ed8 !important;
 }
+.dark .vp-doc .mermaid .node.agent rect,
+.dark .vp-doc .mermaid .node.agent polygon {
+  fill: #1e3a8a !important;
+  stroke: #3b82f6 !important;
+}
+.dark .vp-doc .mermaid .node.agent .nodeLabel,
+.dark .vp-doc .mermaid .node.agent foreignObject div {
+  color: #eff6ff !important;
+}
 
 /* 3. Skill (Purple / Violet) */
 :root:not(.dark) .vp-doc .mermaid .node.skill rect,
@@ -134,6 +196,15 @@
 :root:not(.dark) .vp-doc .mermaid .node.skill .nodeLabel,
 :root:not(.dark) .vp-doc .mermaid .node.skill foreignObject div {
   color: #6d28d9 !important;
+}
+.dark .vp-doc .mermaid .node.skill rect,
+.dark .vp-doc .mermaid .node.skill polygon {
+  fill: #4c1d95 !important;
+  stroke: #8b5cf6 !important;
+}
+.dark .vp-doc .mermaid .node.skill .nodeLabel,
+.dark .vp-doc .mermaid .node.skill foreignObject div {
+  color: #faf5ff !important;
 }
 
 /* 4. Prompt (Amber / Gold) */
@@ -146,6 +217,15 @@
 :root:not(.dark) .vp-doc .mermaid .node.prompt foreignObject div {
   color: #b45309 !important;
 }
+.dark .vp-doc .mermaid .node.prompt rect,
+.dark .vp-doc .mermaid .node.prompt polygon {
+  fill: #78350f !important;
+  stroke: #f59e0b !important;
+}
+.dark .vp-doc .mermaid .node.prompt .nodeLabel,
+.dark .vp-doc .mermaid .node.prompt foreignObject div {
+  color: #fef3c7 !important;
+}
 
 /* 5. Verification / Success (Emerald Green) */
 :root:not(.dark) .vp-doc .mermaid .node.verify rect,
@@ -157,6 +237,15 @@
 :root:not(.dark) .vp-doc .mermaid .node.verify foreignObject div {
   color: #047857 !important;
 }
+.dark .vp-doc .mermaid .node.verify rect,
+.dark .vp-doc .mermaid .node.verify polygon {
+  fill: #064e3b !important;
+  stroke: #10b981 !important;
+}
+.dark .vp-doc .mermaid .node.verify .nodeLabel,
+.dark .vp-doc .mermaid .node.verify foreignObject div {
+  color: #ecfdf5 !important;
+}
 
 /* 6. Decision / Question (Indigo) */
 :root:not(.dark) .vp-doc .mermaid .node.decision rect,
@@ -167,6 +256,63 @@
 :root:not(.dark) .vp-doc .mermaid .node.decision .nodeLabel,
 :root:not(.dark) .vp-doc .mermaid .node.decision foreignObject div {
   color: #3730a3 !important;
+}
+.dark .vp-doc .mermaid .node.decision rect,
+.dark .vp-doc .mermaid .node.decision polygon {
+  fill: #312e81 !important;
+  stroke: #6366f1 !important;
+}
+.dark .vp-doc .mermaid .node.decision .nodeLabel,
+.dark .vp-doc .mermaid .node.decision foreignObject div {
+  color: #e0e7ff !important;
+}
+
+/* 7. Code / Report / Target (Slate) */
+:root:not(.dark) .vp-doc .mermaid .node.code rect,
+:root:not(.dark) .vp-doc .mermaid .node.report rect,
+:root:not(.dark) .vp-doc .mermaid .node.input rect {
+  fill: #f8fafc !important;
+  stroke: #64748b !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.code .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.report .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.input .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.code foreignObject div,
+:root:not(.dark) .vp-doc .mermaid .node.report foreignObject div,
+:root:not(.dark) .vp-doc .mermaid .node.input foreignObject div {
+  color: #1e293b !important;
+}
+.dark .vp-doc .mermaid .node.code rect,
+.dark .vp-doc .mermaid .node.report rect,
+.dark .vp-doc .mermaid .node.input rect {
+  fill: #1e293b !important;
+  stroke: #64748b !important;
+}
+.dark .vp-doc .mermaid .node.code .nodeLabel,
+.dark .vp-doc .mermaid .node.report .nodeLabel,
+.dark .vp-doc .mermaid .node.input .nodeLabel,
+.dark .vp-doc .mermaid .node.code foreignObject div,
+.dark .vp-doc .mermaid .node.report foreignObject div,
+.dark .vp-doc .mermaid .node.input foreignObject div {
+  color: #f8fafc !important;
+}
+
+/* 8. Reject / Error (Red / Crimson) */
+:root:not(.dark) .vp-doc .mermaid .node.reject rect {
+  fill: #fef2f2 !important;
+  stroke: #ef4444 !important;
+}
+:root:not(.dark) .vp-doc .mermaid .node.reject .nodeLabel,
+:root:not(.dark) .vp-doc .mermaid .node.reject foreignObject div {
+  color: #991b1b !important;
+}
+.dark .vp-doc .mermaid .node.reject rect {
+  fill: #450a0a !important;
+  stroke: #ef4444 !important;
+}
+.dark .vp-doc .mermaid .node.reject .nodeLabel,
+.dark .vp-doc .mermaid .node.reject foreignObject div {
+  color: #fee2e2 !important;
 }
 
 /* ==========================================================================

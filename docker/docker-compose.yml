@@ -1,3 +1,5 @@
+name: coding-pal
+
 services:
   website:
     build:
@@ -12,7 +14,7 @@ services:
     container_name: coding-pal-docs
     hostname: coding-pal-docs
     ports:
-      - "${PORT:-5173}:5173"
+      - "${PORT:-5174}:5174"
     volumes:
       - ../website/package.json:/usr/src/app/package.json:ro
       - ../website/package-lock.json:/usr/src/app/package-lock.json

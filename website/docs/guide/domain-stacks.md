@@ -46,6 +46,14 @@ flowchart TD
     I_NG === K_NG
     I_DB === K_DB
     I_INFRA === K_INFRA
+
+    classDef code fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+
+    class S_NODE,S_NG,S_DB,S_INFRA code;
+    class I_NODE,I_NG,I_DB,I_INFRA instruction;
+    class K_NODE,K_NG,K_DB,K_INFRA skill;
 ```
 
 ---

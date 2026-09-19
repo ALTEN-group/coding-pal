@@ -17,10 +17,12 @@ cd "$(dirname "$0")/.."
 echo -e "${YELLOW}🛑 Stopping Coding Pal development environment...${NC}"
 
 if [[ "$REMOVE_IMAGES" == true ]]; then
-  docker compose -f docker/docker-compose.yml down --rmi all
+  docker compose -p coding-pal -f docker/docker-compose.yml down --rmi all
+  docker compose -p docker -f docker/docker-compose.yml down 2>/dev/null || true
   echo -e "${RED}✅ Development environment stopped and images removed!${NC}"
 else
-  docker compose -f docker/docker-compose.yml down
+  docker compose -p coding-pal -f docker/docker-compose.yml down
+  docker compose -p docker -f docker/docker-compose.yml down 2>/dev/null || true
   echo -e "${RED}✅ Development environment stopped!${NC}"
   echo -e "Run '${YELLOW}./scripts/stop-dev.sh --rmi${NC}' to also remove Docker images."
 fi

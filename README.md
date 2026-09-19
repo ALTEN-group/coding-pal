@@ -1,203 +1,111 @@
 # Coding Pal
 
-Instructions, skills, agents, and prompts to improve your AI coding assistant.
+> Version-controlled persistent context primitives (instructions, skills, agents, prompts) to standardize and improve AI coding assistants across engineering teams.
 
 Documentation website: **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the golden standard on choosing and creating each primitive.
+---
 
-## Documentation
+## What is Coding Pal?
 
-Full documentation, architecture guides, catalog references, and markdown schemas are available at:  
-👉 **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
+Coding Pal codifies organizational engineering standards, specialist personas, procedural workflows, and interactive slash commands into machine-readable Markdown files. It eliminates hallucinated conventions, prompt drift, token waste, and unbounded agent behaviors across **GitHub Copilot**, **Claude Code**, and **Cursor**.
 
+Persistent context is organized into four core primitives:
 
-## Catalog
+| Primitive | Loading | Purpose | Catalog Reference |
+|---|---|---|---|
+| 📋 **Instructions** | **Always-on** | Normative engineering standards applied when matching files open (`applyTo` glob). | [Browse Instructions](https://alten-group.github.io/coding-pal/guide/catalog-instructions.html) |
+| 🤖 **Agents** | **On-demand** | Named specialists with strict boundaries and falsifiable completion criteria. | [Browse Agents](https://alten-group.github.io/coding-pal/guide/catalog-agents.html) |
+| ⚡ **Skills** | **On-demand** | Procedural bundles with contracts, automated CI validators, and scaffolding templates. | [Browse Skills](https://alten-group.github.io/coding-pal/guide/catalog-skills.html) |
+| 💬 **Prompts** | **On-demand** | Interactive slash commands parameterized from active IDE selections and files. | [Browse Prompts](https://alten-group.github.io/coding-pal/guide/catalog-prompts.html) |
 
-**Always-on** means the harness injects the file when matching context is open (for instructions, that is the `applyTo` glob).
-**On-demand** means a person or workflow must select, invoke, or match the primitive by name/description.
+---
 
-### Instructions
+## Quickstart with APM
 
-Stable standards that apply when matching files are in context.
+Coding Pal packages and distributes primitives to multiple AI coding environments using [Agent Package Manager (APM)](https://microsoft.github.io/apm/).
 
-| Name | Applies to | Description |
-|---|---|---|
-| [sharp-agent](instructions/sharp-agent.instructions.md) | `**` | Avoid overengineering and reduce token use. Prefer surgical changes and clear problem-solving. |
-| [node-express](instructions/node-express.instructions.md) | `src/**/*.js` | Node.js Express service conventions: structure, libraries, flow, caching, errors, and security. |
-| [node-unit-tests](instructions/node-unit-tests.instructions.md) | `tests/**/*.js` | Jest tests under `tests/`: unit tests for modules, HTTP API tests (Supertest) for routes. |
-| [postgres-liquibase](instructions/postgres-liquibase.instructions.md) | `db/**/*.sql`, `db/**/*.xml`, `db/**/*.yml`, `db/**/*.yaml` | PostgreSQL + Liquibase audited schemas: history trail, soft-delete, view triggers, and seed data. |
-| [postgres-liquibase-tests](instructions/postgres-liquibase-tests.instructions.md) | `tests/db/**/*.sql` | SQL assertions against a migrated database in the Docker stack. |
-| [docker](instructions/docker.instructions.md) | `docker/**`, `**/dockerfile*`, `**/.dockerignore`, `scripts/**/*.sh` | Multi-service Docker/Compose workflow behind Traefik, with BuildKit secrets and env-driven naming. |
-| [angular-admin](instructions/angular-admin.instructions.md) | `**/src/app/**/*.ts` | Angular admin CRUD pattern: feature-sliced entities, ACL, PrimeNG, and app-config registries. |
-| [angular-unit-tests](instructions/angular-unit-tests.instructions.md) | `**/src/**/*.spec.ts` | Vitest unit specs (`ng test`), colocated with source. |
-| [angular-e2e-tests](instructions/angular-e2e-tests.instructions.md) | `**/e2e/**/*.ts` | Playwright e2e for the admin app (`e2e/`, stack baseURL). |
-| [vitepress-docs](instructions/vitepress-docs.instructions.md) | `**/.vitepress/**`, `**/docs/guide/**/*.md`, `**/docs/index.md`, `**/docs/public/**` | VitePress product docs: user-named docs root, Mermaid, Traefik `/docs` in dev, GitHub Pages in prod. |
-| [k6-performance-tests](instructions/k6-performance-tests.instructions.md) | `tests/perf/`, perf Compose, runner, workflow | K6 API performance scenarios, Docker execution, reports, thresholds, and CI benchmarks. |
-| [restler-fuzzing-tests](instructions/restler-fuzzing-tests.instructions.md) | `tests/restler/`, restler Compose/docker, runner, workflow | RESTler API fuzzing: spec-driven grammar compilation, authentication, Docker execution, reports, and CI gating. |
+### 1. Declare Dependencies in `apm.yml`
 
-### Agents
+Create an `apm.yml` in your consumer project root and select the primitives you need:
 
-Named specialists selected explicitly for a bounded kind of work.
-
-| Name | File | Description |
-|---|---|---|
-| Code Auditor | [code-audit](agents/code-audit.agent.md) | Audit every file, interface, and relevant architectural layer in an explicitly scoped codebase. |
-| Audit Finding Fixer | [audit-fix](agents/audit-fix.agent.md) | Remediate a single finding from a validated code audit report. |
-| Spec from Code | [spec-from-code](agents/spec-from-code.agent.md) | Generate technical specifications from existing code — nothing left undocumented. |
-| Unit Tester | [unit-test](agents/unit-test.agent.md) | Create or update unit tests with full edge-case coverage and meaningful assertions. |
-| VitePress Docs | [vitepress-docs](agents/vitepress-docs.agent.md) | Scaffold or write a VitePress product guide from code in a user-named docs root. |
-| Performance Tester | [performance-tests](agents/performance-tests.agent.md) | Design, scaffold, adapt, or extend a performance-test suite using the available implementation tooling. |
-| Fuzz Tester | [fuzz-tests](agents/fuzz-tests.agent.md) | Design, scaffold, adapt, or extend a fuzz-testing suite using the available implementation tooling. |
-
-### Skills
-
-On-demand workflows with contracts, scripts, and reusable assets. Scaffolding example packs are skills too: install them with the matching domain instruction so templates ship as a folder (`SKILL.md` + `references/`).
-
-| Name | Description |
-|---|---|
-| [audit-reporting](skills/audit-reporting/SKILL.md) | Produce deterministic Markdown audit reports and validate them before CI publication. |
-| [spec-reporting](skills/spec-reporting/SKILL.md) | Produce structured Markdown specs under `docs/specs/` and validate them (pairs with Spec from Code). |
-| [node-express-examples](skills/node-express-examples/SKILL.md) | Express scaffolding templates (pairs with `node-express` instruction). |
-| [postgres-liquibase-examples](skills/postgres-liquibase-examples/SKILL.md) | Liquibase/SQL scaffolding templates (pairs with `postgres-liquibase` instruction). |
-| [docker-examples](skills/docker-examples/SKILL.md) | Docker/Compose scaffolding snippets (pairs with `docker` instruction). |
-| [angular-admin-examples](skills/angular-admin-examples/SKILL.md) | Angular admin entity-slice templates (pairs with `angular-admin` instruction). |
-| [vitepress-docs-examples](skills/vitepress-docs-examples/SKILL.md) | VitePress site templates (pairs with `vitepress-docs` instruction). |
-| [k6-performance-examples](skills/k6-performance-examples/SKILL.md) | Reusable k6 architecture patterns (pairs with `k6-performance-tests` instruction). |
-| [restler-fuzzing-examples](skills/restler-fuzzing-examples/SKILL.md) | Reusable RESTler fuzzing architecture patterns (pairs with `restler-fuzzing-tests` instruction). |
-
-### Prompts
-
-Focused, parameterized commands invoked explicitly.
-
-| Name | File | Description |
-|---|---|---|
-| Node unit tests | [node-unit-tests](prompts/node-unit-tests.prompt.md) | Slash command: resolve a `src/` module, map its test file, run Unit Tester (unit vs HTTP API by path). |
-| Angular unit tests | [angular-unit-tests](prompts/angular-unit-tests.prompt.md) | Slash command: resolve a `src/` module, map `*.spec.ts`, run Unit Tester (Vitest). |
-| Angular e2e tests | [angular-e2e-tests](prompts/angular-e2e-tests.prompt.md) | Slash command: resolve a flow, map `e2e/<area>.spec.ts`, run Unit Tester (Playwright). |
-| Postgres / Liquibase tests | [postgres-liquibase-tests](prompts/postgres-liquibase-tests.prompt.md) | Slash command: resolve a `db/` area, map `tests/db/`, run Unit Tester. |
-| VitePress docs | [vitepress-docs](prompts/vitepress-docs.prompt.md) | Slash command: require a docs-root folder, run VitePress Docs. |
-| Performance tests | [performance-tests](prompts/performance-tests.prompt.md) | Slash command: implement a performance-test suite for a named service or application. |
-| Fuzz tests | [fuzz-tests](prompts/fuzz-tests.prompt.md) | Slash command: implement a fuzz-testing suite for a named service or application. |
-
-## Install with APM
-
-Declare what you need in the consumer project's `apm.yml`, then run `apm install`.
-
-Because this repo ships skills under `skills/`, APM treats it as a **skill bundle**. Agents and instructions must be listed as **virtual path** dependencies; skills are selected from the bundle with a `skills:` subset. Do not nest `agents:` / `instructions:` under a single `git: ALTEN-group/coding-pal` entry — APM will install only the skills and skip the rest.
-
-Dependencies are the same for every harness. Only `targets:` (and `apm install --target`) changes.
-
-| Harness | `targets:` | `apm install --target` |
-|---|---|---|
-| GitHub Copilot | `[copilot]` | `copilot` |
-| Claude Code | `[claude]` | `claude` |
-| Cursor | `[cursor]` | `cursor` |
-| Copilot + Cursor | `[copilot, cursor]` | `copilot,cursor` |
-| All three | `[copilot, claude, cursor]` | `copilot,claude,cursor` |
-
-Claude Code and Cursor do **not** load Copilot’s `.github/instructions/` and `.github/agents/` paths. Use `claude`, `cursor`, or both so APM writes native files for each harness.
-
-```yml
-# apm.yml — ships with your project
-name: your-project
+```yaml
+# apm.yml — consumer project configuration
+name: my-service
 version: 1.0.0
-author: your-name
 targets:
   - copilot   # and/or: claude, cursor
 dependencies:
   apm:
-    # Agents
-    - ALTEN-group/coding-pal/agents/unit-test.agent.md
-    - ALTEN-group/coding-pal/agents/vitepress-docs.agent.md
-    - ALTEN-group/coding-pal/agents/performance-tests.agent.md
-    - ALTEN-group/coding-pal/agents/fuzz-tests.agent.md
-    # Pipelines Agents
-    - ALTEN-group/coding-pal/agents/code-audit.agent.md
-    - ALTEN-group/coding-pal/agents/audit-fix.agent.md
-    # Prompts
-    - ALTEN-group/coding-pal/prompts/node-unit-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/angular-unit-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/vitepress-docs.prompt.md
-    - ALTEN-group/coding-pal/prompts/performance-tests.prompt.md
-    - ALTEN-group/coding-pal/prompts/fuzz-tests.prompt.md
-    # Instructions
+    # Virtual Path Dependencies (Agents, Prompts, Instructions)
     - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
     - ALTEN-group/coding-pal/instructions/node-express.instructions.md
-    - ALTEN-group/coding-pal/instructions/node-unit-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/postgres-liquibase.instructions.md
-    - ALTEN-group/coding-pal/instructions/postgres-liquibase-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/docker.instructions.md
-    - ALTEN-group/coding-pal/instructions/angular-admin.instructions.md
-    - ALTEN-group/coding-pal/instructions/angular-unit-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/angular-e2e-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
-    - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
-    # Skills (folder bundles — SKILL.md + references/ + scripts/)
+    - ALTEN-group/coding-pal/agents/unit-test.agent.md
+    - ALTEN-group/coding-pal/prompts/node-unit-tests.prompt.md
+
+    # Companion Skill Bundles (Templates & Validators)
     - git: ALTEN-group/coding-pal
       skills:
         - node-express-examples
-        - postgres-liquibase-examples
-        - docker-examples
-        - angular-admin-examples
-        - vitepress-docs-examples
-        - k6-performance-examples
-        - restler-fuzzing-examples
-        - audit-reporting
-  mcp: {}
 ```
+
+> 👉 For the complete reference manifest listing every available agent, prompt, instruction, and skill, see the **[Full APM Configuration Reference](https://alten-group.github.io/coding-pal/guide/apm-distribution.html#full-canonical-configuration-reference)** on the documentation website.
+
+### 2. Install for Your Target Harness
 
 ```bash
-apm install --target copilot          # or: claude   or: cursor   or: copilot,claude,cursor
+# GitHub Copilot
+apm install --target copilot
+
+# Claude Code or Cursor
+apm install --target claude
+apm install --target cursor
+
+# Multi-harness deployment
+apm install --target copilot,claude,cursor
 ```
 
-Pick only the agents, instructions, and skills your project needs. Pair each domain instruction with its `*-examples` skill when you want scaffolding templates (e.g. `node-express` + `node-express-examples`). Skills install as whole folders (`SKILL.md` + `references/` + any scripts).
+APM compiles and translates each primitive into the target harness's native configuration format:
+- **Copilot**: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.agents/skills/`
+- **Claude Code**: `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
+- **Cursor**: `.cursor/rules/*.mdc`, `.cursor/agents/`, `.cursor/commands/`, `.agents/skills/`
 
-APM deploys each primitive to every listed target.
+---
 
-| Path | From |
-|---|---|
-| `.github/instructions/*.instructions.md` | Copilot |
-| `.github/agents/*.agent.md` | Copilot |
-| `.github/prompts/*.prompt.md` | Copilot |
-| `.claude/rules/*.md` | Claude Code |
-| `.claude/agents/*.md` | Claude Code |
-| `.claude/commands/*.md` | Claude Code (compiled from prompts) |
-| `.claude/skills/<name>/SKILL.md` | Claude Code |
-| `.cursor/rules/*.mdc` | Cursor (rewritten from instructions) |
-| `.cursor/agents/*.md` | Cursor |
-| `.cursor/commands/*.md` | Cursor (compiled from prompts) |
-| `.agents/skills/<name>/SKILL.md` | Shared (Copilot and Cursor) |
+## Documentation Website
 
-### Where files land
+The complete documentation, capability domain guides, interactive architecture schemas, and authoring contracts are hosted at:
 
-| Primitive | GitHub Copilot (`copilot`) | Claude Code (`claude`) | Cursor (`cursor`) |
-|---|---|---|---|
-| Instructions | `.github/instructions/` | `.claude/rules/` | `.cursor/rules/` (`.mdc`) |
-| Agents | `.github/agents/` | `.claude/agents/` | `.cursor/agents/` |
-| Prompts | `.github/prompts/` | `.claude/commands/` | `.cursor/commands/` |
-| Skills | `.agents/skills/` | `.claude/skills/` | `.agents/skills/` (same shared layout) |
+👉 **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
 
-Skills use the shared `.agents/skills/` layout for Copilot and Cursor, but Claude Code keeps its target-native `.claude/skills/` directory. That is APM’s default — not a misconfiguration. Older APM could deploy skills under per-client paths (e.g. `.github/skills/`, `.cursor/skills/`) via `--legacy-skill-paths`; prefer the default layout unless you have a reason not to.
+### Sitemap & Guides
 
-### One-off installs
+- **Architecture & Foundation**:
+  - [Overview & Problem Solved](https://alten-group.github.io/coding-pal/guide/overview.html)
+  - [Persistent Context Architecture & Lifecycle](https://alten-group.github.io/coding-pal/guide/persistent-context.html)
+  - [Multi-Harness Distribution with APM](https://alten-group.github.io/coding-pal/guide/apm-distribution.html)
+- **Capabilities by Domain**:
+  - [Testing & Verification](https://alten-group.github.io/coding-pal/guide/domain-testing.html) (Unit, Component, E2E, Migration, Performance, Fuzzing)
+  - [Auditing & Remediation](https://alten-group.github.io/coding-pal/guide/domain-audit.html) (Code Auditor, Audit Finding Fixer, CI Gating)
+  - [Architecture & Documentation](https://alten-group.github.io/coding-pal/guide/domain-docs.html) (Technical Specs, VitePress Product Docs)
+  - [Stacks & Infrastructure](https://alten-group.github.io/coding-pal/guide/domain-stacks.html) (Node.js, PostgreSQL/Liquibase, Docker, Angular)
+- **Catalogs & Deep Dives**:
+  - [Instructions Catalog](https://alten-group.github.io/coding-pal/guide/catalog-instructions.html)
+  - [Agents Catalog](https://alten-group.github.io/coding-pal/guide/catalog-agents.html)
+  - [Skills Catalog](https://alten-group.github.io/coding-pal/guide/catalog-skills.html)
+  - [Prompts Catalog](https://alten-group.github.io/coding-pal/guide/catalog-prompts.html)
+- **Schemas & Authoring Standards**:
+  - [Instruction Schema](https://alten-group.github.io/coding-pal/guide/schema-instructions.html)
+  - [Agent Schema](https://alten-group.github.io/coding-pal/guide/schema-agents.html)
+  - [Skill Schema](https://alten-group.github.io/coding-pal/guide/schema-skills.html)
+  - [Prompt Schema](https://alten-group.github.io/coding-pal/guide/schema-prompts.html)
+  - [Authoring Guide](https://alten-group.github.io/coding-pal/guide/authoring-guide.html)
 
-You can also add a single primitive by path or skill name:
+---
 
-```bash
-apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --target copilot
-apm install ALTEN-group/coding-pal --skill audit-reporting --target copilot
-```
+## Contributing
 
-For Claude Code or Cursor, pass `--target claude`, `--target cursor`, or a comma-separated target list such as `copilot,claude,cursor` the same way.
-
-### Keep your collection up to date
-
-```bash
-apm update
-```
-
-Learn more about [**Agent Package Manager**](https://microsoft.github.io/apm/quickstart/)
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for:
+- Golden standards for choosing between instructions, agents, skills, and prompts.
+- Authoring checklists and validation scripts.
+- Local VitePress documentation server quickstart (`./scripts/start-dev.sh`).

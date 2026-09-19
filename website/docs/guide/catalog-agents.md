@@ -10,6 +10,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | **Audit Finding Fixer** | `audit-fix.agent.md` | Surgical remediation of a single finding from a validated audit report. | One finding only; no unrelated refactoring; verify with narrowest test command. | `audit-reporting` skill |
 | **Spec from Code** | `spec-from-code.agent.md` | Reverse-engineers technical specifications from existing code. | Grounded strictly in source code; no fabricated features; comprehensive interfaces. | `spec-reporting` skill |
 | **Unit Tester** | `unit-test.agent.md` | Writes or updates isolated unit tests with full branch and edge-case coverage. | **One module scope; edit test files only; never change production code** without explicit user consent. | Installed domain test instruction |
+| **E2E Tester** | `e2e-test.agent.md` | Writes or updates Playwright browser end-to-end tests for user journeys. | **`e2e/` scope only; POM pattern; edit test files only; zero production code altered.** | `angular-e2e-tests` instruction |
 | **VitePress Docs** | `vitepress-docs.agent.md` | Scaffolds or updates a VitePress documentation site in a user-named folder. | Confine all files to docs root; follow `vitepress-docs` instruction; default theme only. | `vitepress-docs-examples` |
 | **Performance Tester** | `performance-tests.agent.md` | Designs, scaffolds, or extends k6 load, stress, and spike test suites. | Follow k6 Docker execution pattern; assert realistic thresholds; isolate scenarios. | `k6-performance-examples` |
 | **Fuzz Tester** | `fuzz-tests.agent.md` | Configures and runs RESTler API fuzzing pipelines. | OpenAPI-driven grammar compilation; handle auth refresh; fail on 500 status. | `restler-fuzzing-examples` |
@@ -54,7 +55,16 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
   4. Runs the project's narrowest test command (e.g. `npx jest tests/services/user.test.js`).
 - **Done When**: Every listed path has assertions, narrowest test passes, and **zero production code was altered**.
 
-### 5. VitePress Docs (`vitepress-docs.agent.md`)
+### 5. E2E Tester (`e2e-test.agent.md`)
+- **When to Invoke**: Creating or maintaining end-to-end browser tests for user flows, authentication, or entity CRUD pages.
+- **Methodology**:
+  1. Resolves target user journey or page area under `e2e/`.
+  2. Identifies accessible roles and UI checkpoints (forms, navigation, banners, ACL boundaries).
+  3. Reuses shared helpers in `e2e/helpers/` and enforces Page Object Model (POM).
+  4. Executes the narrowest headless Playwright command against the running stack.
+- **Done When**: All checkpoints are asserted, narrowest Playwright command passes headlessly, and zero production code was altered.
+
+### 6. VitePress Docs (`vitepress-docs.agent.md`)
 - **When to Invoke**: When scaffolding or maintaining a product documentation website.
 - **Methodology**:
   1. Requires an explicit docs root folder (e.g. `website/` or `docs/`).
@@ -63,7 +73,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
   4. Verifies docs build using `npm run build`.
 - **Done When**: Site builds with exit code 0 and all guide pages are indexed in the sidebar.
 
-### 6. Performance Tester (`performance-tests.agent.md`)
+### 7. Performance Tester (`performance-tests.agent.md`)
 - **When to Invoke**: Designing API performance test suites or validating SLA thresholds.
 - **Methodology**:
   1. Analyzes target service routes and payload patterns.
@@ -71,7 +81,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
   3. Scaffolds Docker runner and Traefik integration.
 - **Done When**: k6 test scripts execute locally in Docker and threshold checks pass.
 
-### 7. Fuzz Tester (`fuzz-tests.agent.md`)
+### 8. Fuzz Tester (`fuzz-tests.agent.md`)
 - **When to Invoke**: Hardening REST APIs against security flaws, malformed payloads, and crash bugs.
 - **Methodology**:
   1. Validates OpenAPI specification.

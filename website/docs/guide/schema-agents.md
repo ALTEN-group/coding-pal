@@ -13,6 +13,7 @@ agents/
 
 Examples:
 - `agents/unit-test.agent.md`
+- `agents/e2e-test.agent.md`
 - `agents/code-audit.agent.md`
 - `agents/vitepress-docs.agent.md`
 

@@ -26,10 +26,10 @@ The site root is the folder named in the request. It is not fixed to `website/`.
 
 ## Stack
 
-- VitePress `1.6.x` (`vitepress dev|build|preview docs`). Dev script: `vitepress dev docs --host`.
+- VitePress `1.6.x` (`vitepress dev|build|preview docs`). Dev script: `vitepress dev docs --host --port 5174`.
 - Mermaid via `vitepress-plugin-mermaid` + `mermaid`. Pre-bundle `fastdom` and `fastdom/extensions/fastdom-promised.js` in `vite.optimizeDeps.include`.
 - Package is `private`, MIT, author ALTEN. `repository.directory` is the docs-root folder name the user gave.
-- Dev: Compose service behind Traefik at `/docs`, port `5173`. Bind-mount `docs/` (and `package.json` / lockfile); named volume for `node_modules`; reinstall on start so lockfile edits apply. Container naming, secrets, and label syntax are owned by the Docker instruction.
+- Dev: Compose service behind Traefik at `/docs`, port `5174`. Bind-mount `docs/` (and `package.json` / lockfile); named volume for `node_modules`; reinstall on start so lockfile edits apply. Container naming, secrets, and label syntax are owned by the Docker instruction.
 - Prod: GitHub Pages from `docs/.vitepress/dist`. **No documentation Docker image in prod.**
 
 ## Branding

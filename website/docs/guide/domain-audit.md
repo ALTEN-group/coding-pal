@@ -8,32 +8,57 @@ The **Auditing & Remediation** domain provides automated, evidence-based code re
 
 ```mermaid
 ---
-caption: Code Audit & Remediation Lifecycle
+caption: Code Audit & Surgical Remediation Lifecycle
 ---
 flowchart TD
-    subgraph Discovery ["1. Audit Phase"]
+    subgraph Phase1 ["1. Audit Phase"]
         direction TB
-        USER_AUDIT["Developer / CI"] -->|Invokes| AG_AUDIT["<b>Code Auditor Agent</b><br/>(code-audit.agent.md)"]
-        AG_AUDIT -->|Inspects Codebase| STANDARDS["<b>Quality Standards</b><br/>(Installed Instructions)"]
-        AG_AUDIT -->|Generates| REPORT["<b>Audit Report</b><br/>(docs/audits/*.md)"]
+        AG_AUDIT["<b>Code Auditor Agent</b><br/>(code-audit.agent.md)"]
+        STANDARDS["<b>Domain Standards</b><br/>(Active Instructions)"]
+        REPORT["<b>Structured Audit Report</b><br/>docs/audits/*.md"]
+
+        AG_AUDIT -.->|Applies| STANDARDS
+        AG_AUDIT -->|Generates| REPORT
     end
 
-    subgraph Validation ["2. Automated Contract Gating"]
+    subgraph Phase2 ["2. Automated Contract Gating"]
         direction TB
-        REPORT --> S_SCRIPT["<b>skills/audit-reporting/</b><br/>scripts/audit-report.mjs"]
-        S_SCRIPT -->|CI Check| VERDICT{"Valid Contract?"}
-        VERDICT -->|Pass| ARTIFACT["Approved Findings Table<br/>(SEC-001, PERF-002, etc.)"]
-        VERDICT -->|Fail| REJECT["Reject Pull Request"]
+        VAL_SCRIPT["<b>skills/audit-reporting/</b><br/>scripts/audit-report.mjs"]
+        VERDICT{"Contract<br/>Valid?"}
+        FINDINGS["<b>Approved Findings Matrix</b><br/>(SEC-001, PERF-002, ...)"]
+        REJECT["<b>Reject PR</b><br/>Schema Mismatch"]
+
+        REPORT --> VAL_SCRIPT --> VERDICT
+        VERDICT -->|Pass| FINDINGS
+        VERDICT -->|Fail| REJECT
     end
 
-    subgraph Remediation ["3. Surgical Fix Phase"]
+    subgraph Phase3 ["3. Surgical Fix & Verification"]
         direction TB
-        ARTIFACT -->|Select Finding| AG_FIX["<b>Audit Finding Fixer</b><br/>(audit-fix.agent.md)"]
-        AG_FIX -.->|Enforces Constraints| INST_SHARP["<b>sharp-agent.instructions.md</b><br/>No speculative refactoring"]
-        AG_FIX -->|Surgical Patch| CODE["Target File(s)"]
-        AG_FIX -->|Run Narrowest Test| TEST["Verification Test"]
-        TEST -->|Pass| DONE["Finding Remediated"]
+        AG_FIX["<b>Audit Finding Fixer</b><br/>(audit-fix.agent.md)"]
+        SHARP["<b>sharp-agent.instructions.md</b><br/>Zero unrelated edits"]
+        DONE["<b>Verified Fix</b><br/>Narrowest test passes · No side-effects"]
+
+        FINDINGS -->|Select Finding ID| AG_FIX
+        AG_FIX -.->|Enforces| SHARP
+        AG_FIX -->|Surgical Patch & Test| DONE
     end
+
+    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef decision fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
+    classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef report fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+    classDef reject fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#fee2e2;
+
+    class AG_AUDIT,AG_FIX agent;
+    class STANDARDS,SHARP instruction;
+    class VAL_SCRIPT skill;
+    class VERDICT decision;
+    class REPORT,FINDINGS report;
+    class DONE verify;
+    class REJECT reject;
 ```
 
 ---

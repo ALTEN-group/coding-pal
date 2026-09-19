@@ -4,9 +4,9 @@
   "description": "Documentation website for Coding Pal persistent context catalog.",
   "private": true,
   "scripts": {
-    "dev": "vitepress dev docs --host",
+    "dev": "vitepress dev docs --host --port 5174",
     "build": "vitepress build docs",
-    "preview": "vitepress preview docs"
+    "preview": "vitepress preview docs --port 5174"
   },
   "author": "ALTEN",
   "license": "MIT",
