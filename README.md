@@ -4,20 +4,17 @@
 
 Documentation website: **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
 
----
-
-## What is Coding Pal?
 
 Coding Pal codifies organizational engineering standards, specialist personas, procedural workflows, and interactive slash commands into machine-readable Markdown files. It eliminates hallucinated conventions, prompt drift, token waste, and unbounded agent behaviors across **GitHub Copilot**, **Claude Code**, and **Cursor**.
 
 Persistent context is organized into four core primitives:
 
-| Primitive | Loading | Purpose | Catalog Reference |
-|---|---|---|---|
-| 📋 **Instructions** | **Always-on** | Normative engineering standards applied when matching files open (`applyTo` glob). | [Browse Instructions](https://alten-group.github.io/coding-pal/guide/catalog-instructions.html) |
-| 🤖 **Agents** | **On-demand** | Named specialists with strict boundaries and falsifiable completion criteria. | [Browse Agents](https://alten-group.github.io/coding-pal/guide/catalog-agents.html) |
-| ⚡ **Skills** | **On-demand** | Procedural bundles with contracts, automated CI validators, and scaffolding templates. | [Browse Skills](https://alten-group.github.io/coding-pal/guide/catalog-skills.html) |
-| 💬 **Prompts** | **On-demand** | Interactive slash commands parameterized from active IDE selections and files. | [Browse Prompts](https://alten-group.github.io/coding-pal/guide/catalog-prompts.html) |
+| Primitive | Purpose | Catalog Reference |
+|---|---|---|
+| 📋 **Instructions** | Normative engineering standards applied when matching files open (`applyTo` glob). | [Browse Instructions](https://alten-group.github.io/coding-pal/guide/catalog-instructions.html) |
+| 🤖 **Agents** | Named specialists with strict boundaries and falsifiable completion criteria. | [Browse Agents](https://alten-group.github.io/coding-pal/guide/catalog-agents.html) |
+| ⚡ **Skills** | Procedural bundles with contracts, automated CI validators, and scaffolding templates. | [Browse Skills](https://alten-group.github.io/coding-pal/guide/catalog-skills.html) |
+| 💬 **Prompts** | Interactive slash commands parameterized from active IDE selections and files. | [Browse Prompts](https://alten-group.github.io/coding-pal/guide/catalog-prompts.html) |
 
 ---
 
@@ -69,37 +66,6 @@ APM compiles and translates each primitive into the target harness's native conf
 - **Copilot**: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.agents/skills/`
 - **Claude Code**: `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
 - **Cursor**: `.cursor/rules/*.mdc`, `.cursor/agents/`, `.cursor/commands/`, `.agents/skills/`
-
----
-
-## Documentation Website
-
-The complete documentation, capability domain guides, interactive architecture schemas, and authoring contracts are hosted at:
-
-👉 **[https://alten-group.github.io/coding-pal/](https://alten-group.github.io/coding-pal/)**
-
-### Sitemap & Guides
-
-- **Architecture & Foundation**:
-  - [Overview & Problem Solved](https://alten-group.github.io/coding-pal/guide/overview.html)
-  - [Persistent Context Architecture & Lifecycle](https://alten-group.github.io/coding-pal/guide/persistent-context.html)
-  - [Multi-Harness Distribution with APM](https://alten-group.github.io/coding-pal/guide/apm-distribution.html)
-- **Capabilities by Domain**:
-  - [Testing & Verification](https://alten-group.github.io/coding-pal/guide/domain-testing.html) (Unit, Component, E2E, Migration, Performance, Fuzzing)
-  - [Auditing & Remediation](https://alten-group.github.io/coding-pal/guide/domain-audit.html) (Code Auditor, Audit Finding Fixer, CI Gating)
-  - [Architecture & Documentation](https://alten-group.github.io/coding-pal/guide/domain-docs.html) (Technical Specs, VitePress Product Docs)
-  - [Stacks & Infrastructure](https://alten-group.github.io/coding-pal/guide/domain-stacks.html) (Node.js, PostgreSQL/Liquibase, Docker, Angular)
-- **Catalogs & Deep Dives**:
-  - [Instructions Catalog](https://alten-group.github.io/coding-pal/guide/catalog-instructions.html)
-  - [Agents Catalog](https://alten-group.github.io/coding-pal/guide/catalog-agents.html)
-  - [Skills Catalog](https://alten-group.github.io/coding-pal/guide/catalog-skills.html)
-  - [Prompts Catalog](https://alten-group.github.io/coding-pal/guide/catalog-prompts.html)
-- **Schemas & Authoring Standards**:
-  - [Instruction Schema](https://alten-group.github.io/coding-pal/guide/schema-instructions.html)
-  - [Agent Schema](https://alten-group.github.io/coding-pal/guide/schema-agents.html)
-  - [Skill Schema](https://alten-group.github.io/coding-pal/guide/schema-skills.html)
-  - [Prompt Schema](https://alten-group.github.io/coding-pal/guide/schema-prompts.html)
-  - [Authoring Guide](https://alten-group.github.io/coding-pal/guide/authoring-guide.html)
 
 ---
 
