@@ -6,6 +6,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 
 | Agent Name | File | Role & Mandate | Domain Guide | Key Constraints | Paired Skill / Instruction |
 |---|---|---|---|---|---|
+| **Think Planner** | `think-plan.agent.md` | Transforms business requirements or issues into `think.md` and `plan.md`. | [Think & Plan](./domain-think-plan.md#1-business-needs-to-specifications-think-plan) | Zero code changes; atomic steps with explicit verification and bootability checks. | `think-plan` skill |
 | **Code Auditor** | `code-audit.agent.md` | Complete, evidence-based code audit of a repo, service, or schema. | [Auditing & Remediation](./domain-audit.md#1-codebase-audit) | Audit agreed scope only; read every file before reporting; no speculative findings. | `audit-reporting` skill |
 | **Audit Finding Fixer** | `audit-fix.agent.md` | Surgical remediation of a single finding from a validated audit report. | [Auditing & Remediation](./domain-audit.md#2-surgical-finding-remediation) | One finding only; no unrelated refactoring; verify with narrowest test command. | `audit-reporting` skill |
 | **Spec from Code** | `spec-from-code.agent.md` | Reverse-engineers technical specifications from existing code. | [Architecture & Docs](./domain-docs.md#1-reverse-engineering-specifications-spec-from-code) | Grounded strictly in source code; no fabricated features; comprehensive interfaces. | `spec-from-code` skill |
@@ -14,7 +15,6 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | **VitePress Docs** | `vitepress-docs.agent.md` | Scaffolds or updates a VitePress documentation site in a user-named folder. | [Architecture & Docs](./domain-docs.md#2-product-documentation-website-vitepress-docs) | Confine all files to docs root; follow `vitepress-docs` instruction; default theme only. | `vitepress-docs-examples` |
 | **Performance Tester** | `performance-tests.agent.md` | Designs, scaffolds, or extends k6 load, stress, and spike test suites. | [Testing & Verification](./domain-testing.md#5-k6-performance--load-benchmarking) | Follow k6 Docker execution pattern; assert realistic thresholds; isolate scenarios. | `k6-performance-examples` |
 | **Fuzz Tester** | `fuzz-tests.agent.md` | Configures and runs RESTler API fuzzing pipelines. | [Testing & Verification](./domain-testing.md#6-restler-api-grammar-fuzzing) | OpenAPI-driven grammar compilation; handle auth refresh; fail on 500 status. | `restler-fuzzing-examples` |
-| **Think Planner** | `think-plan.agent.md` | Transforms business requirements or issues into `think.md` and `plan.md`. | [Think & Plan](./domain-think-plan.md#1-business-needs-to-specifications-think-plan) | Zero code changes; atomic steps with explicit verification and bootability checks. | `think-plan` skill |
 
 ---
 

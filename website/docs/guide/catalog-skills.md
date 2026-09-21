@@ -8,6 +8,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 | Skill Directory | Type | Paired Primitive | Description |
 |---|---|---|---|
+| `skills/think-plan/` | Protocol & Validator | `think-plan` instruction, `Think Planner` agent | Specification contract and deterministic validator for `think.md` and `plan.md` specification artifacts. |
 | `skills/audit-reporting/` | Protocol & Validator | `code-audit`, `audit-fix` | Deterministic Markdown audit report contract and validation scripts for CI gating. |
 | `skills/spec-from-code/` | Protocol & Validator | `spec-from-code` | Technical specification contract under `docs/specs/` with automated schema validation. |
 | `skills/vitepress-docs-examples/` | Scaffolding Pack | `vitepress-docs` instruction | VitePress site templates: `package.json`, `config.mjs`, dev Dockerfile, and Pages workflow. |
@@ -17,7 +18,6 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/angular-admin-examples/` | Scaffolding Pack | `angular-admin` instruction | Angular entity slices: CRUD tables, PrimeNG dialogs, reactive form services, and ACL guards. |
 | `skills/k6-performance-examples/` | Scaffolding Pack | `k6-performance-tests` instruction | Modular k6 test architecture: virtual users, thresholds, stages, and Docker runners. |
 | `skills/restler-fuzzing-examples/` | Scaffolding Pack | `restler-fuzzing-tests` instruction | Microsoft RESTler configuration, dictionary generation, compile scripts, and auth workflows. |
-| `skills/think-plan/` | Protocol & Validator | `think-plan` instruction, `Think Planner` agent | Specification contract and deterministic validator for `think.md` and `plan.md` specification artifacts. |
 
 ---
 

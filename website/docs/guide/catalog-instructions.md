@@ -6,6 +6,7 @@ Instructions are persistent, always-on engineering standards. The harness automa
 
 | Instruction | File | Pattern (`applyTo`) | Domain Guide | Companion Skill | Description |
 |---|---|---|---|---|---|
+| **Think & Plan** | `think-plan.instructions.md` | `**/think.md,**/plan.md,**/specs/**` | [Think & Plan](./domain-think-plan.md#1-business-needs-to-specifications-think-plan) | `think-plan` | Standards for specifications as `think.md` and `plan.md`: bootability preservation, atomic steps, and clean phase separation. |
 | **Sharp Agent** | `sharp-agent.instructions.md` | `**` | [Auditing & Remediation](./domain-audit.md#2-surgical-finding-remediation) | — | Directives against overengineering, premature abstractions, and token waste. |
 | **Node.js Express** | `node-express.instructions.md` | `src/**/*.js` | [Stacks & Infrastructure](./domain-stacks.md#1-nodejs--express-microservices) | `node-express-examples` | Layered microservice architecture, routing, middleware flow, and error envelopes. |
 | **Node Unit Tests** | `node-unit-tests.instructions.md` | `tests/**/*.js` | [Testing & Verification](./domain-testing.md#1-nodejs-unit--route-integration-tests) | — | Jest test conventions: isolated module unit tests and Supertest HTTP API route tests. |
@@ -18,7 +19,6 @@ Instructions are persistent, always-on engineering standards. The harness automa
 | **VitePress Docs** | `vitepress-docs.instructions.md` | `**/.vitepress/**`, `**/docs/**/*.md` | [Architecture & Docs](./domain-docs.md#2-product-documentation-website-vitepress-docs) | `vitepress-docs-examples` | VitePress product docs: user-named docs root, Mermaid, Traefik `/docs` in dev, GitHub Pages in prod. |
 | **k6 Performance Tests** | `k6-performance-tests.instructions.md` | `tests/perf/`, perf Compose | [Testing & Verification](./domain-testing.md#5-k6-performance--load-benchmarking) | `k6-performance-examples` | k6 API performance scenarios, Docker execution, metric thresholds, and HTML/JSON summaries. |
 | **RESTler Fuzzing Tests** | `restler-fuzzing-tests.instructions.md` | `tests/restler/`, restler Compose | [Testing & Verification](./domain-testing.md#6-restler-api-grammar-fuzzing) | `restler-fuzzing-examples` | RESTler stateful REST API fuzzing: OpenAPI compilation, auth tokens, fuzz-lean CI gating. |
-| **Think & Plan** | `think-plan.instructions.md` | `**/think.md,**/plan.md,**/specs/**` | [Think & Plan](./domain-think-plan.md#1-business-needs-to-specifications-think-plan) | `think-plan` | Standards for specifications as `think.md` and `plan.md`: bootability preservation, atomic steps, and clean phase separation. |
 
 ---
 
