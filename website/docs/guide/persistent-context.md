@@ -8,21 +8,25 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 Two rules govern how primitives reach the context window:
 
-1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file the AI is about to **create or modify** — reading or having a file open does not count on its own. If the turn produces no file write at all (a bare chat question, or a read-only answer), there is nothing for any glob to match, so zero instructions load; Coding Pal has no repo-wide instruction file that bypasses this. Where a match does happen, that instruction simply stacks underneath whichever prompt, agent, or skill also fires — it is never an alternative to them.
+1. **An instruction file has two independent activation gates, and either one is enough to load it.** `applyTo` matches against a file the agent is working on this turn; `description` matches semantically against the task itself, with no file required at all. Neither gate needs a prompt, agent, or skill to request it — the check runs automatically in the background. If an instruction has neither an `applyTo` match this turn nor a `description` relevant to the task, it does not load. Where a match does happen (either gate), that instruction simply stacks underneath whichever prompt, agent, or skill also fires — it is never an alternative to them.
 2. **Prompts, Agents, and Skills are three separate on-demand entry points.** Only one of them starts a given turn (a slash command, an explicit agent invocation, or a semantic skill match) — but a prompt or an agent can pull in a skill downstream of that entry point.
 
 ### The Always-On Layer
 
 ```mermaid
 ---
-caption: Instructions are checked on every turn; activation is conditional per instruction
+caption: An instruction loads if either of its two gates matches
 ---
 flowchart TD
-    HASFILE{"Is the AI creating or<br/>modifying a file this turn?"}
-    HASFILE -->|"No — read-only answer<br/>or bare chat prompt"| NONE["No instructions load<br/>(nothing to match against)"]
-    HASFILE -->|"Yes"| G{"Matches this<br/>instruction's applyTo glob?"}
-    G -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
-    G -->|"No"| X["Not loaded<br/>(this instruction doesn't apply)"]
+    F1{"applyTo set, and matches<br/>a file the agent is working on?"}
+    F2{"description set, and matches<br/>the task semantically?"}
+    F1 -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
+    F2 -->|"Yes"| I
+    F1 -->|"No"| X1["Gate not met"]
+    F2 -->|"No"| X2["Gate not met"]
+    X1 --> BOTH{"Did the other<br/>gate match?"}
+    X2 --> BOTH
+    BOTH -->|"No"| NONE["Not loaded this turn"]
     I --> CTX["<b>LLM Context Window</b>"]
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
@@ -32,11 +36,11 @@ flowchart TD
 
     class I instruction;
     class CTX execution;
-    class HASFILE,G event;
-    class X,NONE skip;
+    class F1,F2,BOTH event;
+    class X1,X2,NONE skip;
 ```
 
-There are three possible outcomes per turn, not two: no file being written at all (zero instructions, read-only or bare prompt), a written file that matches no instruction's glob (zero instructions, but for a different reason), or a match (the instruction loads). Only the third case adds anything to the context window. This is also why `applyTo` is a poor fit for guidance that should hold even for read-only questions — that belongs in a `description`-based instruction instead (see [On-Demand Entry Points](#the-three-on-demand-entry-points) below for the equivalent on-demand pattern for skills).
+This is the verified mechanism per VS Code's documentation: "the agent determines which instructions files to apply based on the file patterns specified in the `applyTo` property… or semantic matching of the instruction description to the current task." An instruction with neither property set is never applied automatically; it can still be attached manually to a chat request.
 
 ### The Three On-Demand Entry Points
 
