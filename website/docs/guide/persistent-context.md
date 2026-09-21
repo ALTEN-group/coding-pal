@@ -8,15 +8,19 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 Each session event resolves through its **own** chain of primitives — instructions are never loaded in isolation, prompts hand off to agents, and agents pull in skills as needed. The four chains below replace a single flattened diagram so the calling order stays explicit.
 
+> [!NOTE]
+> These four events are **concurrent triggers, not mutually exclusive alternatives**. Event 1 (instructions via `applyTo`) runs continuously in the background for every open file; it does not prevent Event 4 from firing a skill in the same turn, and a skill loaded under Event 4 never displaces instructions already active under Event 1. A single turn commonly combines several events at once.
+
 ### Event 1 — File Opened / Context Focused
 
 ```mermaid
 ---
 caption: Always-On Instruction Loading
 ---
-flowchart LR
+flowchart TD
     E1["File Opened / Context Focused"] -->|"applyTo glob match"| I["<b>Instruction</b><br/>*.instructions.md"]
     I --> CTX["<b>LLM Context Window</b>"]
+    E4b["Task also matches a skill?<br/>(Event 4, independent)"] -.->|"Semantic trigger, additive"| CTX
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
@@ -24,10 +28,10 @@ flowchart LR
 
     class I instruction;
     class CTX execution;
-    class E1 event;
+    class E1,E4b event;
 ```
 
-Instructions are the only primitive that self-inject; no other primitive is required to call them.
+Instructions are the only primitive that self-injects on file context alone; it runs regardless of whether a skill is also triggered (Event 4) — the two are independent, not either/or.
 
 ### Event 2 — User Types Slash Command (`/...`)
 
@@ -35,7 +39,7 @@ Instructions are the only primitive that self-inject; no other primitive is requ
 ---
 caption: On-Demand Prompt Loading
 ---
-flowchart LR
+flowchart TD
     E2["User Types Slash Command (/...)"] -->|"Resolves parameters"| P["<b>Prompt</b><br/>*.prompt.md"]
     P -->|"Maps intent to"| A["<b>Agent</b><br/>*.agent.md"]
     A -->|"Enforces"| I["<b>Instruction</b><br/>*.instructions.md"]
@@ -65,7 +69,7 @@ A prompt never talks to the context window directly — it always routes through
 ---
 caption: On-Demand Agent Loading
 ---
-flowchart LR
+flowchart TD
     E3["User Invokes Agent (--agent)"] -->|"Explicit select"| A["<b>Agent</b><br/>*.agent.md"]
     A -->|"Enforces"| I["<b>Instruction</b><br/>*.instructions.md"]
     A -->|"Implements contract via"| S["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
@@ -92,23 +96,27 @@ Same downstream chain as Event 2, minus the prompt hand-off — the agent is the
 ---
 caption: On-Demand Skill Loading
 ---
-flowchart LR
+flowchart TD
+    E1b["File already in context<br/>(Event 1, ongoing)"] -.->|"applyTo glob match, unaffected"| I["<b>Instruction</b><br/>*.instructions.md"]
     E4["Task Matches Skill Description"] -->|"Semantic/dynamic trigger"| S["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
     S -->|"Runs"| V["Validator Script<br/>scripts/"]
-    S --> CTX["<b>LLM Context Window</b>"]
+    I --> CTX["<b>LLM Context Window</b>"]
+    S --> CTX
 
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
     classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
     classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
     classDef artifact fill:#7c2d12,stroke:#ea580c,stroke-width:1.5px,color:#fff7ed;
 
+    class I instruction;
     class S skill;
     class CTX execution;
-    class E4 event;
+    class E1b,E4 event;
     class V artifact;
 ```
 
-A skill can be reached either directly (user or auto-trigger) or as a dependency invoked by an agent, but it always owns its own validation scripts.
+A skill can be reached either directly (user/auto-trigger) or as a dependency invoked by an agent, and it always owns its own validation scripts. Skill loading is **additive**: it never removes the instructions already active from Event 1 — both stay in the context window together.
 
 | Primitive | Loading Model | Trigger Condition | Primary Purpose |
 |---|---|---|---|
@@ -241,6 +249,16 @@ classDiagram
     Agent --> DomainInstruction : Enforces quality standard
     Agent --> Skill : Implements contract
     Workflow_CI --> Skill : Executes validator script
+
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+
+    cssClass "Agent" agent
+    cssClass "DomainInstruction" instruction
+    cssClass "Skill" skill
+    cssClass "Workflow_CI" execution
 ```
 
 | Concern | Authoritative Owner | Example in Coding Pal |
