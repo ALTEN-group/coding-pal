@@ -132,22 +132,6 @@ flowchart TD
     class R4 prompt;
 ```
 
-```
-Do you need to guide an AI assistant?
-│
-├── 1. Does the guidance apply to most code changes matching a file pattern?
-│   └── YES ➔ Create an INSTRUCTION (instructions/*.instructions.md)
-│
-├── 2. Does it define a named specialist with bounded scope, method, and rules?
-│   └── YES ➔ Create an AGENT (agents/*.agent.md)
-│
-├── 3. Does it provide a multi-file workflow, contract, validator script, or templates?
-│   └── YES ➔ Create a SKILL (skills/<name>/SKILL.md)
-│
-└── 4. Is it a focused, parameterized single command for a user?
-    └── YES ➔ Create a PROMPT (prompts/*.prompt.md)
-```
-
 > [!TIP]
 > If a single capability seems to span multiple answers, **split responsibilities**. Do not create a single file that attempts to act as an agent, define general coding standards, and dictate machine-readable report contracts all at once.
 
@@ -231,11 +215,57 @@ classDiagram
 | Target files and systems to examine | **Agent** | `code-audit.agent.md` defines which modules are in scope |
 | Method of investigation or repair | **Agent** | `audit-fix.agent.md` defines surgical one-finding repair |
 | Domain coding standards & security rules | **Instruction** | `node-express.instructions.md`, `docker.instructions.md` |
-| Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/contract.md` |
-| Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/validate.js` |
+| Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
+| Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
 | Task coverage completion | **Agent** (`Done When`) | "Every file in scope has been examined" |
 | Artifact validity completion | **Skill** (`Done When`) | "Report satisfies the validation contract" |
 | CI publication, gating, and PR checks | **Consuming Workflow** | GitHub Actions workflow in consumer repo |
 
 > [!IMPORTANT]
 > An agent must say *"Follow the installed `audit-reporting` skill"*. It must **not** duplicate report headings, field names, or validation rules in its own body. Model compliance alone is not enforcement — workflows must run the deterministic skill script.
+
+---
+
+## Specifications as Persistent Context: Think & Plan
+
+In traditional engineering, specifications are narrative Product Requirement Documents (PRDs) written in conversational prose. For AI coding agents, traditional specifications introduce critical failure modes:
+1. **Context Window Exhaustion**: Long descriptive documents deplete the agent's context window before coding even begins.
+2. **Ambiguity & Hallucinated Scope**: Models infer unstated features or refactor adjacent components when requirements lack strict boundaries.
+3. **Monolithic Error Compounding**: Asking an agent to implement a full feature in one shot leads to cascading failures across multiple files.
+
+Coding Pal replaces traditional specifications with **two persistent, machine-consumable artifacts**:
+
+```mermaid
+---
+caption: Phased Specification Architecture (Think -> Plan -> Build)
+---
+flowchart LR
+    BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Copilot Plan Mode"]
+    T --> TM["<b>think.md</b><br/>Flows, invariants, minimal scope"]
+    TM --> P["<b>2. Plan Phase</b><br/>Copilot Plan Mode"]
+    P --> PM["<b>plan.md</b><br/>Atomic steps + bootable check"]
+    PM --> B["<b>3. Build Phase</b><br/>Copilot Agent Mode (1 step/turn)"]
+
+    classDef stage fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef artifact fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+
+    class BN input;
+    class T,P,B stage;
+    class TM,PM artifact;
+```
+
+### The Two Specification Primitives
+
+| Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
+|---|---|---|---|---|
+| `think.md` | **Think** | Copilot Plan Mode / `Think Planner` agent | `skills/think-plan/` | Request flow tracing, component responsibilities, architectural invariants, and explicit minimal change scope. **No code or task checklists.** |
+| `plan.md` | **Plan** | Copilot Plan Mode / `Think Planner` agent | `skills/think-plan/` | Numbered atomic steps (`### Step N:`), explicit file paths, surgical actions, narrowest verification commands, and per-step **bootability checks**. **No code.** |
+
+### Downstream Execution Discipline
+When an AI build agent implements functionality from `plan.md`:
+1. It reads `plan.md` in a fresh chat session (clean context).
+2. It executes **exactly one step** from the checklist.
+3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
+4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
+

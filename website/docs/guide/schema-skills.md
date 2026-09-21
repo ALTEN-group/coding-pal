@@ -17,7 +17,8 @@ skills/<skill-name>/
 
 Examples in Coding Pal:
 - `skills/audit-reporting/`
-- `skills/spec-reporting/`
+- `skills/spec-from-code/`
+- `skills/think-plan/`
 - `skills/vitepress-docs-examples/`
 - `skills/node-express-examples/`
 - `skills/docker-examples/`

@@ -90,7 +90,7 @@ You are a specialist at ...
 - ...
 ```
 
-Keep the agent clean. It owns how the task is conducted, not a reusable artifact protocol. For example, the Code Auditor owns audit scope and review method; the `audit-reporting` skill owns the report contract and validator. The Spec from Code agent owns extraction scope and method; the `spec-reporting` skill owns the spec-file contract and validator.
+Keep the agent clean. It owns how the task is conducted, not a reusable artifact protocol. For example, the Code Auditor owns audit scope and review method; the `audit-reporting` skill owns the report contract and validator. The Spec from Code agent owns extraction scope and method; the `spec-from-code` skill owns the spec-file contract and validator.
 
 ### Skills Own Reusable Workflows and Artifacts
 

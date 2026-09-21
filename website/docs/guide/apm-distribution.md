@@ -67,126 +67,7 @@ Dependencies remain identical across all AI harnesses — only `targets:` (and t
 
 ## Where Files Land
 
-Each AI environment expects persistent context in specific locations and formats. APM handles translation and deployment automatically.
-
-### 1. GitHub Copilot Target Mapping
-
-```mermaid
----
-caption: GitHub Copilot Target Mapping
----
-flowchart LR
-    subgraph Source ["Coding Pal Source"]
-        direction TB
-        I1["<b>Instructions</b><br/>*.instructions.md"]
-        A1["<b>Agents</b><br/>*.agent.md"]
-        P1["<b>Prompts</b><br/>*.prompt.md"]
-        S1["<b>Skills</b><br/>skills/*/"]
-    end
-
-    subgraph Copilot ["GitHub Copilot Target Layout"]
-        direction TB
-        CI["<b>.github/instructions/</b><br/>*.instructions.md (Always-on)"]
-        CA["<b>.github/agents/</b><br/>*.agent.md (On-demand)"]
-        CP["<b>.github/prompts/</b><br/>*.prompt.md (Slash commands)"]
-        CS["<b>.agents/skills/</b><br/>skills/&lt;name&gt;/ (Shared folder layout)"]
-    end
-
-    I1 -->|Direct install| CI
-    A1 -->|Direct install| CA
-    P1 -->|Direct install| CP
-    S1 -->|Folder bundle| CS
-
-    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
-    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-
-    class I1,CI instruction;
-    class A1,CA agent;
-    class P1,CP prompt;
-    class S1,CS skill;
-```
-
-### 2. Claude Code Target Mapping & Transpilation
-
-```mermaid
----
-caption: Claude Code Target Mapping & Transpilation
----
-flowchart LR
-    subgraph Source ["Coding Pal Source"]
-        direction TB
-        I2["<b>Instructions</b><br/>*.instructions.md"]
-        A2["<b>Agents</b><br/>*.agent.md"]
-        P2["<b>Prompts</b><br/>*.prompt.md"]
-        S2["<b>Skills</b><br/>skills/*/"]
-    end
-
-    subgraph Claude ["Claude Code Target Layout"]
-        direction TB
-        CR["<b>.claude/rules/</b><br/>*.md (Project rules)"]
-        CG["<b>.claude/agents/</b><br/>*.md (Subagents)"]
-        CC["<b>.claude/commands/</b><br/>*.md (Compiled slash commands)"]
-        CL["<b>.claude/skills/</b><br/>skills/&lt;name&gt;/ (Target-native layout)"]
-    end
-
-    I2 -->|Rule conversion| CR
-    A2 -->|Agent adaptation| CG
-    P2 -->|Transpiles to slash command| CC
-    S2 -->|Target-native bundle| CL
-
-    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
-    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-
-    class I2,CR instruction;
-    class A2,CG agent;
-    class P2,CC prompt;
-    class S2,CL skill;
-```
-
-### 3. Cursor Target Mapping & MDC Conversion
-
-```mermaid
----
-caption: Cursor Target Mapping & MDC Conversion
----
-flowchart LR
-    subgraph Source ["Coding Pal Source"]
-        direction TB
-        I3["<b>Instructions</b><br/>*.instructions.md"]
-        A3["<b>Agents</b><br/>*.agent.md"]
-        P3["<b>Prompts</b><br/>*.prompt.md"]
-        S3["<b>Skills</b><br/>skills/*/"]
-    end
-
-    subgraph Cursor ["Cursor Target Layout"]
-        direction TB
-        UR["<b>.cursor/rules/</b><br/>*.mdc (MDC with globs metadata)"]
-        UA["<b>.cursor/agents/</b><br/>*.md (Specialist agents)"]
-        UC["<b>.cursor/commands/</b><br/>*.md (Compiled commands)"]
-        US["<b>.agents/skills/</b><br/>skills/&lt;name&gt;/ (Shared folder layout)"]
-    end
-
-    I3 -->|Transpiles frontmatter to MDC| UR
-    A3 -->|Agent adaptation| UA
-    P3 -->|Transpiles to slash command| UC
-    S3 -->|Shared bundle layout| US
-
-    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
-    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-
-    class I3,UR instruction;
-    class A3,UA agent;
-    class P3,UC prompt;
-    class S3,US skill;
-```
-
-### Summary Comparison Table
+Each AI environment expects persistent context in specific locations and formats. APM handles translation, frontmatter conversion, and deployment automatically:
 
 | Primitive | GitHub Copilot (`copilot`) | Claude Code (`claude`) | Cursor (`cursor`) |
 |---|---|---|---|
@@ -231,6 +112,7 @@ dependencies:
     - ALTEN-group/coding-pal/agents/code-audit.agent.md
     - ALTEN-group/coding-pal/agents/audit-fix.agent.md
     - ALTEN-group/coding-pal/agents/spec-from-code.agent.md
+    - ALTEN-group/coding-pal/agents/think-plan.agent.md
 
     # --------------------------------------------------------------------------
     # 2. Interactive Prompts / Slash Commands (Virtual Path Dependencies)
@@ -258,6 +140,7 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
     - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
+    - ALTEN-group/coding-pal/instructions/think-plan.instructions.md
 
     # --------------------------------------------------------------------------
     # 4. Procedural Skills & Scaffolding Bundles (SKILL.md + references/ + scripts/)
@@ -272,7 +155,8 @@ dependencies:
         - k6-performance-examples
         - restler-fuzzing-examples
         - audit-reporting
-        - spec-reporting
+        - spec-from-code
+        - think-plan
   mcp: {}
 ```
 

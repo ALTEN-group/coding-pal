@@ -36,16 +36,12 @@ flowchart TD
 Define the exact engineering task in one sentence (e.g., *"Scaffold a VitePress documentation website in a user-named folder"* or *"Remediate a single security finding from an audit report"*).
 
 ### Step 2: Apply the Decision Tree
-- Does it apply automatically across an entire file pattern? ➔ **Instruction**
-- Does it define a specialized persona with bounded method and test-only boundaries? ➔ **Agent**
-- Does it require a multi-file workflow, contract, fixtures, or scripts? ➔ **Skill**
-- Is it a single user-invoked command? ➔ **Prompt**
+Consult the authoritative [Persistent Context Decision Tree](./persistent-context.md#the-decision-tree) to select the correct primitive (**Instruction**, **Agent**, **Skill**, or **Prompt**) based on desired runtime activation and operational scope.
 
 ### Step 3: Enforce Single Ownership
-Check existing primitives in `instructions/`, `agents/`, `skills/`, and `prompts/`.
-- Do not restate coding conventions inside an agent.
-- Do not put scaffolding templates inside an instruction.
-- Reference existing primitives by path or name.
+Verify against existing primitives in `instructions/`, `agents/`, `skills/`, and `prompts/`. Adhere strictly to [Single Authoritative Ownership](./persistent-context.md#ownership-rules):
+- Never duplicate conventions, report headings, or schemas across multiple files.
+- Instructions own standards, agents own task scope, skills own contracts and validators, and prompts own user entry points.
 
 ### Step 4: Follow Precise Schemas
 Adhere to the exact Markdown and frontmatter schemas:

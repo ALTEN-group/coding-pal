@@ -74,11 +74,11 @@ flowchart TD
     class I_NG_E2E standard;
 ```
 
-### 3. Database Migration Testing
+### 3. Database Testing
 
 ```mermaid
 ---
-caption: Database Migration Testing Flow
+caption: Database Testing Flow
 ---
 flowchart TD
     subgraph Triggers ["Slash Prompt"]

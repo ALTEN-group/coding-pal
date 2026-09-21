@@ -88,7 +88,7 @@ flowchart TD
   - Every file in scope has been reviewed.
   - The audit report compiles and passes validation via the skill script:
     ```bash
-    node .agents/skills/audit-reporting/scripts/audit-report.mjs --report docs/audits/code-audit.md
+    node .agents/skills/audit-reporting/scripts/audit-report.mjs --input docs/audits/code-audit.md --output docs/audits/code-audit.md
     ```
 
 ### 2. Surgical Finding Remediation
@@ -112,36 +112,32 @@ flowchart TD
 
 ## The Audit Report Protocol
 
-The audit report protocol provided by `skills/audit-reporting/` enforces deterministic structure:
+The audit report protocol provided by `skills/audit-reporting/` enforces deterministic structure bounded by exact markers:
 
 ```markdown
----
-audit_date: YYYY-MM-DD
-repository: repo-name
-commit_sha: abc1234
-scope: path/to/service
-auditor: agent-or-person
-findings_summary:
-  critical: 0
-  high: 2
-  medium: 1
-  low: 3
----
-
+<!-- AUDIT-REPORT:START -->
 # Code Audit Report: [Target]
 
 ## Executive Summary
-[High-level findings summary]
+Concise summary of risk and priority (1-3 short paragraphs, max 1,200 characters).
 
-## Findings Matrix
-| ID | Severity | Category | Summary | File | Line |
-|---|---|---|---|---|---|
-| SEC-001 | High | Security | SQL concatenation in search query | src/services/user.js | L42 |
+## Critical
+### SQL concatenation in search query
+- **Location:** `src/services/user.js:42`
+- **Category:** Security
+- **Evidence:** Concrete query concatenates unescaped userInput directly into SQL string.
+- **Impact:** Unauthenticated SQL injection leading to arbitrary data exfiltration.
+- **Recommendation:** Use parameterized query bindings via pg-promise / knex query builder.
 
-## Detailed Findings
-### SEC-001: SQL concatenation in search query
-...
+## Important
+_No findings._
+
+## Suggestions
+_No findings._
+<!-- AUDIT-REPORT:END -->
 ```
+
+The script normalizes and sorts findings, assigns canonical `AUDIT-001` identifiers, and adds summary counts to each severity heading.
 
 ---
 

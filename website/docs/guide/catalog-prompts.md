@@ -4,58 +4,54 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 
 ## Overview Table
 
-| Command | File | Bound Agent | Argument Hint | Purpose |
-|---|---|---|---|---|
-| `/node-unit-tests` | `node-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/routes/app.js` | Generates Jest unit tests or Supertest HTTP API route tests for a Node module. |
-| `/angular-unit-tests` | `angular-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/app/...` | Generates or updates Vitest unit tests colocated with an Angular component/service. |
-| `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **E2E Tester** | `optional flow name, e.g. auth-login` | Generates Playwright end-to-end tests under `e2e/`. |
-| `/postgres-liquibase-tests` | `postgres-liquibase-tests.prompt.md` | **Unit Tester** | `optional db area, e.g. db/changelog` | Generates SQL assertion tests validating migrations against PostgreSQL. |
-| `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | Scaffolds or updates a complete VitePress product documentation website. |
-| `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | Scaffolds or updates a k6 performance test suite. |
-| `/fuzz-tests` | `fuzz-tests.prompt.md` | **Fuzz Tester** | `OpenAPI path or service name` | Scaffolds or runs RESTler grammar-based fuzzing tests. |
+| Command | File | Bound Agent | Argument Hint | Domain Workflow | Purpose |
+|---|---|---|---|---|---|
+| `/node-unit-tests` | `node-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/routes/app.js` | [Testing & Verification](./domain-testing.md#1-nodejs-unit--route-integration-tests) | Generates Jest unit tests or Supertest HTTP API route tests for a Node module. |
+| `/angular-unit-tests` | `angular-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/app/...` | [Testing & Verification](./domain-testing.md#2-angular-vitest-component-specs) | Generates or updates Vitest unit tests colocated with an Angular component/service. |
+| `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **E2E Tester** | `optional flow name, e.g. auth-login` | [Testing & Verification](./domain-testing.md#3-angular-playwright-end-to-end-tests) | Generates Playwright end-to-end tests under `e2e/`. |
+| `/postgres-liquibase-tests` | `postgres-liquibase-tests.prompt.md` | **Unit Tester** | `optional db area, e.g. db/changelog` | [Testing & Verification](./domain-testing.md#4-postgresql--liquibase-migration-assertions) | Generates SQL assertion tests validating migrations against PostgreSQL. |
+| `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | [Architecture & Docs](./domain-docs.md#3-product-documentation-website-vitepress-docs) | Scaffolds or updates a complete VitePress product documentation website. |
+| `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | [Testing & Verification](./domain-testing.md#5-k6-performance--load-benchmarking) | Scaffolds or updates a k6 performance test suite. |
+| `/fuzz-tests` | `fuzz-tests.prompt.md` | **Fuzz Tester** | `OpenAPI path or service name` | [Testing & Verification](./domain-testing.md#6-restler-api-grammar-fuzzing) | Scaffolds or runs RESTler grammar-based fuzzing tests. |
 
 ---
 
-## Command Details & Usage
+## Command Invocation & Target Resolution
+
+Each prompt enforces a deterministic parameter resolution pipeline (argument $\rightarrow$ active editor selection $\rightarrow$ open file). If resolution fails, the prompt halts and asks the user rather than guessing.
 
 ### 1. `/node-unit-tests`
 - **Invocation**: `/node-unit-tests [src/path/to/module.js]`
-- **Target Resolution**:
-  1. Checks for a `src/**/*.js` path in the prompt message.
-  2. Falls back to active IDE selection.
-  3. Falls back to currently active editor tab.
-- **Mapping**: `src/<path>/<file>.js` → `tests/<path>/<file>.test.js`. If under `src/routes/`, applies the HTTP API Supertest standard; otherwise applies module unit testing.
-- **Agent Handover**: Invokes **Unit Tester** with resolved paths.
+- **Target Resolution**: Checks chat prompt for `src/**/*.js`, falls back to active editor selection or current file.
+- **Delegation**: Maps to `tests/<path>/<file>.test.js` and hands off execution to **Unit Tester**. See [Node.js Unit & Route Testing](./domain-testing.md#1-nodejs-unit--route-integration-tests).
 
 ### 2. `/angular-unit-tests`
 - **Invocation**: `/angular-unit-tests [src/app/path/to/component.ts]`
-- **Target Resolution**: Resolves target TypeScript component, service, or pipe.
-- **Mapping**: Colocates `component.spec.ts` in the same directory as `component.ts`.
-- **Agent Handover**: Invokes **Unit Tester** with Vitest conventions.
+- **Target Resolution**: Resolves target TypeScript component, service, or pipe from prompt, selection, or tab.
+- **Delegation**: Colocates `*.spec.ts` adjacent to source and hands off to **Unit Tester**. See [Angular Vitest Component Specs](./domain-testing.md#2-angular-vitest-component-specs).
 
 ### 3. `/angular-e2e-tests`
 - **Invocation**: `/angular-e2e-tests [flow-name]`
-- **Target Resolution**: Resolves user workflow name or target page area.
-- **Mapping**: Creates or updates `e2e/<area>.spec.ts`.
-- **Agent Handover**: Invokes **E2E Tester** with Playwright POM guidelines.
+- **Target Resolution**: Resolves target workflow or feature name under `e2e/`.
+- **Delegation**: Hands off to **E2E Tester** enforcing Page Object Model. See [Angular Playwright E2E Tests](./domain-testing.md#3-angular-playwright-end-to-end-tests).
 
 ### 4. `/postgres-liquibase-tests`
 - **Invocation**: `/postgres-liquibase-tests [db/changelog/path]`
 - **Target Resolution**: Resolves target migration changelog or schema table.
-- **Mapping**: `db/<area>/...` → `tests/db/<area>.sql`.
-- **Agent Handover**: Invokes **Unit Tester** to author SQL rollback and forward assertions.
+- **Delegation**: Maps to `tests/db/<area>.sql` and hands off to **Unit Tester**. See [PostgreSQL Migration Assertions](./domain-testing.md#4-postgresql--liquibase-migration-assertions).
 
 ### 5. `/vitepress-docs`
 - **Invocation**: `/vitepress-docs [docs-root]`
-- **Target Resolution**: Takes positional argument as documentation folder (e.g., `website`). If omitted, prompts user to specify the root folder rather than guessing.
-- **Agent Handover**: Invokes **VitePress Docs** to scaffold or update the VitePress site.
+- **Target Resolution**: Takes positional argument as documentation root (e.g., `website/`). Halts and prompts if missing.
+- **Delegation**: Hands off scaffolding and configuration to **VitePress Docs**. See [Product Documentation Website](./domain-docs.md#3-product-documentation-website-vitepress-docs).
 
 ### 6. `/performance-tests`
 - **Invocation**: `/performance-tests [service-name]`
-- **Target Resolution**: Identifies the API service or endpoint to benchmark.
-- **Agent Handover**: Invokes **Performance Tester** to generate k6 load tests and thresholds.
+- **Target Resolution**: Identifies target API service or endpoint to benchmark.
+- **Delegation**: Hands off k6 scenario generation and threshold setup to **Performance Tester**. See [k6 Performance Benchmarking](./domain-testing.md#5-k6-performance--load-benchmarking).
 
 ### 7. `/fuzz-tests`
 - **Invocation**: `/fuzz-tests [openapi-path]`
-- **Target Resolution**: Identifies OpenAPI/Swagger contract for the service.
-- **Agent Handover**: Invokes **Fuzz Tester** to compile grammars and execute RESTler fuzzing.
+- **Target Resolution**: Resolves OpenAPI/Swagger contract path.
+- **Delegation**: Hands off grammar compilation and RESTler execution to **Fuzz Tester**. See [RESTler API Grammar Fuzzing](./domain-testing.md#6-restler-api-grammar-fuzzing).
+

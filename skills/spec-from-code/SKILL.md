@@ -1,10 +1,10 @@
 ---
-name: spec-reporting
-description: 'Create technical specifications from existing code as Markdown files under a specs directory and validate them before treating the task as done. Use when a spec-from-code agent, documentation agent, or CI step must emit structured docs/specs (or equivalent) with purpose, inputs, outputs, side effects, and tests.'
+name: spec-from-code
+description: 'Extract technical specifications from existing code as Markdown files under a specs directory and validate them before treating the task as done. Use when a spec-from-code agent, documentation agent, or CI step must emit structured docs/specs (or equivalent) with purpose, inputs, outputs, side effects, and tests.'
 license: MIT
 ---
 
-# Spec Reporting
+# Spec from Code
 
 Produce specification Markdown that a script can validate.
 
@@ -15,7 +15,7 @@ Produce specification Markdown that a script can validate.
 
 ## Path resolution
 
-Resolve `references/` and `scripts/` relative to **this skill's install directory** (the folder that contains this `SKILL.md`), not the consumer repository root or the current shell cwd.
+Resolve `references/` and `scripts/` relative to **this skill's install directory** (the folder that contains this `SKILL.md`), not the consumer repository root or the current shell cwd. If the skill was installed under `.agents/skills/spec-from-code/` or `.claude/skills/spec-from-code/`, use that base path.
 
 ## Workflow
 

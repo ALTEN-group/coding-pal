@@ -70,7 +70,7 @@ flowchart TD
     end
 
     subgraph Gates ["Deterministic Gates"]
-        V1["audit-reporting<br/>validate.js"]
+        V1["audit-reporting<br/>audit-report.mjs"]
         V2["Narrowest Test Command"]
         V3["Test Suite Run"]
         V4["Schema/Link Validator"]
