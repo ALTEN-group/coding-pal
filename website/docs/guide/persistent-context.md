@@ -33,9 +33,6 @@ flowchart TD
     E2 -->|Slash Command| P --> CTX
     E3 -->|Explicit Select| A --> CTX
     E4 -->|Dynamic Trigger| S --> CTX
-    I -.->|Governs| A
-    P -.->|Resolves & Invokes| A
-    A -.->|Consults Contract| S
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
