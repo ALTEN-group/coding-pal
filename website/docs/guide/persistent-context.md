@@ -37,8 +37,6 @@ flowchart TD
     class T1,T2 event;
 ```
 
-This is the verified mechanism per VS Code's documentation: "the agent determines which instructions files to apply based on the file patterns specified in the `applyTo` property… or semantic matching of the instruction description to the current task." An instruction with neither property set is never applied automatically; it can still be attached manually to a chat request.
-
 ### The Three On-Demand Entry Points
 
 Each entry point below is a separate way a turn can **start**. Pick the row that matches how the user acted; the instruction layer above still applies on top of all three.
