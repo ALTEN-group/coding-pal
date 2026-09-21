@@ -10,7 +10,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 | `/angular-unit-tests` | `angular-unit-tests.prompt.md` | **Unit Tester** | `optional src path, e.g. src/app/...` | [Testing & Verification](./domain-testing.md#2-angular-vitest-component-specs) | Generates or updates Vitest unit tests colocated with an Angular component/service. |
 | `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **E2E Tester** | `optional flow name, e.g. auth-login` | [Testing & Verification](./domain-testing.md#3-angular-playwright-end-to-end-tests) | Generates Playwright end-to-end tests under `e2e/`. |
 | `/postgres-liquibase-tests` | `postgres-liquibase-tests.prompt.md` | **Unit Tester** | `optional db area, e.g. db/changelog` | [Testing & Verification](./domain-testing.md#4-postgresql--liquibase-migration-assertions) | Generates SQL assertion tests validating migrations against PostgreSQL. |
-| `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | [Architecture & Docs](./domain-docs.md#3-product-documentation-website-vitepress-docs) | Scaffolds or updates a complete VitePress product documentation website. |
+| `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | [Architecture & Docs](./domain-docs.md#2-product-documentation-website-vitepress-docs) | Scaffolds or updates a complete VitePress product documentation website. |
 | `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | [Testing & Verification](./domain-testing.md#5-k6-performance--load-benchmarking) | Scaffolds or updates a k6 performance test suite. |
 | `/fuzz-tests` | `fuzz-tests.prompt.md` | **Fuzz Tester** | `OpenAPI path or service name` | [Testing & Verification](./domain-testing.md#6-restler-api-grammar-fuzzing) | Scaffolds or runs RESTler grammar-based fuzzing tests. |
 
@@ -43,7 +43,7 @@ Each prompt enforces a deterministic parameter resolution pipeline (argument $\r
 ### 5. `/vitepress-docs`
 - **Invocation**: `/vitepress-docs [docs-root]`
 - **Target Resolution**: Takes positional argument as documentation root (e.g., `website/`). Halts and prompts if missing.
-- **Delegation**: Hands off scaffolding and configuration to **VitePress Docs**. See [Product Documentation Website](./domain-docs.md#3-product-documentation-website-vitepress-docs).
+- **Delegation**: Hands off scaffolding and configuration to **VitePress Docs**. See [Product Documentation Website](./domain-docs.md#2-product-documentation-website-vitepress-docs).
 
 ### 6. `/performance-tests`
 - **Invocation**: `/performance-tests [service-name]`

@@ -8,13 +8,13 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 |---|---|---|---|---|---|
 | **Code Auditor** | `code-audit.agent.md` | Complete, evidence-based code audit of a repo, service, or schema. | [Auditing & Remediation](./domain-audit.md#1-codebase-audit) | Audit agreed scope only; read every file before reporting; no speculative findings. | `audit-reporting` skill |
 | **Audit Finding Fixer** | `audit-fix.agent.md` | Surgical remediation of a single finding from a validated audit report. | [Auditing & Remediation](./domain-audit.md#2-surgical-finding-remediation) | One finding only; no unrelated refactoring; verify with narrowest test command. | `audit-reporting` skill |
-| **Spec from Code** | `spec-from-code.agent.md` | Reverse-engineers technical specifications from existing code. | [Architecture & Docs](./domain-docs.md#2-reverse-engineering-specifications-spec-from-code) | Grounded strictly in source code; no fabricated features; comprehensive interfaces. | `spec-from-code` skill |
+| **Spec from Code** | `spec-from-code.agent.md` | Reverse-engineers technical specifications from existing code. | [Architecture & Docs](./domain-docs.md#1-reverse-engineering-specifications-spec-from-code) | Grounded strictly in source code; no fabricated features; comprehensive interfaces. | `spec-from-code` skill |
 | **Unit Tester** | `unit-test.agent.md` | Writes or updates isolated unit tests with full branch and edge-case coverage. | [Testing & Verification](./domain-testing.md#1-nodejs-unit--route-integration-tests) | **One module scope; edit test files only; never change production code** without explicit consent. | Installed domain test instruction |
 | **E2E Tester** | `e2e-test.agent.md` | Writes or updates Playwright browser end-to-end tests for user journeys. | [Testing & Verification](./domain-testing.md#3-angular-playwright-end-to-end-tests) | **`e2e/` scope only; POM pattern; edit test files only; zero production code altered.** | `angular-e2e-tests` instruction |
-| **VitePress Docs** | `vitepress-docs.agent.md` | Scaffolds or updates a VitePress documentation site in a user-named folder. | [Architecture & Docs](./domain-docs.md#3-product-documentation-website-vitepress-docs) | Confine all files to docs root; follow `vitepress-docs` instruction; default theme only. | `vitepress-docs-examples` |
+| **VitePress Docs** | `vitepress-docs.agent.md` | Scaffolds or updates a VitePress documentation site in a user-named folder. | [Architecture & Docs](./domain-docs.md#2-product-documentation-website-vitepress-docs) | Confine all files to docs root; follow `vitepress-docs` instruction; default theme only. | `vitepress-docs-examples` |
 | **Performance Tester** | `performance-tests.agent.md` | Designs, scaffolds, or extends k6 load, stress, and spike test suites. | [Testing & Verification](./domain-testing.md#5-k6-performance--load-benchmarking) | Follow k6 Docker execution pattern; assert realistic thresholds; isolate scenarios. | `k6-performance-examples` |
 | **Fuzz Tester** | `fuzz-tests.agent.md` | Configures and runs RESTler API fuzzing pipelines. | [Testing & Verification](./domain-testing.md#6-restler-api-grammar-fuzzing) | OpenAPI-driven grammar compilation; handle auth refresh; fail on 500 status. | `restler-fuzzing-examples` |
-| **Think Planner** | `think-plan.agent.md` | Transforms business requirements or issues into `think.md` and `plan.md`. | [Architecture & Docs](./domain-docs.md#1-business-needs-to-specifications-think-plan) | Zero code changes; atomic steps with explicit verification and bootability checks. | `think-plan` skill |
+| **Think Planner** | `think-plan.agent.md` | Transforms business requirements or issues into `think.md` and `plan.md`. | [Think & Plan](./domain-think-plan.md#1-business-needs-to-specifications-think-plan) | Zero code changes; atomic steps with explicit verification and bootability checks. | `think-plan` skill |
 
 ---
 
@@ -36,7 +36,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Role**: Reverse-engineers technical specifications and data models directly from source code.
 - **Hard Boundaries**: Grounded strictly in observable code; no undocumented or assumed capabilities.
 - **Completion Gate**: Area specification markdown files pass `skills/spec-from-code/scripts/spec-docs.mjs` validation.
-- **Full Workflow**: See [Technical Specification Pipeline](./domain-docs.md#2-reverse-engineering-specifications-spec-from-code).
+- **Full Workflow**: See [Technical Specification Pipeline](./domain-docs.md#1-reverse-engineering-specifications-spec-from-code).
 
 ### 4. Unit Tester (`unit-test.agent.md`)
 - **Role**: Authors or improves isolated unit tests with complete branch coverage.
@@ -54,7 +54,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Role**: Scaffolds and maintains product documentation websites using VitePress.
 - **Hard Boundaries**: Requires an explicit user-named root (e.g. `website/` or `docs/`). Confined strictly to docs directory.
 - **Completion Gate**: `npm run build` succeeds with exit code 0 and all guide pages are indexed in the sidebar navigation.
-- **Full Workflow**: See [Product Documentation Website](./domain-docs.md#3-product-documentation-website-vitepress-docs).
+- **Full Workflow**: See [Product Documentation Website](./domain-docs.md#2-product-documentation-website-vitepress-docs).
 
 ### 7. Performance Tester (`performance-tests.agent.md`)
 - **Role**: Designs and executes automated k6 API performance and load benchmarking.
@@ -72,5 +72,5 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Role**: Analyzes business requirements, user stories, or issues and produces persistent architectural specifications (`think.md` and `plan.md`) without writing code.
 - **Hard Boundaries**: **Zero code changes**; codebase is read-only; derives `plan.md` strictly from an approved `think.md`; enforces explicit verification and bootable check per step.
 - **Completion Gate**: `think.md` and `plan.md` pass `skills/think-plan/scripts/validate-specs.mjs` validation with exit code 0.
-- **Full Workflow**: See [Business Needs to Specifications](./domain-docs.md#1-business-needs-to-specifications-think-plan).
+- **Full Workflow**: See [Business Needs to Specifications](./domain-think-plan.md#1-business-needs-to-specifications-think-plan).
 

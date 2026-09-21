@@ -54,6 +54,7 @@ export default withMermaid(defineConfig({
         text: 'Use cases (By Domain)',
         collapsed: false,
         items: [
+          { text: 'Think & Plan', link: '/guide/domain-think-plan' },
           { text: 'Testing & Verification', link: '/guide/domain-testing' },
           { text: 'Auditing & Remediation', link: '/guide/domain-audit' },
           { text: 'Architecture & Docs', link: '/guide/domain-docs' },

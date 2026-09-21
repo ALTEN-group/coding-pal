@@ -173,24 +173,24 @@ When an agent executes a workflow that produces a structured artifact (e.g., Cod
 caption: The Golden Split Responsibility Matrix
 ---
 classDiagram
-    class Agent {
+    class Agent:::agent {
         +Files in scope
         +Investigation method
         +Constraints
         +Coverage completion ("Done When")
     }
-    class DomainInstruction {
+    class DomainInstruction:::instruction {
         +Universal coding conventions
         +Security standards
         +Architecture rules
     }
-    class Skill {
+    class Skill:::skill {
         +Reusable output contract
         +Report format in references/
         +Validator script in scripts/
         +Validation fixtures in fixtures/
     }
-    class Workflow_CI {
+    class Workflow_CI:::execution {
         +Artifact publication
         +PR gating & retries
     }
@@ -203,11 +203,6 @@ classDiagram
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
     classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
-
-    cssClass "Agent" agent
-    cssClass "DomainInstruction" instruction
-    cssClass "Skill" skill
-    cssClass "Workflow_CI" execution
 ```
 
 | Concern | Authoritative Owner | Example in Coding Pal |
@@ -239,7 +234,7 @@ Coding Pal replaces traditional specifications with **two persistent, machine-co
 ---
 caption: Phased Specification Architecture (Think -> Plan -> Build)
 ---
-flowchart LR
+flowchart TD
     BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Copilot Plan Mode"]
     T --> TM["<b>think.md</b><br/>Flows, invariants, minimal scope"]
     TM --> P["<b>2. Plan Phase</b><br/>Copilot Plan Mode"]
@@ -268,4 +263,7 @@ When an AI build agent implements functionality from `plan.md`:
 2. It executes **exactly one step** from the checklist.
 3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
 4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
+
+> [!TIP]
+> For automated workflows, headless CI execution, and the GitHub issue attachment pattern, see the dedicated [Think & Plan Domain Guide](./domain-think-plan.md).
 
