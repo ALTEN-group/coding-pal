@@ -2,7 +2,7 @@
 
 An AI assistant that cannot verify its own work can only ever be as trustworthy as the human reviewing every line behind it. **Deterministic Controls** are the mechanical, falsifiable checks — tests, validator scripts, schema contracts — that let an agent confirm its own output is correct *without* asking a human to re-read it first.
 
-This capability is what turns a single supervised assistant into an autonomous worker, and eventually into an orchestrator capable of coordinating a fleet of other agents.
+This capability is what turns a single supervised assistant into an autonomous worker. Giving the AI engineer the ability to orchestrate more and more agents.
 
 ## Why "Trust Me" Doesn't Scale
 
