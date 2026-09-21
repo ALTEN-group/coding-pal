@@ -8,7 +8,7 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 Two rules govern how primitives reach the context window:
 
-1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file that is in the request context (open, attached, or referenced); no match means no load, and non-matching instructions are never an alternative to a prompt, agent, or skill — the ones that do match simply stack underneath whichever of those also fires.
+1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file that is in the request context (open, attached, or referenced). If the turn is a bare chat prompt with **no file in context at all** — no open editor, no attachment, no tool-touched file — there is nothing for any glob to match, so zero instructions load; Coding Pal has no repo-wide instruction file that bypasses this. Where a match does happen, that instruction simply stacks underneath whichever prompt, agent, or skill also fires — it is never an alternative to them.
 2. **Prompts, Agents, and Skills are three separate on-demand entry points.** Only one of them starts a given turn (a slash command, an explicit agent invocation, or a semantic skill match) — but a prompt or an agent can pull in a skill downstream of that entry point.
 
 ### The Always-On Layer
@@ -18,9 +18,11 @@ Two rules govern how primitives reach the context window:
 caption: Instructions are checked on every turn; activation is conditional per instruction
 ---
 flowchart TD
-    F["Any file in the request context<br/>(open, attached, or referenced)"] --> G{"Matches this<br/>instruction's applyTo glob?"}
+    START["Turn begins"] --> HASFILE{"Any file in context?<br/>(open, attached, referenced)"}
+    HASFILE -->|"No — bare chat prompt"| NONE["No instructions load<br/>(nothing to match against)"]
+    HASFILE -->|"Yes"| G{"Matches this<br/>instruction's applyTo glob?"}
     G -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
-    G -->|"No"| X["Not loaded<br/>(no contribution to this turn)"]
+    G -->|"No"| X["Not loaded<br/>(this instruction doesn't apply)"]
     I --> CTX["<b>LLM Context Window</b>"]
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
@@ -30,11 +32,11 @@ flowchart TD
 
     class I instruction;
     class CTX execution;
-    class F,G event;
-    class X skip;
+    class START,HASFILE,G event;
+    class X,NONE skip;
 ```
 
-The glob check itself is the only automatic path — it always runs. Whether it produces a loaded instruction depends on the match; a turn can easily have zero matching instructions if no open or referenced file fits any `applyTo` pattern.
+There are three possible outcomes per turn, not two: no file in context at all (zero instructions, bare prompt), a file in context that matches nothing (zero instructions, but for a different reason), or a match (the instruction loads). Only the third case adds anything to the context window.
 
 ### The Three On-Demand Entry Points
 
