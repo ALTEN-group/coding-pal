@@ -58,6 +58,7 @@ Coding Pal eliminates these issues by codifying standards into 4 well-defined pr
 ## Next Steps
 
 - Understand the [Persistent Context Architecture](./persistent-context.md).
+- Learn why [Deterministic Controls](./deterministic-controls.md) are required to scale agent autonomy.
 - Explore [Capabilities by Domain](./domain-testing.md) (Testing, Auditing, Docs, Stacks).
 - Browse [Primitives by Type](./catalog-prompts.md) (Prompts, Agents, Instructions, Skills).
 - Examine the exact [Prompt Markdown Schema](./schema-prompts.md) and [Agent Markdown Schema](./schema-agents.md).

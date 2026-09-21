@@ -47,6 +47,7 @@ export default withMermaid(defineConfig({
         items: [
           { text: 'Overview', link: '/guide/overview' },
           { text: 'Persistent Context', link: '/guide/persistent-context' },
+          { text: 'Deterministic Controls', link: '/guide/deterministic-controls' },
         ],
       },
       {
