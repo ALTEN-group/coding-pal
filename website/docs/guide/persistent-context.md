@@ -8,29 +8,33 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 Two rules govern how primitives reach the context window:
 
-1. **Instructions run on every turn**, in the background, independently of everything else below. They are never an alternative to a prompt, agent, or skill — they simply stack underneath whichever of those also fires.
+1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file that is in the request context (open, attached, or referenced); no match means no load, and non-matching instructions are never an alternative to a prompt, agent, or skill — the ones that do match simply stack underneath whichever of those also fires.
 2. **Prompts, Agents, and Skills are three separate on-demand entry points.** Only one of them starts a given turn (a slash command, an explicit agent invocation, or a semantic skill match) — but a prompt or an agent can pull in a skill downstream of that entry point.
 
 ### The Always-On Layer
 
 ```mermaid
 ---
-caption: Instructions load on every turn, regardless of what else happens
+caption: Instructions are checked on every turn; activation is conditional per instruction
 ---
 flowchart TD
-    F["Any file in the request context<br/>(open, attached, or referenced)"] -->|"applyTo glob match"| I["<b>Instruction</b><br/>*.instructions.md"]
+    F["Any file in the request context<br/>(open, attached, or referenced)"] --> G{"Matches this<br/>instruction's applyTo glob?"}
+    G -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
+    G -->|"No"| X["Not loaded<br/>(no contribution to this turn)"]
     I --> CTX["<b>LLM Context Window</b>"]
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
     classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
+    classDef skip fill:#3f3f46,stroke:#71717a,stroke-width:1.5px,color:#f4f4f5,stroke-dasharray: 4 3;
 
     class I instruction;
     class CTX execution;
-    class F event;
+    class F,G event;
+    class X skip;
 ```
 
-This is the only automatic path. It runs whether or not a prompt, agent, or skill is also active on the same turn.
+The glob check itself is the only automatic path — it always runs. Whether it produces a loaded instruction depends on the match; a turn can easily have zero matching instructions if no open or referenced file fits any `applyTo` pattern.
 
 ### The Three On-Demand Entry Points
 
