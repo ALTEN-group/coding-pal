@@ -12,6 +12,7 @@ When authoring or validating specifications, follow the installed `think-plan` s
 - **Clean context separation**: Think, Plan, and Build run in separate sessions with clean context to prevent token depletion and error compounding.
 - **Specification invariant**: Neither `think.md` nor `plan.md` contains source code implementations. Code is written only during the Build phase.
 - **Strict sequence**: Never create `plan.md` without a validated `think.md`. Never begin coding without a validated `plan.md`.
+- **`plan.md` is strictly the result of `think.md`**: The Plan phase takes `think.md` as its primary input. Every file declared in `think.md`'s `Minimal Change Scope` must be mapped to implementation steps in `plan.md`, and all invariants established in `think.md` must be respected. Never author `plan.md` directly from ungrounded business prompts.
 
 ## `think.md` Standards
 
@@ -23,6 +24,7 @@ When authoring or validating specifications, follow the installed `think-plan` s
 
 ## `plan.md` Standards
 
+- **Derived from `think.md`**: `plan.md` must explicitly reference the source `think.md` location in its `## Prerequisites & Context` section.
 - **Numbered, atomic steps**: Every task must be an atomic step (`### Step 1: ...`, `### Step 2: ...`) ordered strictly by dependency.
 - **Preserve bootability**: Every step must ensure the application remains bootable upon completion. A step that leaves the application unable to boot is invalid.
 - **Required step metadata**: Every step must contain four explicit fields in order:

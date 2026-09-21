@@ -109,3 +109,14 @@ test("rejects plan.md step missing Bootable Check field", () => {
 		(err) => err instanceof ValidationError && /missing or empty required field "- \*\*Bootable Check:\*\*"/.test(err.message),
 	);
 });
+
+test("rejects plan.md if Prerequisites & Context does not reference think.md", () => {
+	const missingPrereqRef = validPlan.replace(
+		"- Reference: `specs/roles/think.md`.\n",
+		"",
+	);
+	assert.throws(
+		() => validatePlanContent(missingPrereqRef, "plan.md"),
+		(err) => err instanceof ValidationError && /must reference the think\.md specification it is derived from/.test(err.message),
+	);
+});

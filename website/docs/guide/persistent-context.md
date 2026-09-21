@@ -235,11 +235,11 @@ Coding Pal replaces traditional specifications with **two persistent, machine-co
 caption: Phased Specification Architecture (Think -> Plan -> Build)
 ---
 flowchart TD
-    BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Copilot Plan Mode"]
+    BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Architecture & reasoning session"]
     T --> TM["<b>think.md</b><br/>Flows, invariants, minimal scope"]
-    TM --> P["<b>2. Plan Phase</b><br/>Copilot Plan Mode"]
+    TM --> P["<b>2. Plan Phase</b><br/>Planning & sequencing session"]
     P --> PM["<b>plan.md</b><br/>Atomic steps + bootable check"]
-    PM --> B["<b>3. Build Phase</b><br/>Copilot Agent Mode (1 step/turn)"]
+    PM --> B["<b>3. Build Phase</b><br/>AI Coding Agent (1 step/turn)"]
 
     classDef stage fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
     classDef artifact fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
@@ -254,8 +254,8 @@ flowchart TD
 
 | Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
 |---|---|---|---|---|
-| `think.md` | **Think** | Copilot Plan Mode / `Think Planner` agent | `skills/think-plan/` | Request flow tracing, component responsibilities, architectural invariants, and explicit minimal change scope. **No code or task checklists.** |
-| `plan.md` | **Plan** | Copilot Plan Mode / `Think Planner` agent | `skills/think-plan/` | Numbered atomic steps (`### Step N:`), explicit file paths, surgical actions, narrowest verification commands, and per-step **bootability checks**. **No code.** |
+| `think.md` | **Think** | Planning session / `Think Planner` agent | `skills/think-plan/` | Request flow tracing, component responsibilities, architectural invariants, and explicit minimal change scope. **No code or task checklists.** |
+| `plan.md` | **Plan** | Planning session / `Think Planner` agent | `skills/think-plan/` | Numbered atomic steps (`### Step N:`), explicit file paths, surgical actions, narrowest verification commands, and per-step **bootability checks**. **No code.** |
 
 ### Downstream Execution Discipline
 When an AI build agent implements functionality from `plan.md`:

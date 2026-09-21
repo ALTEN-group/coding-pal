@@ -23,7 +23,7 @@ This contract defines the authoritative structure, headings, fields, and validat
 
 ## 2. `think.md` Specification Contract
 
-`think.md` is authored during the **Think phase** (e.g. using Copilot in Plan mode) from business needs and codebase exploration. It contains **no production code** and **no task checklist**.
+`think.md` is authored during the **Think phase** (e.g. using an interactive planning session or Think Planner agent) from business needs and codebase exploration. It contains **no production code** and **no task checklist**.
 
 ### Required Document Structure (In Exact Order)
 
@@ -62,7 +62,7 @@ This contract defines the authoritative structure, headings, fields, and validat
 
 ## 3. `plan.md` Specification Contract
 
-`plan.md` is authored during the **Plan phase** (e.g. using Copilot in Plan mode) from `think.md`. It contains **no source code**, but provides the exact, numbered execution roadmap for AI build agents.
+`plan.md` is authored during the **Plan phase** (e.g. using an interactive planning session or Think Planner agent) strictly as the downstream result of `think.md`. It contains **no source code**, but provides the exact, numbered execution roadmap for AI build agents.
 
 ### Required Document Structure (In Exact Order)
 
@@ -74,7 +74,7 @@ This contract defines the authoritative structure, headings, fields, and validat
 ### Section Requirements for `plan.md`
 
 #### `## Prerequisites & Context`
-- Reference to `think.md` location.
+- Mandatory reference to the source `think.md` location (e.g. `- Reference: specs/think.md`).
 - Pre-existing dependencies, environment variables, or running containers required before executing step 1.
 
 #### `## Implementation Checklist`
@@ -91,7 +91,7 @@ Every step **must** contain these four structured fields in order:
 ```
 
 Field rules:
-- **`Files:`** Lists explicit paths. Never use vague phrases like "relevant files".
+- **`Files:`** Lists explicit paths. Every file must be accounted for from `think.md`'s `Minimal Change Scope`. Never use vague phrases like "relevant files".
 - **`Action:`** States the surgical change without pasting entire code files.
 - **`Verification:`** Must be a runnable, narrow command (e.g., `npm test -- tests/routes/role.test.js` or `npm run lint`).
 - **`Bootable Check:`** Must assert that the service boots or passes basic health inspection (e.g., `docker compose up -d && curl -f http://localhost:3000/health` or `node -e 'import("./src/app.js")'`).
@@ -110,7 +110,8 @@ A checklist of falsifiable completion criteria:
 1. **No Monolithic Narrative PRDs**: Specifications must not be prose-heavy essays where requirements are scattered across paragraphs.
 2. **No Code in Specifications**: Neither `think.md` nor `plan.md` may contain full implementation source code files or large patch diffs. The code is written during the build phase.
 3. **No Unbounded Steps**: A step like "Implement user management" is prohibited. Steps must be atomic (e.g., "Add roles router", "Add roles service", "Mount route in app.js").
-4. **No Combined Think-Plan Phase**: Thinking and Planning have distinct cognitive models. Do not author `plan.md` without first establishing and validating `think.md`.
+4. **No Combined Think-Plan Phase**: Thinking and Planning have distinct cognitive models. Do not author `plan.md` without first establishing and validating `think.md`. `plan.md` must always be the downstream result of `think.md`.
+5. **No Scope Deviation**: `plan.md` must not add steps that modify files outside the `Minimal Change Scope` established in `think.md`.
 
 ---
 

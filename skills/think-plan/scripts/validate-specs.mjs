@@ -179,8 +179,15 @@ export function validatePlanContent(rawMarkdown, filename = "plan.md") {
 		}
 	}
 
-	// Validate steps inside "## Implementation Checklist"
+	// Verify "## Prerequisites & Context" references think.md
+	const prereqStart = markdown.indexOf("## Prerequisites & Context");
 	const checklistStart = markdown.indexOf("## Implementation Checklist");
+	const prereqContent = markdown.slice(prereqStart + "## Prerequisites & Context".length, checklistStart).trim();
+	if (!/think\.md/i.test(prereqContent)) {
+		fail(`${filename} "## Prerequisites & Context" must reference the think.md specification it is derived from`);
+	}
+
+	// Validate steps inside "## Implementation Checklist"
 	const doneWhenStart = markdown.indexOf("## Done When");
 	const checklistContent = markdown.slice(checklistStart + "## Implementation Checklist".length, doneWhenStart).trim();
 
@@ -262,6 +269,10 @@ export async function runValidator(args = process.argv.slice(2)) {
 		if (await fileExists(planInDir)) targetPlan = planInDir;
 		if (!targetThink && !targetPlan) {
 			console.error(`Error: Directory ${opts.dir} contains neither think.md nor plan.md`);
+			return 1;
+		}
+		if (targetPlan && !targetThink) {
+			console.error(`Error: Directory ${opts.dir} contains plan.md without think.md. plan.md must be derived from think.md.`);
 			return 1;
 		}
 	}
