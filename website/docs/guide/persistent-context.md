@@ -6,33 +6,41 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 ## Context Lifecycle: Always-On vs On-Demand
 
+Each session event resolves through its **own** chain of primitives — instructions are never loaded in isolation, prompts hand off to agents, and agents pull in skills as needed. The four chains below replace a single flattened diagram so the calling order stays explicit.
+
+### Event 1 — File Opened / Context Focused
+
 ```mermaid
 ---
-caption: Persistent Context Loading Mechanism
+caption: Always-On Instruction Loading
 ---
-flowchart TD
-    subgraph Trigger ["Session Event"]
-        E1["File Opened / Context Focused"]
-        E2["User Types Slash Command (/...)"]
-        E3["User Invokes Agent (--agent)"]
-        E4["Task Matches Skill Description"]
-    end
+flowchart LR
+    E1["File Opened / Context Focused"] -->|"applyTo glob match"| I["<b>Instruction</b><br/>*.instructions.md"]
+    I --> CTX["<b>LLM Context Window</b>"]
 
-    subgraph Catalog ["Coding Pal Primitives"]
-        I["<b>Instructions</b> (*.instructions.md)<br/>Always-On via applyTo glob"]
-        P["<b>Prompts</b> (*.prompt.md)<br/>On-Demand Slash Command"]
-        A["<b>Agents</b> (*.agent.md)<br/>On-Demand Named Specialist"]
-        S["<b>Skills</b> (skills/&lt;name&gt;/SKILL.md)<br/>On-Demand Procedural Workflow"]
-    end
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
 
-    subgraph Execution ["AI Coding Context"]
-        CTX["<b>LLM Context Window</b><br/>(Surgical, Bounded & Evidence-Based)"]
-    end
+    class I instruction;
+    class CTX execution;
+    class E1 event;
+```
 
-    E1 -->|Glob Match| I --> CTX
-    E2 -->|Slash Command| P --> CTX
-    E3 -->|Explicit Select| A --> CTX
-    E4 -->|Dynamic Trigger| S --> CTX
+Instructions are the only primitive that self-inject; no other primitive is required to call them.
+
+### Event 2 — User Types Slash Command (`/...`)
+
+```mermaid
+---
+caption: On-Demand Prompt Loading
+---
+flowchart LR
+    E2["User Types Slash Command (/...)"] -->|"Resolves parameters"| P["<b>Prompt</b><br/>*.prompt.md"]
+    P -->|"Maps intent to"| A["<b>Agent</b><br/>*.agent.md"]
+    A -->|"Enforces"| I["<b>Instruction</b><br/>*.instructions.md"]
+    A -->|"Invokes if needed"| S["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
+    A --> CTX["<b>LLM Context Window</b>"]
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
@@ -46,8 +54,61 @@ flowchart TD
     class A agent;
     class S skill;
     class CTX execution;
-    class E1,E2,E3,E4 event;
+    class E2 event;
 ```
+
+A prompt never talks to the context window directly — it always routes through the agent it maps to.
+
+### Event 3 — User Invokes Agent (`--agent <name>`)
+
+```mermaid
+---
+caption: On-Demand Agent Loading
+---
+flowchart LR
+    E3["User Invokes Agent (--agent)"] -->|"Explicit select"| A["<b>Agent</b><br/>*.agent.md"]
+    A -->|"Enforces"| I["<b>Instruction</b><br/>*.instructions.md"]
+    A -->|"Implements contract via"| S["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
+    A --> CTX["<b>LLM Context Window</b>"]
+
+    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
+    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
+
+    class I instruction;
+    class A agent;
+    class S skill;
+    class CTX execution;
+    class E3 event;
+```
+
+Same downstream chain as Event 2, minus the prompt hand-off — the agent is the entry point.
+
+### Event 4 — Task Matches Skill Description
+
+```mermaid
+---
+caption: On-Demand Skill Loading
+---
+flowchart LR
+    E4["Task Matches Skill Description"] -->|"Semantic/dynamic trigger"| S["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
+    S -->|"Runs"| V["Validator Script<br/>scripts/"]
+    S --> CTX["<b>LLM Context Window</b>"]
+
+    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
+    classDef artifact fill:#7c2d12,stroke:#ea580c,stroke-width:1.5px,color:#fff7ed;
+
+    class S skill;
+    class CTX execution;
+    class E4 event;
+    class V artifact;
+```
+
+A skill can be reached either directly (user or auto-trigger) or as a dependency invoked by an agent, but it always owns its own validation scripts.
 
 | Primitive | Loading Model | Trigger Condition | Primary Purpose |
 |---|---|---|---|
