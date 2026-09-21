@@ -8,7 +8,7 @@ Instead of relying on volatile chat memory or giant prompt dumps, Coding Pal org
 
 Two rules govern how primitives reach the context window:
 
-1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file that is in the request context (open, attached, or referenced). If the turn is a bare chat prompt with **no file in context at all** — no open editor, no attachment, no tool-touched file — there is nothing for any glob to match, so zero instructions load; Coding Pal has no repo-wide instruction file that bypasses this. Where a match does happen, that instruction simply stacks underneath whichever prompt, agent, or skill also fires — it is never an alternative to them.
+1. **Instructions are checked on every turn, but each one only activates if its own condition is met.** The check itself runs automatically in the background — no prompt, agent, or skill has to request it. Whether a *specific* instruction file actually loads depends solely on its `applyTo` glob matching a file the AI is about to **create or modify** — reading or having a file open does not count on its own. If the turn produces no file write at all (a bare chat question, or a read-only answer), there is nothing for any glob to match, so zero instructions load; Coding Pal has no repo-wide instruction file that bypasses this. Where a match does happen, that instruction simply stacks underneath whichever prompt, agent, or skill also fires — it is never an alternative to them.
 2. **Prompts, Agents, and Skills are three separate on-demand entry points.** Only one of them starts a given turn (a slash command, an explicit agent invocation, or a semantic skill match) — but a prompt or an agent can pull in a skill downstream of that entry point.
 
 ### The Always-On Layer
@@ -18,8 +18,8 @@ Two rules govern how primitives reach the context window:
 caption: Instructions are checked on every turn; activation is conditional per instruction
 ---
 flowchart TD
-    START["Turn begins"] --> HASFILE{"Any file in context?<br/>(open, attached, referenced)"}
-    HASFILE -->|"No — bare chat prompt"| NONE["No instructions load<br/>(nothing to match against)"]
+    HASFILE{"Is the AI creating or<br/>modifying a file this turn?"}
+    HASFILE -->|"No — read-only answer<br/>or bare chat prompt"| NONE["No instructions load<br/>(nothing to match against)"]
     HASFILE -->|"Yes"| G{"Matches this<br/>instruction's applyTo glob?"}
     G -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
     G -->|"No"| X["Not loaded<br/>(this instruction doesn't apply)"]
@@ -32,11 +32,11 @@ flowchart TD
 
     class I instruction;
     class CTX execution;
-    class START,HASFILE,G event;
+    class HASFILE,G event;
     class X,NONE skip;
 ```
 
-There are three possible outcomes per turn, not two: no file in context at all (zero instructions, bare prompt), a file in context that matches nothing (zero instructions, but for a different reason), or a match (the instruction loads). Only the third case adds anything to the context window.
+There are three possible outcomes per turn, not two: no file being written at all (zero instructions, read-only or bare prompt), a written file that matches no instruction's glob (zero instructions, but for a different reason), or a match (the instruction loads). Only the third case adds anything to the context window. This is also why `applyTo` is a poor fit for guidance that should hold even for read-only questions — that belongs in a `description`-based instruction instead (see [On-Demand Entry Points](#the-three-on-demand-entry-points) below for the equivalent on-demand pattern for skills).
 
 ### The Three On-Demand Entry Points
 
