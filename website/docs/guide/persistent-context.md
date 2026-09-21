@@ -15,29 +15,26 @@ Two rules govern how primitives reach the context window:
 
 ```mermaid
 ---
-caption: An instruction loads if either of its two gates matches
+caption: Instruction Loading — triggered automatically by file pattern or task description
 ---
 flowchart TD
-    F1{"applyTo set, and matches<br/>a file the agent is working on?"}
-    F2{"description set, and matches<br/>the task semantically?"}
-    F1 -->|"Yes"| I["<b>Instruction</b><br/>*.instructions.md"]
-    F2 -->|"Yes"| I
-    F1 -->|"No"| X1["Gate not met"]
-    F2 -->|"No"| X2["Gate not met"]
-    X1 --> BOTH{"Did the other<br/>gate match?"}
-    X2 --> BOTH
-    BOTH -->|"No"| NONE["Not loaded this turn"]
+    subgraph Triggers ["Automatic Triggers (either matches)"]
+        direction TB
+        T1["File matches <code>applyTo</code> pattern"]
+        T2["Task matches <code>description</code> semantically"]
+    end
+
+    T1 --> I["<b>Instruction</b><br/>*.instructions.md"]
+    T2 --> I
     I --> CTX["<b>LLM Context Window</b>"]
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
     classDef event fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
-    classDef skip fill:#3f3f46,stroke:#71717a,stroke-width:1.5px,color:#f4f4f5,stroke-dasharray: 4 3;
 
     class I instruction;
     class CTX execution;
-    class F1,F2,BOTH event;
-    class X1,X2,NONE skip;
+    class T1,T2 event;
 ```
 
 This is the verified mechanism per VS Code's documentation: "the agent determines which instructions files to apply based on the file patterns specified in the `applyTo` property… or semantic matching of the instruction description to the current task." An instruction with neither property set is never applied automatically; it can still be attached manually to a chat request.
