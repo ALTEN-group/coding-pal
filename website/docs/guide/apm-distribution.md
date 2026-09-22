@@ -105,6 +105,7 @@ dependencies:
     # 1. Specialist Agents (Virtual Path Dependencies)
     # --------------------------------------------------------------------------
     - ALTEN-group/coding-pal/agents/unit-test.agent.md
+    - ALTEN-group/coding-pal/agents/api-test.agent.md
     - ALTEN-group/coding-pal/agents/e2e-test.agent.md
     - ALTEN-group/coding-pal/agents/vitepress-docs.agent.md
     - ALTEN-group/coding-pal/agents/performance-tests.agent.md
@@ -118,6 +119,7 @@ dependencies:
     # 2. Interactive Prompts / Slash Commands (Virtual Path Dependencies)
     # --------------------------------------------------------------------------
     - ALTEN-group/coding-pal/prompts/node-unit-tests.prompt.md
+    - ALTEN-group/coding-pal/prompts/node-api-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-unit-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
@@ -131,6 +133,7 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md
     - ALTEN-group/coding-pal/instructions/node-express.instructions.md
     - ALTEN-group/coding-pal/instructions/node-unit-tests.instructions.md
+    - ALTEN-group/coding-pal/instructions/node-api-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/postgres-liquibase.instructions.md
     - ALTEN-group/coding-pal/instructions/postgres-liquibase-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/docker.instructions.md

@@ -1,6 +1,6 @@
-# Stacks & Infrastructure
+# Tech Stacks
 
-The **Stacks & Infrastructure** domain codifies enterprise engineering conventions, architectural patterns, and verified scaffolding bundles for modern production tech stacks.
+The **Tech Stacks** domain codifies enterprise engineering conventions, architectural patterns, and verified scaffolding bundles for modern production tech stacks.
 
 Rather than relying on the LLM's generic defaults, Coding Pal injects precise conventions whenever files matching these stacks are opened or edited.
 

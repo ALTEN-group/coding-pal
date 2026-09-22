@@ -14,7 +14,7 @@ hero:
       link: /guide/overview
     - theme: alt
       text: Browse Catalog
-      link: /guide/domain-testing
+      link: /guide/domain-think-plan
 
 features:
   - icon: 🧠

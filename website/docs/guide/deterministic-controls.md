@@ -124,5 +124,5 @@ When authoring a new agent or skill that should eventually run unsupervised or a
 ## Next Steps
 
 - Revisit the [Golden Split](./persistent-context.md#the-golden-split) to see how skills own validator scripts.
-- See a full worked example in [Auditing & Remediation](./domain-audit.md), where CI gating rejects reports that fail schema validation.
+- See a full worked example in [Audit & Remediation](./domain-audit.md), where CI gating rejects reports that fail schema validation.
 - Browse the [Skills Catalog](./catalog-skills.md) for existing validator scripts to reuse.

@@ -1,6 +1,6 @@
-# Architecture & Documentation
+# Specs & Docs
 
-The **Architecture & Documentation** domain provides automated capabilities to reverse-engineer technical specifications from existing source code and scaffold enterprise-grade product documentation websites.
+The **Specs & Docs** domain provides automated capabilities to reverse-engineer technical specifications from existing source code and scaffold enterprise-grade product documentation websites.
 
 > [!TIP]
 > For turning forward-looking business requirements and user stories into structured specifications, see the dedicated [Think & Plan](./domain-think-plan.md) domain.

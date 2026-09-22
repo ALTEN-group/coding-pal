@@ -165,4 +165,4 @@ flowchart TD
 - [Instructions Catalog](./catalog-instructions.md)
 - [Skills Catalog](./catalog-skills.md)
 - [Persistent Context Architecture](./persistent-context.md)
-- [Architecture & Docs Domain](./domain-docs.md)
+- [Specs & Docs Domain](./domain-docs.md)

@@ -1,6 +1,6 @@
-# Auditing & Remediation
+# Audit & Remediation
 
-The **Auditing & Remediation** domain provides automated, evidence-based code review and surgical vulnerability/defect remediation. It transforms subjective code reviews into reproducible, schema-validated artifacts backed by CI gating.
+The **Audit & Remediation** domain provides automated, evidence-based code review and surgical vulnerability/defect remediation. It transforms subjective code reviews into reproducible, schema-validated artifacts backed by CI gating.
 
 ---
 

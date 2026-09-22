@@ -55,10 +55,10 @@ export default withMermaid(defineConfig({
         collapsed: false,
         items: [
           { text: 'Think & Plan', link: '/guide/domain-think-plan' },
-          { text: 'Testing & Verification', link: '/guide/domain-testing' },
-          { text: 'Auditing & Remediation', link: '/guide/domain-audit' },
-          { text: 'Architecture & Docs', link: '/guide/domain-docs' },
-          { text: 'Stacks & Infrastructure', link: '/guide/domain-stacks' },
+          { text: 'Automated Tests', link: '/guide/domain-testing' },
+          { text: 'Audit & Remediation', link: '/guide/domain-audit' },
+          { text: 'Specs & Docs', link: '/guide/domain-docs' },
+          { text: 'Tech Stacks', link: '/guide/domain-stacks' },
         ],
       },
       {
