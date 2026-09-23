@@ -156,8 +156,10 @@ When an agent uses a skill, divide responsibility this way:
 | Files and systems to examine | Agent |
 | Domain-specific review or implementation method | Agent and applicable instructions |
 | Universal coding standards | Instruction |
-| Reusable output contract | Skill |
-| Report parsing, validation, normalization | Skill script |
+| Blast-radius & file churn boundary | Guard (`skills/scope-guard`) |
+| Reusable output contract | Skill (`references/`) |
+| Report parsing, validation, normalization | Skill script (`scripts/`) |
+| Falsifiable execution certification | Gate (narrow test command + validator) |
 | Task coverage completion | Agent `Done When` |
 | Artifact validity completion | Skill `Done When` |
 | CI retries, artifacts, publication, and fallbacks | Consuming workflow |

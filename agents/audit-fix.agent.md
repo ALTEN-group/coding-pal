@@ -26,6 +26,7 @@ You are a specialist at remediating individual audit findings with minimal, veri
 ## Done When
 
 - The finding is remediated with a minimal diff, or explicitly marked as skipped with no code changes.
+- When `scope-guard` is installed, git changes pass `scope-guard.mjs` without out-of-scope files or forbidden churn.
 - Relevant validation passes according to the selected stack's instructions.
 - The required `<!-- AUDIT-FIX:START -->` output block has been produced.
 

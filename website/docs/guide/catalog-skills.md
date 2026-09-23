@@ -17,7 +17,13 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/docker-examples/` | Scaffolding Pack | `docker` instruction | Multi-stage Dockerfiles, Traefik dynamic labels, BuildKit secret mounts, and Compose files. |
 | `skills/angular-admin-examples/` | Scaffolding Pack | `angular-admin` instruction | Angular entity slices: CRUD tables, PrimeNG dialogs, reactive form services, and ACL guards. |
 | `skills/k6-performance-examples/` | Scaffolding Pack | `k6-performance-tests` instruction | Modular k6 test architecture: virtual users, thresholds, stages, and Docker runners. |
-| `skills/restler-fuzzing-examples/` | Scaffolding Pack | `restler-fuzzing-tests` instruction | Microsoft RESTler configuration, dictionary generation, compile scripts, and auth workflows. |
+| `skills/scope-guard/` | Guard & Boundary | `sharp-agent` instruction, `audit-fix` agent | Blast-radius and churn guard asserting changes stay within allowed paths and thresholds. |
+| `skills/dependency-guard/` | Guard & Dependency | Package manifests, PR reviews | Prevents unauthorized, bloated, or banned dependencies in `package.json`. |
+| `skills/secret-guard/` | Guard & Security | Pre-commit hooks, CI scanning | Prevents hardcoded credentials, API keys, private keys, and platform tokens in diffs. |
+| `skills/task-gate/` | Gate & Verifier | All agents (`Done When`), CI workflows | Multi-stage verification pipeline (lint, types, tests) with structured self-repair diagnostics. |
+| `skills/contract-validator/` | Schema Contract | `spec-from-code`, `audit-reporting` | Declarative schema validator for Markdown and structured artifacts without custom scripts. |
+| `skills/test-probe/` | Behavioral Probe | Test authoring agents, CI verification | Anti-tautology probe asserting tests fail when unpatched to prove genuine falsifiability. |
+| `skills/rollback-probe/` | Behavioral Probe | `postgres-liquibase`, database migrations | Certifies migration reversibility (Forward $\rightarrow$ Rollback $\rightarrow$ Forward) and idempotency. |
 
 ---
 
@@ -98,4 +104,99 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
   # Validate specifications directory in CI or local harness
   node .agents/skills/think-plan/scripts/validate-specs.mjs --dir specs
   ```
+
+### 11. Scope Guard (`skills/scope-guard/`)
+- **Category**: Guard & Boundary
+- **Contents**:
+  - `SKILL.md`: Step-by-step guidance on validating agent blast radius and diff bounds.
+  - `references/guard-contract.md`: Invariant specification defining path matching semantics, forbidden file rules (`*.lock`, `*-lock.json`, `.env*`), churn bounds, and exit code contracts.
+  - `scripts/scope-guard.mjs`: Fast, zero-dependency Node.js CLI asserting that repository diffs stay within permitted scopes and limits.
+  - `scripts/scope-guard.test.mjs`: Node.js test suite proving guard evaluation across valid and invalid inputs.
+- **Workflow**:
+  ```bash
+  # Assert current git changes stay within permitted scope and churn limits
+  node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --scope "src/auth/**" --max-additions 100
+  ```
+
+### 12. Task Gate (`skills/task-gate/`)
+- **Category**: Gate & Verifier
+- **Contents**:
+  - `SKILL.md`: Pipeline orchestration and self-repair diagnostic guidance.
+  - `references/gate-contract.md`: Schema for gate configurations, stage declarations, and diagnostic envelopes.
+  - `scripts/task-gate.mjs`: Fast Node.js CLI executing multi-stage checks with fail-fast semantics and decisive failure snippet extraction.
+  - `scripts/task-gate.test.mjs`: Test suite asserting stage execution, failure capture, and diagnostic formatting.
+- **Workflow**:
+  ```bash
+  # Execute verification pipeline with JSON diagnostics for agent self-repair
+  node .agents/skills/task-gate/scripts/task-gate.mjs --stage "lint:npm run lint" --stage "tests:npm test" --json
+  ```
+
+### 13. Contract Validator (`skills/contract-validator/`)
+- **Category**: Schema Contract
+- **Contents**:
+  - `SKILL.md`: Declarative document validation workflow.
+  - `references/contract-schema.md`: Specification for `*.contract.json` rules (markers, headings, sequence, max lines).
+  - `scripts/validate-contract.mjs`: Generic validator evaluating Markdown/JSON files against declarative contracts without writing custom scripts.
+  - `scripts/validate-contract.test.mjs`: Test suite covering marker detection, heading sequences, line overflow, and forbidden patterns.
+- **Workflow**:
+  ```bash
+  # Declaratively validate an artifact against a contract
+  node .agents/skills/contract-validator/scripts/validate-contract.mjs --contract contracts/report.contract.json --file docs/report.md
+  ```
+
+### 14. Test Probe (`skills/test-probe/`)
+- **Category**: Behavioral Probe
+- **Contents**:
+  - `SKILL.md`: Anti-tautology and test efficacy verification workflow.
+  - `references/probe-contract.md`: Falsifiability lifecycle contract (Baseline $\rightarrow$ Inversion $\rightarrow$ Assertion $\rightarrow$ Restoration).
+  - `scripts/test-probe.mjs`: Automated probe temporarily unpatching source code to prove that newly generated tests actually fail without the fix.
+  - `scripts/test-probe.test.mjs`: Test suite proving detection of vacuous tests and atomic file restoration.
+- **Workflow**:
+  ```bash
+  # Verify that a test suite fails when the source fix is absent
+  node .agents/skills/test-probe/scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
+  ```
+
+### 15. Dependency Guard (`skills/dependency-guard/`)
+- **Category**: Guard & Dependency
+- **Contents**:
+  - `SKILL.md`: Dependency blast-radius guidance and policy workflows.
+  - `references/dependency-contract.md`: Manifest invariant contract defining zero-unprompted-dependency rules and banned libraries.
+  - `scripts/dependency-guard.mjs`: Node.js CLI inspecting package.json diffs against git HEAD to block unvetted libraries.
+  - `scripts/dependency-guard.test.mjs`: Test suite covering new package detection, allow-lists, banned lists, and loose versions.
+- **Workflow**:
+  ```bash
+  # Assert no unauthorized dependencies were added to package.json
+  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --allow "zod,dotenv"
+  ```
+
+### 16. Secret Guard (`skills/secret-guard/`)
+- **Category**: Guard & Security
+- **Contents**:
+  - `SKILL.md`: Secret leak prevention workflow and remediation steps.
+  - `references/secret-contract.md`: Credential pattern contract (AWS keys, private keys, platform tokens, high-entropy assignments).
+  - `scripts/secret-guard.mjs`: Fast regex and entropy scanner asserting diffs or source files contain zero hardcoded secrets.
+  - `scripts/secret-guard.test.mjs`: Test suite asserting detection and secret masking across credentials.
+- **Workflow**:
+  ```bash
+  # Scan git diff for hardcoded credentials before commit
+  node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+  ```
+
+### 17. Rollback Probe (`skills/rollback-probe/`)
+- **Category**: Behavioral Probe
+- **Contents**:
+  - `SKILL.md`: Migration reversibility and idempotency verification workflow.
+  - `references/rollback-contract.md`: Roundtrip lifecycle specification (Forward $\rightarrow$ Rollback $\rightarrow$ Forward Re-apply).
+  - `scripts/rollback-probe.mjs`: CLI automating migration application, rollback, and re-apply to guarantee clean inverse state.
+  - `scripts/rollback-probe.test.mjs`: Test suite covering forward failure, rollback failure, and idempotency verification.
+- **Workflow**:
+  ```bash
+  # Certify database migration reversibility and idempotency
+  node .agents/skills/rollback-probe/scripts/rollback-probe.mjs \
+    --forward "npm run migrate:up" \
+    --rollback "npm run migrate:down"
+  ```
+
+
 

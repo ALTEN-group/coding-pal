@@ -160,6 +160,13 @@ dependencies:
         - audit-reporting
         - spec-from-code
         - think-plan
+        - scope-guard
+        - dependency-guard
+        - secret-guard
+        - task-gate
+        - contract-validator
+        - test-probe
+        - rollback-probe
   mcp: {}
 ```
 

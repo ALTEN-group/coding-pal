@@ -16,12 +16,17 @@ skills/<skill-name>/
 ```
 
 Examples in Coding Pal:
-- `skills/audit-reporting/`
-- `skills/spec-from-code/`
-- `skills/think-plan/`
-- `skills/vitepress-docs-examples/`
-- `skills/node-express-examples/`
-- `skills/docker-examples/`
+- `skills/scope-guard/` (Guard & churn limiter)
+- `skills/dependency-guard/` (Guard & dependency sentinel)
+- `skills/secret-guard/` (Guard & credential sentinel)
+- `skills/task-gate/` (Gate & verification runner)
+- `skills/contract-validator/` (Declarative schema contract)
+- `skills/test-probe/` (Behavioral anti-tautology probe)
+- `skills/rollback-probe/` (Migration roundtrip probe)
+- `skills/audit-reporting/` (Finding protocol & validator)
+- `skills/think-plan/` (Specification protocol & validator)
+- `skills/vitepress-docs-examples/` (Scaffolding bundle)
+- `skills/node-express-examples/` (Scaffolding bundle)
 
 ---
 

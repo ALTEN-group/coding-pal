@@ -68,7 +68,7 @@ flowchart TD
 | Capability | Role | Specialist Agent | Scoping Instruction | Protocol & Skill Bundle | Gating Mechanism |
 |---|---|---|---|---|---|
 | **Codebase Audit** | Full codebase assessment | [`Code Auditor`](./catalog-agents.md#1-code-auditor) | Matching domain instructions | [`audit-reporting`](./catalog-skills.md#1-audit-reporting) | CI schema validation script |
-| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#2-audit-finding-fixer) | [`sharp-agent`](./catalog-instructions.md#1-sharp-agent) | [`audit-reporting`](./catalog-skills.md#1-audit-reporting) | Narrowest test command execution |
+| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#2-audit-finding-fixer) | [`sharp-agent`](./catalog-instructions.md#1-sharp-agent) | [`audit-reporting`](./catalog-skills.md#1-audit-reporting), [`scope-guard`](./catalog-skills.md#10-scope-guard), [`secret-guard`](./catalog-skills.md#16-secret-guard), [`dependency-guard`](./catalog-skills.md#15-dependency-guard) | Narrowest test + `scope-guard.mjs` |
 
 ---
 
@@ -106,6 +106,15 @@ flowchart TD
 - **Falsifiable Done When**:
   - The finding condition is resolved.
   - The narrowest test suite passes.
+  - Blast-radius and churn guard passes:
+    ```bash
+    node .agents/skills/scope-guard/scripts/scope-guard.mjs --git
+    ```
+  - Secret & dependency guards pass with zero violations:
+    ```bash
+    node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+    node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git
+    ```
   - Untouched code and unrelated files remain completely unmodified.
 
 ---

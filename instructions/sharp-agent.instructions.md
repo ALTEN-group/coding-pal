@@ -40,7 +40,7 @@ When your changes create orphans:
 - Only remove imports/variables/functions that your changes made unused.
 - Do not remove pre-existing dead code. Mention it.
 
-Every changed line should trace directly to the user's request.
+Every changed line should trace directly to the user's request. When the `scope-guard` skill is available, run its deterministic validator (`node .agents/skills/scope-guard/scripts/scope-guard.mjs --git`) to verify diff bounds and churn limits.
 
 ## 4. Goal-Driven Execution
 

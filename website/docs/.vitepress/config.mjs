@@ -47,7 +47,7 @@ export default withMermaid(defineConfig({
         items: [
           { text: 'Overview', link: '/guide/overview' },
           { text: 'Persistent Context', link: '/guide/persistent-context' },
-          { text: 'Deterministic Controls', link: '/guide/deterministic-controls' },
+          { text: 'Control Architecture', link: '/guide/deterministic-controls' },
         ],
       },
       {
@@ -59,6 +59,7 @@ export default withMermaid(defineConfig({
           { text: 'Audit & Remediation', link: '/guide/domain-audit' },
           { text: 'Specs & Docs', link: '/guide/domain-docs' },
           { text: 'Tech Stacks', link: '/guide/domain-stacks' },
+          { text: 'Controls & Safeguards', link: '/guide/domain-controls' },
         ],
       },
       {

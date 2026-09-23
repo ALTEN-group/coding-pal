@@ -170,11 +170,11 @@ When an agent executes a workflow that produces a structured artifact (e.g., Cod
 
 ```mermaid
 ---
-caption: The Golden Split Responsibility Matrix
+caption: The Extended Golden Split Responsibility Matrix
 ---
 classDiagram
     class Agent:::agent {
-        +Files in scope
+        +Target scope
         +Investigation method
         +Constraints
         +Coverage completion ("Done When")
@@ -184,11 +184,21 @@ classDiagram
         +Security standards
         +Architecture rules
     }
+    class Guard:::guard {
+        +Allowed paths whitelist
+        +Forbidden file protection
+        +Diff churn thresholds
+    }
     class Skill:::skill {
         +Reusable output contract
         +Report format in references/
         +Validator script in scripts/
         +Validation fixtures in fixtures/
+    }
+    class Gate:::gate {
+        +Narrowest test command
+        +AST / Schema verification
+        +Actionable self-repair diagnostics
     }
     class Workflow_CI:::execution {
         +Artifact publication
@@ -196,13 +206,19 @@ classDiagram
     }
 
     Agent --> DomainInstruction : Enforces quality standard
+    Agent --> Guard : Constrained by blast-radius
     Agent --> Skill : Implements contract
+    Agent --> Gate : Certified by completion gate
     Workflow_CI --> Skill : Executes validator script
+    Workflow_CI --> Gate : Executes verification gate
+    Workflow_CI --> Guard : Verifies scope compliance
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-    classDef execution fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef guard fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
+    classDef gate fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
+    classDef execution fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
 ```
 
 | Concern | Authoritative Owner | Example in Coding Pal |
@@ -210,8 +226,10 @@ classDiagram
 | Target files and systems to examine | **Agent** | `code-audit.agent.md` defines which modules are in scope |
 | Method of investigation or repair | **Agent** | `audit-fix.agent.md` defines surgical one-finding repair |
 | Domain coding standards & security rules | **Instruction** | `node-express.instructions.md`, `docker.instructions.md` |
+| Blast-radius & file churn boundary | **Guard** (`skills/`) | `skills/scope-guard/scripts/scope-guard.mjs` prevents out-of-scope diffs |
 | Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
 | Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
+| Falsifiable execution certification | **Gate** | Narrowest test suite command + `validate-specs.mjs` |
 | Task coverage completion | **Agent** (`Done When`) | "Every file in scope has been examined" |
 | Artifact validity completion | **Skill** (`Done When`) | "Report satisfies the validation contract" |
 | CI publication, gating, and PR checks | **Consuming Workflow** | GitHub Actions workflow in consumer repo |

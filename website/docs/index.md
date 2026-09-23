@@ -35,4 +35,7 @@ features:
   - icon: 🚀
     title: Executable Skill Bundles
     details: Self-contained workflows pairing normative references, scripts, templates, and fixtures.
+  - icon: 🎯
+    title: Deterministic Controls
+    details: 7 native skills providing blast-radius guards, multi-stage gates, declarative contracts, and falsifiability probes.
 ---

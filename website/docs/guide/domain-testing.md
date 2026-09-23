@@ -287,8 +287,9 @@ flowchart TD
 - **Trigger**: `/postgres-liquibase-tests [db/changelog/path]`
 - **Scope & Isolation**:
   - Generates deterministic SQL test scripts validating forward migrations, rollback integrity, and soft-delete triggers.
+- **Automated Oracle**: Uses [`rollback-probe`](./catalog-skills.md#17-rollback-probe) to mechanically certify the full roundtrip lifecycle (`Forward` $\rightarrow$ `Rollback` $\rightarrow$ `Forward Re-apply`).
 - **Falsifiable Done When**:
-  - Migration applies cleanly to a temporary schema, verification assertions pass, and rollback returns the schema to pristine state.
+  - Migration applies cleanly to a temporary schema, verification assertions pass, and rollback returns the schema to pristine state (`rollback-probe.mjs` exits 0).
 
 ### 6. k6 Performance & Load Benchmarking
 
@@ -306,6 +307,18 @@ flowchart TD
 - **Scaffolding**: Employs [`restler-fuzzing-examples`](./catalog-skills.md#9-restler-fuzzing-examples) containing compilation configurations, dictionary templates, and CI gating scripts.
 - **Falsifiable Done When**:
   - RESTler compiles grammar from OpenAPI specs, fuzz-lean phase passes with 0 unexpected 500 server crashes.
+
+### 8. Anti-Tautology Falsifiability Verification
+
+- **Role**: Behavioral probe asserting tests are not vacuous or self-satisfying.
+- **Skill Engine**: [`test-probe`](./catalog-skills.md#14-test-probe) (`skills/test-probe/scripts/test-probe.mjs`).
+- **Mechanism**:
+  - Asserts that modified code passes tests initially.
+  - Temporarily reverts the source code under test to baseline HEAD.
+  - Re-executes the test suite against the unpatched source: **fails if tests pass (tautology detection)**!
+  - Restores modified source code atomically.
+- **Done When**:
+  - `test-probe.mjs` exits with code 0, proving the test suite genuinely fails without the fix.
 
 ---
 
