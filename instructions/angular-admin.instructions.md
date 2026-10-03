@@ -1,5 +1,5 @@
 ---
-description: "Angular pattern for building a standalone, ACL-protected admin CRUD app on top of @dwtechs/crud-builder + PrimeNG: feature-sliced entity folders, centralized app-config registries, permission-aware field configs, and lazy-loaded routes with resolvers. Use when working on an Angular admin app."
+description: "Angular pattern for building a standalone, ACL-protected admin CRUD app on top of @dwtechs/ngx-crud-builder + @openng/optimus-ui: feature-sliced entity folders, centralized app-config registries, permission-aware field configs, and lazy-loaded routes with resolvers. Use when working on an Angular admin app."
 applyTo: "**/src/app/**/*.ts"
 ---
 
@@ -11,14 +11,17 @@ HTML/SCSS templates are thin wrappers around these TS conventions — edit them 
 
 When scaffolding an entity slice, follow the installed `angular-admin-examples` skill (read its `references/examples.md`). How unit specs are written is owned by the Angular unit-test instructions; how browser tests are written is owned by the Angular e2e instructions.
 
-## 1. Bootstrap (`main.ts`, `angular.json`)
+## 1. Bootstrap (`main.ts`, `angular.json`) — global, one-time app setup
 
-- Zoneless: `provideZonelessChangeDetection()` + `importProvidersFrom(BrowserModule)` first, then animations, then PrimeNG.
-- PrimeNG via `providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: ".dark" } } })`.
-- `provideHttpClient` + `withXsrfConfiguration` matching backend CSRF cookie/header names — no custom XSRF interceptor.
-- Global providers: `MessageService`, `ConfirmationService`, `DialogService`, `provideAppConfig()`.
-- Schematics defaults: `standalone: true`, `OnPush`, `scss`, `skipTests: false`.
-- Path aliases: `@core/*` → `app/core/*`; other app imports via bare `app/...` (not deep `../../`).
+This is done once when the admin app itself is created. Entity-level CRUD work (sections 2–8) never touches `main.ts` or `angular.json` again.
+
+- Zoneless: `provideZonelessChangeDetection()` + `importProvidersFrom(BrowserModule)` first, then `provideAnimations()` + `provideAnimationsAsync()`, then the UI theme provider.
+- UI library is `@openng/optimus-ui` (not PrimeNG): `provideOptimus({ theme: { preset: Aura, options: { darkModeSelector: ".dark" } } })`.
+- `provideHttpClient(withInterceptorsFromDi(), withInterceptors([authInterceptor, preferencesInterceptor, errorInterceptor, locationInterceptor]), withXsrfConfiguration({ cookieName, headerName }))` matching backend CSRF cookie/header names — no separate custom XSRF interceptor.
+- `provideRouter(ROUTES)`.
+- Global providers: `MessageService`, `ConfirmationService`, `DialogService` (from `@openng/optimus-ui`), `provideAppConfig()`.
+- Schematics defaults (`angular.json`): `standalone: true`, `OnPush`, `scss`, `skipTests: true`.
+- Path aliases (`tsconfig.json`): `app/*` → `src/app/*`, `@core/*` → `src/app/core/*`, `@messages/*` → `src/app/messages/*`; import other app code via bare `app/...` (not deep `../../`).
 - All user-facing strings use `$localize` with ids `@@<Area>_<Key>`.
 
 ## 2. Central app-config (`core/app-config/`)
