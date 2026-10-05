@@ -12,6 +12,7 @@ On-demand templates for the Angular admin instruction. Normative rules stay in t
 
 - Adding a new admin entity (data-access trio, feature component, route, sidenav/table registries).
 - Matching ACL-wrapped column configs or lookup resolvers.
+- Bootstrapping a brand-new admin app (one-time `main.ts` provider setup) — see the `Bootstrap` section of `references/examples.md`, not the entity steps below.
 
 ## Path resolution
 
@@ -19,7 +20,7 @@ Resolve `references/` relative to **this skill's install directory** (the folder
 
 ## Workflow
 
-1. Follow the installed Angular admin instruction for bootstrap, ACL, and registry rules.
+1. Follow the installed Angular admin instruction for bootstrap, ACL, and registry rules. If the app isn't bootstrapped yet, copy the `Bootstrap` example from `references/examples.md` verbatim — this step runs once per app, never per entity.
 2. **Read `references/examples.md` now** before scaffolding.
 
 ## Done When
