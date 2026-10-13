@@ -169,7 +169,8 @@ export function inspectGit({ cwd = process.cwd(), stagedOnly = false } = {}) {
 		const statusOutput = execSync(statusCmd, { cwd, encoding: "utf8" });
 
 		const files = [];
-		for (const line of statusOutput.trim().split("\n")) {
+		// Do not trim the output: the first porcelain line may start with a status space (" M path").
+		for (const line of statusOutput.split("\n")) {
 			if (!line.trim()) continue;
 			if (stagedOnly) {
 				files.push(line.trim());

@@ -250,14 +250,14 @@ Coding Pal replaces traditional specifications with **two persistent, machine-co
 
 ```mermaid
 ---
-caption: Phased Specification Architecture (Think -> Plan -> Build)
+caption: Phased Specification Architecture (Think -> Plan -> Code)
 ---
 flowchart TD
     BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Architecture & reasoning session"]
-    T --> TM["<b>think.md</b><br/>Flows, invariants, minimal scope"]
+    T --> TM["<b>think.md</b><br/>Options, Forge bindings, blast radius"]
     TM --> P["<b>2. Plan Phase</b><br/>Planning & sequencing session"]
-    P --> PM["<b>plan.md</b><br/>Atomic steps + bootable check"]
-    PM --> B["<b>3. Build Phase</b><br/>AI Coding Agent (1 step/turn)"]
+    P --> PM["<b>plan.md</b><br/>Scope, criteria, steps with code"]
+    PM --> B["<b>3. Code Stage</b><br/>AI Coding Agent (1 step/turn)"]
 
     classDef stage fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
     classDef artifact fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
@@ -272,16 +272,28 @@ flowchart TD
 
 | Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
 |---|---|---|---|---|
-| `think.md` | **Think** | Planning session / `Think Planner` agent | `skills/think-plan/` | Request flow tracing, component responsibilities, architectural invariants, and explicit minimal change scope. **No code or task checklists.** |
-| `plan.md` | **Plan** | Planning session / `Think Planner` agent | `skills/think-plan/` | Numbered atomic steps (`### Step N:`), explicit file paths, surgical actions, narrowest verification commands, and per-step **bootability checks**. **No code.** |
+| `think.md` | **Think** | Planning session / `Think Planner` agent | `skills/think-plan/` | Options considered, chosen approach, Forge asset bindings, constraints and invariants, **blast radius tier**, decision record, and Persistent Context updates. **No code.** |
+| `plan.md` | **Plan** | Planning session / `Think Planner` agent | `skills/think-plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, **`New Code`**, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. |
 
 ### Downstream Execution Discipline
 When an AI build agent implements functionality from `plan.md`:
 1. It reads `plan.md` in a fresh chat session (clean context).
-2. It executes **exactly one step** from the checklist.
+2. It executes **exactly one step** from the checklist, applying the step's `New Code`.
 3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
 4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
 
 > [!TIP]
 > For automated workflows, headless CI execution, and the GitHub issue attachment pattern, see the dedicated [Think & Plan Domain Guide](./domain-think-plan.md).
+
+### Downstream: Code, Prove, Release, Learn
+
+After Plan, the same discipline continues. `progress.json` (`skills/code-loop/`) records one step at a time and the fix-loop limit. The pull request record (`skills/pr-record/`) links the issue and the Plan, traces every acceptance criterion to a test, and records human validation at the level the blast radius requires. Controls such as `criteria-verify`, `mutation-bar`, `contract-compat`, `security-gate`, and `control-guard` run in the loop and in CI, and agents never change them. `release.md` (`skills/release-plan/`) declares thresholds and rollback before deployment. Learn keeps the hypothesis ledger and incident records, and its outputs become new Triage issues. Persistent Context itself is checked by `skills/context-health/`. See the [Code](./domain-code.md), [Prove](./domain-prove.md), [Release](./domain-release.md), and [Learn](./domain-learn.md) guides.
+
+### Upstream: Meeting Packs and the Glossary
+
+The first stage uses the same artifact discipline. A Meeting Pack (`skills/meeting-pack/`, `Meeting Analyst` agent) turns a client conversation into an immutable transcript plus a structured pack with verbatim, client-attributed quotes. The domain glossary (`docs/glossary.md`) is the Persistent Context the meeting agent reads, and new client terminology flows back to it by pull request. Confirmed packs become `needs:triage` issues. See the [Meet Domain Guide](./domain-meet.md).
+
+### Upstream: Triage Records
+
+Before Think starts, the same artifact discipline applies to the candidate need itself. `triage.md` (`skills/triage/`, `Triage Analyst` agent) records the evidence, system mapping, scorecard, and a **proposed** decision. The ledger (`specs/triage/ledger.md`) and the weights (`specs/triage/weights.json`) are persistent triage memory. Think starts only from a Product Owner decision of `todo` and reuses the triage evidence. See the [Triage Domain Guide](./domain-triage.md).
 

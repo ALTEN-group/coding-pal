@@ -35,7 +35,7 @@ applyTo: string
 | Field | Type | Required | Description | Constraints & Best Practices |
 |---|---|---|---|---|
 | `description` | `string` | **Yes** | What this instruction enforces and when it applies. | Clear, concise summary of the standard (e.g., conventions, structure, security). |
-| `applyTo` | `string` | **Yes** | Glob pattern matching relevant files. | **Use the narrowest practical glob.** E.g., `src/**/*.js` or `db/**/*.sql`. Glob `"**"` is reserved strictly for universal rules (like `sharp-agent`). |
+| `applyTo` | `string` | **Yes** | Glob pattern matching relevant files. | **Use the narrowest practical glob.** E.g., `src/**/*.js` or `db/**/*.sql`. Glob `"**"` is reserved for universal rules (like `sharp-agent`). |
 
 ### Example Frontmatter
 

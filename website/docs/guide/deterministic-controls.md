@@ -1,4 +1,4 @@
-# Deterministic Controls: The Foundation of Autonomy
+# Deterministic Controls: The Foundation of AI Autonomy
 
 An AI assistant that cannot verify its own work can only ever be as trustworthy as the human reviewing every line behind it. **Deterministic Controls** are the mechanical, falsifiable checks — tests, validator scripts, schema contracts, diff guards — that let an agent confirm its own output is correct *without* asking a human to re-read it first.
 
@@ -103,6 +103,8 @@ flowchart TD
   - `skills/contract-validator/references/contract-schema.md` & `validate-contract.mjs` (generic declarative schema validation).
   - `skills/audit-reporting/references/report-contract.md` (audit markers, finding categories, severity limits).
   - `skills/think-plan/references/think-plan-contract.md` (specification headings, invariant sections, bootability checklists).
+  - `skills/triage/references/triage-contract.md` (evidence table, scorecard scale, decision rules, ledger and weights).
+  - `skills/meeting-pack/references/meeting-pack-contract.md` (transcript format, pack sections, confirmation stages, glossary).
   - `skills/scope-guard/references/guard-contract.md` (path matching semantics, forbidden file lists).
 
 ### 2. 🛡️ Guards (Blast-Radius & State Bounding)
@@ -119,7 +121,9 @@ flowchart TD
 * **Purpose**: Replaces subjective self-confidence ("I tested it and it works") with an executable verification command that yields 0 on success or structured diagnostics for agent self-repair.
 * *Mechanisms*:
   - **Multi-Stage Verification Gate**: Runs linting, type checks, and narrowest tests sequentially with fail-fast semantics (`skills/task-gate/scripts/task-gate.mjs`).
-  - **Specification Validator**: Checks that `think.md` and `plan.md` are structurally complete and bootable before build agents touch source code (`skills/think-plan/scripts/validate-specs.mjs`).
+  - **Specification Validator**: Checks that `think.md` and `plan.md` are structurally complete, that every in-scope file and acceptance criterion is covered by a step with its code, and that the two records agree on blast radius, before build agents touch source code (`skills/think-plan/scripts/validate-specs.mjs`).
+  - **Triage Validator**: Checks that `triage.md` carries real, verbatim evidence, a coarse scorecard, and a proposed (never final) AI decision before the Product Owner reviews it (`skills/triage/scripts/validate-triage.mjs`).
+  - **Meeting Pack Validator**: Checks that a Meeting Pack matches its immutable transcript (SHA-256), that every quote is verbatim and client-attributed, that terminology agrees with the glossary, and that only named people confirm it (`skills/meeting-pack/scripts/validate-meeting.mjs`).
   - **Narrowest Test Command**: Runs the focused test suite specifically covering modified files (`npm test -- --findRelatedTests`).
 
 ### 4. 🎯 Probes & Oracles (Falsifiability Assertions)
@@ -208,7 +212,24 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 | **Anti-tautology falsifiability probe** | `skills/test-probe/scripts/test-probe.mjs` verifies tests fail when fix is removed | Probe (`skills/test-probe`) |
 | **Migration rollback probe** | `skills/rollback-probe/scripts/rollback-probe.mjs` verifies reversibility & idempotency | Probe (`skills/rollback-probe`) |
 | **Artifact validator script** | `skills/audit-reporting/scripts/audit-report.mjs` checks report structure | Gate (Skill) |
-| **Specification validator** | `skills/think-plan/scripts/validate-specs.mjs` checks heading sequence & bootability | Gate (Skill) |
+| **Specification validator** | `skills/think-plan/scripts/validate-specs.mjs` checks headings, scope and criteria coverage, bootability & blast radius | Gate (Skill) |
+| **Meeting Pack validator** | `skills/meeting-pack/scripts/validate-meeting.mjs` checks the transcript digest, verbatim client quotes, and named confirmations | Gate (Skill) |
+| **Criteria Test Verification** | `skills/criteria-verify/scripts/verify-criteria.mjs` proves every `AC-<n>` has a passing test | Gate (Skill) |
+| **Mutation Testing Bar** | `skills/mutation-bar/scripts/mutation-bar.mjs` scores mutation reports with raise-only thresholds | Gate (Skill) |
+| **Contract & Schema Compatibility** | `skills/contract-compat/scripts/contract-compat.mjs` detects breaking OpenAPI and JSON Schema changes | Contract (Skill) |
+| **Security & Policy-as-Code, licenses** | `skills/security-gate/scripts/security-gate.mjs` reads SARIF, Conftest, and CycloneDX with expiring waivers | Guard (Skill) |
+| **Control integrity and the bug rule** | `skills/control-guard/scripts/control-guard.mjs` and `bug-rule.mjs` refuse weakened controls and a fix before its test | Guard (Skill) |
+| **Preview Smoke Tests** | `skills/preview-smoke/scripts/preview-smoke.mjs` probes a running preview | Probe (Skill) |
+| **Fix-loop limit and branch guard** | `skills/code-loop/scripts/code-loop.mjs` and `branch-guard.mjs` | Gate (Skill) |
+| **Human validation by blast radius** | `skills/pr-record/scripts/validate-pr.mjs --stage prove` | Gate (Skill) |
+| **Rollout decision** | `skills/release-plan/scripts/evaluate-rollout.mjs` promotes, holds, or rolls back with no AI | Gate (Skill) |
+| **Predictive monitoring** | `skills/telemetry-scan/scripts/telemetry-scan.mjs` finds anomalies, trends, and breaches | Probe (Skill) |
+| **Forge bindings** | `skills/forge/scripts/bindings-check.mjs` checks Think bindings against the catalog | Contract (Skill) |
+| **Persistent Context lint** | `skills/context-health/scripts/context-lint.mjs` | Guard (Skill) |
+| **Platform Rails check** | `skills/verification-pipeline/scripts/rails-check.mjs` | Gate (Skill) |
+| **Clean CI re-run** | `skills/verification-pipeline/references/verify.yml` job `clean-rerun` repeats the checks on the pull request in a clean environment | Gate (Skill) |
+| **Triage validator** | `skills/triage/scripts/validate-triage.mjs` checks evidence, verbatim quotes, scorecard, decision rules & ledger | Gate (Skill) |
+| **Deterministic backlog ranking** | `skills/triage/scripts/rank-backlog.mjs` ranks scorecards with Product Owner weights | Gate (Skill) |
 | **Falsifiable Done When** | "Every file in scope has been reviewed" / "Narrowest test suite passes" | Agent |
 | **Narrowest test command** | `npm test -- tests/auth.test.js` run after a surgical fix | Agent |
 | **Schema/contract validation** | `references/contract-schema.md`, `references/guard-contract.md` | Contract (Skill) |

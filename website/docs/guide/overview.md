@@ -44,6 +44,22 @@ flowchart TD
 - **Sharp Agent Philosophy** — Prevents overengineering, token waste, and hallucination through tightly scoped agents with strict boundaries and falsifiable completion criteria.
 - **The Golden Split** — Separates task scope, universal coding rules, and machine-validated contracts into discrete, non-overlapping primitives.
 - **Scaffolding and Validation Skills** — Bundles executable scripts, verification fixtures, and reusable templates alongside normative specifications.
+
+## Agentic Software Factory Coverage
+
+Coding Pal publishes the Persistent Context primitives that the [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/overview) operating model relies on. Each stage has a domain guide:
+
+| Stage | Domain Guide |
+|---|---|
+| 0 — Meet | [Meet](./domain-meet.md) |
+| 1 — Triage | [Triage](./domain-triage.md) |
+| 2 — Think and 3 — Plan | [Think & Plan](./domain-think-plan.md) |
+| 4 — Code | [Code](./domain-code.md) |
+| 5 — Prove | [Prove](./domain-prove.md) |
+| 6 — Release | [Release](./domain-release.md) |
+| 7 — Learn | [Learn](./domain-learn.md) |
+| Enablers and governance | [Forge](./domain-forge.md), [Governance & Decisions](./domain-governance.md), [Flow Metrics](./domain-metrics.md) |
+
 ## The Problem Solved
 
 Without a versioned persistent context catalog:
@@ -59,7 +75,7 @@ Coding Pal eliminates these issues by codifying standards into 4 well-defined pr
 
 - Understand the [Persistent Context Architecture](./persistent-context.md).
 - Learn why [Deterministic Controls](./deterministic-controls.md) are required to scale agent autonomy, and explore the [Controls & Safeguards Domain](./domain-controls.md).
-- Explore [Capabilities by Domain](./domain-think-plan.md) (Think & Plan, Testing, Auditing, Docs, Stacks, Controls).
+- Explore [Capabilities by Domain](./domain-think-plan.md) (Meet, Triage, Think & Plan, Code, Prove, Release, Learn, Forge, Governance, Metrics, Testing, Auditing, Docs, Stacks, Controls, Migration).
 - Browse [Primitives by Type](./catalog-prompts.md) (Prompts, Agents, Instructions, Skills).
 - Examine the exact [Prompt Markdown Schema](./schema-prompts.md) and [Agent Markdown Schema](./schema-agents.md).
 

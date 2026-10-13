@@ -1,0 +1,318 @@
+# Release pipeline template (Coding Pal `release-plan` skill).
+#
+# Copy to `.github/workflows/release.yml`. Everything marked PLACEHOLDER is project-specific and must be replaced.
+# Trigger: an annotated tag `v*` on `main`. The tag message names exactly ONE work item ("Issue: #42").
+# One issue per release: a tag naming zero or several issues is rejected (batching releases is an anti-pattern).
+#
+# Flow: declare -> build -> staging -> rollout (the tier's ladder: Low 100%; Medium 5%, 100%; High 5%, one step up to 50%, 100%; Critical 5%, 25%, 50%, 100%) -> enable flag, with a rollback job.
+# Deploying and releasing are different: the rollout deploys code switched off, and the `enable` flag is the release decision.
+# No AI runs in this workflow. Every promote/hold/rollback decision comes from evaluate-rollout.mjs, a deterministic script,
+# against the thresholds declared in release.md before deployment.
+#
+# Credentials: no long-lived production secrets. Cloud access uses short-lived OIDC tokens granted only to the `production`
+# environment (`id-token: write`). Configure the environments in repository settings. No coding agent has access to them.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  SKILL_DIR: .agents/skills/release-plan
+  PREVIEW_SMOKE: .agents/skills/preview-smoke/scripts/preview-smoke.mjs
+  # PLACEHOLDER: poll every POLL_SECONDS while the decision is "hold"; give up (and roll back) after MAX_HOLD_POLLS polls.
+  POLL_SECONDS: "60"
+  MAX_HOLD_POLLS: "180"
+
+jobs:
+  declare:
+    name: Declare the release
+    runs-on: ubuntu-latest
+    outputs:
+      dir: ${{ steps.item.outputs.dir }}
+      artifact: ${{ steps.fields.outputs.artifact }}
+      flag: ${{ steps.fields.outputs.flag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Require the tag to be on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Resolve the single work item from the tag message
+        id: item
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          git fetch --tags --force
+          issues="$(git tag -l --format='%(contents)' "$TAG" | grep -oE '#[0-9]+' | sort -u || true)"
+          count="$(printf '%s\n' "$issues" | grep -c . || true)"
+          if [ "$count" -ne 1 ]; then
+            echo "::error::The tag message must name exactly one issue (found $count). One issue per release; do not batch."
+            exit 1
+          fi
+          echo "dir=specs/issue-${issues#\#}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release.md against think.md and plan.md
+        env:
+          TAG: ${{ github.ref_name }}
+          DIR: ${{ steps.item.outputs.dir }}
+        run: node "$SKILL_DIR/scripts/validate-release.mjs" --dir "$DIR" --tag "$TAG"
+
+      - name: Read the declared artifact and flag
+        id: fields
+        env:
+          DIR: ${{ steps.item.outputs.dir }}
+        run: |
+          echo "artifact=$(sed -n 's/^- \*\*Artifact:\*\* //p' "$DIR/release.md" | tr -d '`')" >> "$GITHUB_OUTPUT"
+          echo "flag=$(sed -n 's/^- \*\*Flag:\*\* //p' "$DIR/release.md" | tr -d '`')" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build the immutable artifact
+    needs: declare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to overwrite an existing artifact version
+        env:
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          # PLACEHOLDER: fail when the artifact already exists in your registry (immutability), for example:
+          # if docker manifest inspect "$ARTIFACT" >/dev/null 2>&1; then echo "::error::$ARTIFACT already exists"; exit 1; fi
+          echo "Checking that $ARTIFACT does not exist yet"
+
+      - name: Build and push the artifact
+        env:
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          # PLACEHOLDER: build and push exactly the reference declared in release.md (never "latest"), for example:
+          # docker build -t "$ARTIFACT" . && docker push "$ARTIFACT"
+          echo "Building $ARTIFACT"
+
+      - name: Generate the SBOM
+        env:
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          # PLACEHOLDER: for example syft "$ARTIFACT" -o spdx-json > sbom.spdx.json
+          echo "Generating the SBOM"
+
+      - name: Sign the artifact
+        env:
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          # PLACEHOLDER: keyless signing through the job's OIDC identity, for example cosign sign --yes "$ARTIFACT"
+          echo "Signing the artifact"
+
+  staging:
+    name: Staging (smoke and QA)
+    needs: [declare, build]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy to staging and run the smoke and QA tests
+        id: checks
+        env:
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+          STAGING_URL: https://staging.example.com # PLACEHOLDER
+        run: |
+          started="$(date +%s)"
+          # PLACEHOLDER: deploy $ARTIFACT to staging with the flag off, for example ./.github/release/deploy.sh staging "$ARTIFACT"
+          smoke=0
+          node "$PREVIEW_SMOKE" --url "$STAGING_URL" || smoke=1
+          qa=0
+          # PLACEHOLDER: run the QA suite against staging, for example: npm run test:qa || qa=1
+          echo "started=$started" >> "$GITHUB_OUTPUT"
+          echo "smoke=$smoke" >> "$GITHUB_OUTPUT"
+          echo "qa=$qa" >> "$GITHUB_OUTPUT"
+
+      - name: Gate on the declared staging window
+        env:
+          DIR: ${{ needs.declare.outputs.dir }}
+          STARTED: ${{ steps.checks.outputs.started }}
+          SMOKE: ${{ steps.checks.outputs.smoke }}
+          QA: ${{ steps.checks.outputs.qa }}
+        run: |
+          polls=0
+          while true; do
+            minutes=$(( ($(date +%s) - STARTED) / 60 ))
+            printf '{"stage":"staging","observedMinutes":%s,"metrics":{"smoke_failures":%s,"qa_failures":%s}}' "$minutes" "$SMOKE" "$QA" > metrics.json
+            code=0
+            node "$SKILL_DIR/scripts/evaluate-rollout.mjs" --release "$DIR/release.md" --stage staging --metrics metrics.json || code=$?
+            case "$code" in
+              0) exit 0 ;;
+              2)
+                polls=$((polls + 1))
+                [ "$polls" -lt "$MAX_HOLD_POLLS" ] || { echo "::error::Staging never produced a green window"; exit 1; }
+                sleep "$POLL_SECONDS"
+                ;;
+              *) echo "::error::Staging failed; nothing reached production"; exit 1 ;;
+            esac
+          done
+
+  rollout:
+    name: Staged production rollout (the ladder declared for the tier)
+    needs: [declare, staging]
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 360 # Watch windows must fit here. For longer windows use a self-hosted runner or re-enter the job.
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      rollback: ${{ steps.loop.outputs.rollback }}
+      rollback_with: ${{ steps.loop.outputs.rollback_with }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Authenticate to production with a short-lived token
+        run: |
+          # PLACEHOLDER: OIDC login to your cloud or cluster, for example aws-actions/configure-aws-credentials with role-to-assume.
+          # Do not store long-lived production credentials as repository secrets.
+          echo "Authenticating through OIDC"
+
+      - name: Promote stage by stage on deterministic decisions
+        id: loop
+        env:
+          DIR: ${{ needs.declare.outputs.dir }}
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          EVAL="node $SKILL_DIR/scripts/evaluate-rollout.mjs"
+          echo "rollback=false" >> "$GITHUB_OUTPUT"
+
+          # Record the mechanism for the rollback job and stop; the job itself succeeds so its outputs are kept.
+          rollback() {
+            echo "rollback=true" >> "$GITHUB_OUTPUT"
+            echo "rollback_with=$1" >> "$GITHUB_OUTPUT"
+            echo "::error::Rollout stopped at stage $STAGE: $2"
+            exit 0
+          }
+
+          # A failed or empty stage list must never fall through to "enable": a loop over nothing would succeed.
+          stages="$($EVAL --release "$DIR/release.md" --list-stages)" || { echo "::error::Could not list the production stages"; exit 1; }
+          [ -n "$stages" ] || { echo "::error::release.md declares no production stages"; exit 1; }
+
+          for STAGE in $stages; do
+            echo "::group::Stage $STAGE"
+            # PLACEHOLDER: give the new version this stage's traffic percentage from release.md, for example
+            # ./.github/release/shift-traffic.sh "$STAGE" "$ARTIFACT"
+            polls=0
+            while true; do
+              # PLACEHOLDER: print {"stage","observedMinutes","metrics"} JSON read from your observability backend
+              # with a read-only credential, for example ./.github/release/collect-metrics.sh "$STAGE" > metrics.json
+              code=0
+              $EVAL --release "$DIR/release.md" --stage "$STAGE" --metrics metrics.json > decision.json || code=$?
+              cat decision.json
+              case "$code" in
+                0) break ;;
+                2)
+                  polls=$((polls + 1))
+                  [ "$polls" -lt "$MAX_HOLD_POLLS" ] || rollback "Traffic shift back" "no green window after $polls polls"
+                  sleep "$POLL_SECONDS"
+                  ;;
+                *)
+                  mechanism="$(node -p "JSON.parse(require('fs').readFileSync('decision.json','utf8')).rollbackWith ?? ''" 2>/dev/null || true)"
+                  rollback "${mechanism:-Traffic shift back}" "threshold breached or invalid metrics"
+                  ;;
+              esac
+            done
+            echo "::endgroup::"
+          done
+
+  enable:
+    name: Enable the flag (the release decision)
+    needs: [declare, rollout]
+    if: needs.rollout.outputs.rollback == 'false'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable the flag for everyone
+        env:
+          FLAG: ${{ needs.declare.outputs.flag }}
+        run: |
+          # PLACEHOLDER: switch the declared release flag on, for example ./.github/release/enable-flag.sh "$FLAG"
+          echo "Enabling $FLAG"
+
+      - name: Confirm the change's dashboard is live in Learn
+        env:
+          DIR: ${{ needs.declare.outputs.dir }}
+        run: |
+          # PLACEHOLDER: exit gate. Fail unless the observability dashboard for this change exists, for example
+          # ./.github/release/check-dashboard.sh "$DIR"
+          echo "Checking the dashboard for $DIR"
+
+      - name: Hand the outcome metric to Learn
+        env:
+          DIR: ${{ needs.declare.outputs.dir }}
+        run: |
+          {
+            echo "### Released: $DIR"
+            sed -n '/^## Outcome Metric/,/^## Changelog/p' "$DIR/release.md" | sed '$d'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # PLACEHOLDER: append a release.production event (percent 100) to your metrics log if you use flow-metrics.
+
+  rollback:
+    name: Roll back with the declared mechanism
+    needs: [declare, rollout]
+    if: always() && (needs.rollout.result == 'failure' || needs.rollout.result == 'cancelled' || needs.rollout.outputs.rollback == 'true')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply the rollback mechanism
+        env:
+          # PLACEHOLDER default: when the rollout job crashed before deciding, use the Primary mechanism declared in release.md.
+          MECHANISM: ${{ needs.rollout.outputs.rollback_with || 'Traffic shift back' }}
+          FLAG: ${{ needs.declare.outputs.flag }}
+          ARTIFACT: ${{ needs.declare.outputs.artifact }}
+        run: |
+          case "$MECHANISM" in
+            "Feature flag off") echo "Turning $FLAG off" ;; # PLACEHOLDER: ./.github/release/flag-off.sh "$FLAG"
+            "Traffic shift back") echo "Shifting traffic back" ;; # PLACEHOLDER: ./.github/release/traffic-back.sh
+            "Redeploy previous artifact") echo "Redeploying the previous artifact" ;; # PLACEHOLDER: ./.github/release/redeploy-previous.sh
+            *) echo "::error::Unknown rollback mechanism: $MECHANISM"; exit 1 ;;
+          esac
+
+      - name: Record the rollback and fail the release
+        run: |
+          # PLACEHOLDER: open an incident record and append a release.rollback event to your metrics log.
+          echo "::error::Release rolled back"
+          exit 1

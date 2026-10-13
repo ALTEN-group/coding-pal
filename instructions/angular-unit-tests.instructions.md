@@ -30,6 +30,7 @@ How the admin app is structured is owned by the installed Angular admin instruct
 
 - Prefer services, interceptors, guards, validators, and field/ACL helpers.
 - Keep feature-component specs thin. Do not re-test crud-builder / PrimeNG / Optimus internals.
+- **Acceptance-criteria traceability**: when the plan lists acceptance criteria (`AC-<n>`), include the criterion id in the test name or title, for example `it('AC-2: rejects viewers', ...)`, so Criteria Test Verification can map results to criteria.
 
 ## Execution
 

@@ -17,6 +17,7 @@ How the service is structured is owned by the installed Node.js Express instruct
 - Group tests in `describe` blocks. Use `it("should ...")`. Prefer `toEqual()` / `toStrictEqual()` over loose assertions.
 - Never perform real network I/O or live database connections.
 - Reset mocks in `beforeEach` (`jest.clearAllMocks()` or `jest.resetAllMocks()`).
+- **Acceptance-criteria traceability**: when the plan lists acceptance criteria (`AC-<n>`), include the criterion id in the test name or title, for example `it('AC-2: rejects viewers', ...)`, so Criteria Test Verification can map results to criteria.
 
 ## Scope & Routing Distinction
 

@@ -114,6 +114,15 @@ dependencies:
     - ALTEN-group/coding-pal/agents/audit-fix.agent.md
     - ALTEN-group/coding-pal/agents/spec-from-code.agent.md
     - ALTEN-group/coding-pal/agents/think-plan.agent.md
+    - ALTEN-group/coding-pal/agents/meeting-pack.agent.md
+    - ALTEN-group/coding-pal/agents/code.agent.md
+    - ALTEN-group/coding-pal/agents/gate-fix.agent.md
+    - ALTEN-group/coding-pal/agents/release.agent.md
+    - ALTEN-group/coding-pal/agents/learn.agent.md
+    - ALTEN-group/coding-pal/agents/forge-curator.agent.md
+    - ALTEN-group/coding-pal/agents/decision-scribe.agent.md
+    - ALTEN-group/coding-pal/agents/triage.agent.md
+    - ALTEN-group/coding-pal/agents/migration-docs.agent.md
 
     # --------------------------------------------------------------------------
     # 2. Interactive Prompts / Slash Commands (Virtual Path Dependencies)
@@ -126,6 +135,22 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/vitepress-docs.prompt.md
     - ALTEN-group/coding-pal/prompts/performance-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/fuzz-tests.prompt.md
+    - ALTEN-group/coding-pal/prompts/meet.prompt.md
+    - ALTEN-group/coding-pal/prompts/meet-readback.prompt.md
+    - ALTEN-group/coding-pal/prompts/triage.prompt.md
+    - ALTEN-group/coding-pal/prompts/triage-review.prompt.md
+    - ALTEN-group/coding-pal/prompts/code.prompt.md
+    - ALTEN-group/coding-pal/prompts/fix-gates.prompt.md
+    - ALTEN-group/coding-pal/prompts/release-plan.prompt.md
+    - ALTEN-group/coding-pal/prompts/outcome-review.prompt.md
+    - ALTEN-group/coding-pal/prompts/context-review.prompt.md
+    - ALTEN-group/coding-pal/prompts/incident.prompt.md
+    - ALTEN-group/coding-pal/prompts/pre-read.prompt.md
+    - ALTEN-group/coding-pal/prompts/operating-retro.prompt.md
+    - ALTEN-group/coding-pal/prompts/forge-search.prompt.md
+    - ALTEN-group/coding-pal/prompts/forge-certify.prompt.md
+    - ALTEN-group/coding-pal/prompts/decision.prompt.md
+    - ALTEN-group/coding-pal/prompts/migration-docs.prompt.md
 
     # --------------------------------------------------------------------------
     # 3. Persistent Engineering Instructions (Always-On Standards)
@@ -144,6 +169,15 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/think-plan.instructions.md
+    - ALTEN-group/coding-pal/instructions/meeting-pack.instructions.md
+    - ALTEN-group/coding-pal/instructions/triage.instructions.md
+    - ALTEN-group/coding-pal/instructions/code-loop.instructions.md
+    - ALTEN-group/coding-pal/instructions/prove-controls.instructions.md
+    - ALTEN-group/coding-pal/instructions/release.instructions.md
+    - ALTEN-group/coding-pal/instructions/learn.instructions.md
+    - ALTEN-group/coding-pal/instructions/forge.instructions.md
+    - ALTEN-group/coding-pal/instructions/decision-record.instructions.md
+    - ALTEN-group/coding-pal/instructions/migration-docs.instructions.md
 
     # --------------------------------------------------------------------------
     # 4. Procedural Skills & Scaffolding Bundles (SKILL.md + references/ + scripts/)
@@ -160,6 +194,26 @@ dependencies:
         - audit-reporting
         - spec-from-code
         - think-plan
+        - meeting-pack
+        - triage
+        - code-loop
+        - pr-record
+        - criteria-verify
+        - mutation-bar
+        - contract-compat
+        - security-gate
+        - control-guard
+        - preview-smoke
+        - verification-pipeline
+        - release-plan
+        - hypothesis-ledger
+        - incident-record
+        - telemetry-scan
+        - learn-signals
+        - context-health
+        - forge
+        - decision-record
+        - flow-metrics
         - scope-guard
         - dependency-guard
         - secret-guard
@@ -167,6 +221,7 @@ dependencies:
         - contract-validator
         - test-probe
         - rollback-probe
+        - migration-docs
   mcp: {}
 ```
 

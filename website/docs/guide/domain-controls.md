@@ -72,13 +72,13 @@ flowchart TD
 
 | Capability | Role | Skill Package | Contract & Schema | Executable Engine | Primary Failure Mode Solved |
 |---|---|---|---|---|---|
-| **Scope & Blast-Radius** | 🛡️ Guard | [`skills/scope-guard/`](./catalog-skills.md#10-scope-guard) | [`guard-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/scope-guard/references/guard-contract.md) | `scope-guard.mjs` | Modifying out-of-scope files, lockfiles, `.env`, or exceeding churn thresholds. |
-| **Dependency Containment** | 🛡️ Guard | [`skills/dependency-guard/`](./catalog-skills.md#15-dependency-guard) | [`dependency-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/dependency-guard/references/dependency-contract.md) | `dependency-guard.mjs` | Silently adding unvetted dependencies to `package.json` or importing banned libraries. |
-| **Secret Leak Prevention** | 🛡️ Guard | [`skills/secret-guard/`](./catalog-skills.md#16-secret-guard) | [`secret-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/secret-guard/references/secret-contract.md) | `secret-guard.mjs` | Hardcoding cloud keys (AWS), SSH/PGP private keys, platform tokens, or credentials. |
-| **Multi-Stage Task Gate** | 🚦 Gate | [`skills/task-gate/`](./catalog-skills.md#11-task-gate) | [`gate-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/task-gate/references/gate-contract.md) | `task-gate.mjs` | Premature completion claims; provides decisive error snippets for agent self-repair. |
-| **Declarative Artifact Schema** | 📄 Contract | [`skills/contract-validator/`](./catalog-skills.md#13-contract-validator) | [`contract-schema.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/contract-validator/references/contract-schema.md) | `validate-contract.mjs` | Generating malformed Markdown/JSON artifacts lacking required markers or headings. |
-| **Anti-Tautology Testing** | 🎯 Probe | [`skills/test-probe/`](./catalog-skills.md#14-test-probe) | [`probe-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/test-probe/references/probe-contract.md) | `test-probe.mjs` | Writing vacuous tests that pass unconditionally without proving the underlying bugfix. |
-| **Migration Reversibility** | 🎯 Probe | [`skills/rollback-probe/`](./catalog-skills.md#17-rollback-probe) | [`rollback-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/rollback-probe/references/rollback-contract.md) | `rollback-probe.mjs` | Authoring irreversible database migrations or broken `<rollback>` and `DOWN` scripts. |
+| **Scope & Blast-Radius** | 🛡️ Guard | [`skills/scope-guard/`](./catalog-skills.md#_11-scope-guard-skills-scope-guard) | [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/scope-guard/references/guard-contract.md) | `scope-guard.mjs` | Modifying out-of-scope files, lockfiles, `.env`, or exceeding churn thresholds. |
+| **Dependency Containment** | 🛡️ Guard | [`skills/dependency-guard/`](./catalog-skills.md#_15-dependency-guard-skills-dependency-guard) | [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/dependency-guard/references/dependency-contract.md) | `dependency-guard.mjs` | Silently adding unvetted dependencies to `package.json` or importing banned libraries. |
+| **Secret Leak Prevention** | 🛡️ Guard | [`skills/secret-guard/`](./catalog-skills.md#_16-secret-guard-skills-secret-guard) | [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/secret-guard/references/secret-contract.md) | `secret-guard.mjs` | Hardcoding cloud keys (AWS), SSH/PGP private keys, platform tokens, or credentials. |
+| **Multi-Stage Task Gate** | 🚦 Gate | [`skills/task-gate/`](./catalog-skills.md#_12-task-gate-skills-task-gate) | [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/task-gate/references/gate-contract.md) | `task-gate.mjs` | Premature completion claims; provides decisive error snippets for agent self-repair. |
+| **Declarative Artifact Schema** | 📄 Contract | [`skills/contract-validator/`](./catalog-skills.md#_13-contract-validator-skills-contract-validator) | [`contract-schema.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/contract-validator/references/contract-schema.md) | `validate-contract.mjs` | Generating malformed Markdown/JSON artifacts lacking required markers or headings. |
+| **Anti-Tautology Testing** | 🎯 Probe | [`skills/test-probe/`](./catalog-skills.md#_14-test-probe-skills-test-probe) | [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/test-probe/references/probe-contract.md) | `test-probe.mjs` | Writing vacuous tests that pass unconditionally without proving the underlying bugfix. |
+| **Migration Reversibility** | 🎯 Probe | [`skills/rollback-probe/`](./catalog-skills.md#_17-rollback-probe-skills-rollback-probe) | [`rollback-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/rollback-probe/references/rollback-contract.md) | `rollback-probe.mjs` | Authoring irreversible database migrations or broken `<rollback>` and `DOWN` scripts. |
 
 ---
 
@@ -88,7 +88,7 @@ flowchart TD
 
 - **Role**: 🛡️ Guard
 - **When to Use**: During agent code editing, PR preparation, and in pre-commit git hooks.
-- **Governing Contract**: [`guard-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/scope-guard/references/guard-contract.md)
+- **Governing Contract**: [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/scope-guard/references/guard-contract.md)
 - **Workflow & Command**:
   ```bash
   # Check git working tree changes against allowed scopes
@@ -109,7 +109,7 @@ flowchart TD
 
 - **Role**: 🛡️ Guard
 - **When to Use**: Whenever an agent touches package manifests (`package.json`, `pom.xml`, `requirements.txt`).
-- **Governing Contract**: [`dependency-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/dependency-guard/references/dependency-contract.md)
+- **Governing Contract**: [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/dependency-guard/references/dependency-contract.md)
 - **Workflow & Command**:
   ```bash
   # Check git changes to package.json against baseline HEAD
@@ -129,7 +129,7 @@ flowchart TD
 
 - **Role**: 🛡️ Guard
 - **When to Use**: Before any commit or patch generation to ensure zero confidential credentials leak.
-- **Governing Contract**: [`secret-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/secret-guard/references/secret-contract.md)
+- **Governing Contract**: [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/secret-guard/references/secret-contract.md)
 - **Workflow & Command**:
   ```bash
   # Scan added lines in git diff against HEAD
@@ -150,7 +150,7 @@ flowchart TD
 
 - **Role**: 🚦 Gate
 - **When to Use**: Inside an agent's `Done When` declaration and CI verification jobs.
-- **Governing Contract**: [`gate-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/task-gate/references/gate-contract.md)
+- **Governing Contract**: [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/task-gate/references/gate-contract.md)
 - **Workflow & Command**:
   ```bash
   # Execute verification stages with fail-fast execution and self-repair diagnostics
@@ -171,7 +171,7 @@ flowchart TD
 
 - **Role**: 📄 Contract
 - **When to Use**: Certifying markdown deliverables (architecture plans, audit reports, specs, RFCs).
-- **Governing Contract**: [`contract-schema.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/contract-validator/references/contract-schema.md)
+- **Governing Contract**: [`contract-schema.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/contract-validator/references/contract-schema.md)
 - **Workflow & Command**:
   ```bash
   # Declaratively validate an artifact against a JSON contract definition
@@ -191,7 +191,7 @@ flowchart TD
 
 - **Role**: 🎯 Probe / Oracle
 - **When to Use**: When an agent authors unit or integration tests, to prove the tests actually verify the fix.
-- **Governing Contract**: [`probe-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/test-probe/references/probe-contract.md)
+- **Governing Contract**: [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/test-probe/references/probe-contract.md)
 - **Workflow & Command**:
   ```bash
   # Assert test suite fails when source fix is temporarily reverted
@@ -211,7 +211,7 @@ flowchart TD
 
 - **Role**: 🎯 Probe / Oracle
 - **When to Use**: Certifying database schema migrations (Liquibase, Flyway, Prisma, raw SQL).
-- **Governing Contract**: [`rollback-contract.md`](file:///Users/Shared/Projects/alten/coding-pal/skills/rollback-probe/references/rollback-contract.md)
+- **Governing Contract**: [`rollback-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/rollback-probe/references/rollback-contract.md)
 - **Workflow & Command**:
   ```bash
   # Certify migration reversibility and idempotency via roundtrip execution

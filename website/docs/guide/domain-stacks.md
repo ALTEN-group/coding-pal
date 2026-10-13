@@ -62,10 +62,10 @@ flowchart TD
 
 | Tech Stack | Focus Area | Persistent Instruction | Scaffolding Skill Bundle | Target Path Pattern |
 |---|---|---|---|---|
-| **Node.js Express** | Layered microservice backend | [`node-express`](./catalog-instructions.md#2-nodejs-express) | [`node-express-examples`](./catalog-skills.md#4-node-express-examples) | `src/**/*.js` |
-| **Angular Enterprise** | Feature-sliced admin SPA | [`angular-admin`](./catalog-instructions.md#7-angular-admin) | [`angular-admin-examples`](./catalog-skills.md#7-angular-admin-examples) | `**/src/app/**/*.ts` |
-| **PostgreSQL & Liquibase** | Audited relational schema | [`postgres-liquibase`](./catalog-instructions.md#4-postgresql--liquibase) | [`postgres-liquibase-examples`](./catalog-skills.md#5-postgres-liquibase-examples) | `db/**/*.{sql,xml,yml}` |
-| **Docker & Compose** | Containerized infra & Traefik | [`docker`](./catalog-instructions.md#6-docker--compose) | [`docker-examples`](./catalog-skills.md#6-docker-examples) | `docker/**`, `**/dockerfile*`, `scripts/**/*.sh` |
+| **Node.js Express** | Layered microservice backend | [`node-express`](./catalog-instructions.md#tech-stack-instructions) | [`node-express-examples`](./catalog-skills.md#_4-node-js-express-examples-skills-node-express-examples) | `src/**/*.js` |
+| **Angular Enterprise** | Feature-sliced admin SPA | [`angular-admin`](./catalog-instructions.md#tech-stack-instructions) | [`angular-admin-examples`](./catalog-skills.md#_7-angular-admin-examples-skills-angular-admin-examples) | `**/src/app/**/*.ts` |
+| **PostgreSQL & Liquibase** | Audited relational schema | [`postgres-liquibase`](./catalog-instructions.md#tech-stack-instructions) | [`postgres-liquibase-examples`](./catalog-skills.md#_5-postgresql-liquibase-examples-skills-postgres-liquibase-examples) | `db/**/*.{sql,xml,yml}` |
+| **Docker & Compose** | Containerized infra & Traefik | [`docker`](./catalog-instructions.md#tech-stack-instructions) | [`docker-examples`](./catalog-skills.md#_6-docker-examples-skills-docker-examples) | `docker/**`, `**/dockerfile*`, `scripts/**/*.sh` |
 
 ---
 
@@ -73,8 +73,8 @@ flowchart TD
 
 ### 1. Node.js & Express Microservices
 
-- **Instruction**: [`node-express.instructions.md`](./catalog-instructions.md#2-nodejs-express)
-- **Scaffolding**: [`skills/node-express-examples`](./catalog-skills.md#4-node-express-examples)
+- **Instruction**: [`node-express.instructions.md`](./catalog-instructions.md#tech-stack-instructions)
+- **Scaffolding**: [`skills/node-express-examples`](./catalog-skills.md#_4-node-js-express-examples-skills-node-express-examples)
 - **Architectural Rules**:
   - **Directory Layering**: Strict separation between `routes/`, `controllers/`, `services/`, `models/`, and `middlewares/`. Controllers never execute database queries; services never handle HTTP `req`/`res`.
   - **Standardized Envelopes**:
@@ -84,8 +84,8 @@ flowchart TD
 
 ### 2. Angular Enterprise Admin Portal
 
-- **Instruction**: [`angular-admin.instructions.md`](./catalog-instructions.md#7-angular-admin)
-- **Scaffolding**: [`skills/angular-admin-examples`](./catalog-skills.md#7-angular-admin-examples)
+- **Instruction**: [`angular-admin.instructions.md`](./catalog-instructions.md#tech-stack-instructions)
+- **Scaffolding**: [`skills/angular-admin-examples`](./catalog-skills.md#_7-angular-admin-examples-skills-angular-admin-examples)
 - **Architectural Rules**:
   - **Feature-Sliced Entities**: Each business domain (e.g. `users`, `products`, `orders`) forms an isolated slice containing its UI components, API services, and route declarations.
   - **PrimeNG Component Guidelines**: Standardized data tables with server-side pagination, sorting, search debounce, and dialog forms.
@@ -94,8 +94,8 @@ flowchart TD
 
 ### 3. PostgreSQL & Liquibase Database Evolution
 
-- **Instruction**: [`postgres-liquibase.instructions.md`](./catalog-instructions.md#4-postgresql--liquibase)
-- **Scaffolding**: [`skills/postgres-liquibase-examples`](./catalog-skills.md#5-postgres-liquibase-examples)
+- **Instruction**: [`postgres-liquibase.instructions.md`](./catalog-instructions.md#tech-stack-instructions)
+- **Scaffolding**: [`skills/postgres-liquibase-examples`](./catalog-skills.md#_5-postgresql-liquibase-examples-skills-postgres-liquibase-examples)
 - **Architectural Rules**:
   - **Deterministic ChangeSets**: Every database change lives in an isolated Liquibase changeSet with explicit author, ID, and mandatory `<rollback>` block.
   - **Audit Trails**: Every table includes `created_at`, `updated_at`, `created_by`, and `updated_by`.
@@ -103,8 +103,8 @@ flowchart TD
 
 ### 4. Docker, Traefik, & Container Infrastructure
 
-- **Instruction**: [`docker.instructions.md`](./catalog-instructions.md#6-docker--compose)
-- **Scaffolding**: [`skills/docker-examples`](./catalog-skills.md#6-docker-examples)
+- **Instruction**: [`docker.instructions.md`](./catalog-instructions.md#tech-stack-instructions)
+- **Scaffolding**: [`skills/docker-examples`](./catalog-skills.md#_6-docker-examples-skills-docker-examples)
 - **Architectural Rules**:
   - **Reverse Proxy Routing**: Services integrate into a unified Traefik edge network via dynamic Docker labels (`traefik.http.routers.<svc>.rule`).
   - **Security & Permissions**: Containers run as non-root users (`USER node` / `USER 1000:1000`) with BuildKit secret mounts for credentials (`--mount=type=secret`).

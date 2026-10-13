@@ -218,13 +218,13 @@ flowchart TD
 
 | Capability | Slash Prompt | Specialist Agent | Scoping Instruction | Supporting Skill | Key Test Runner |
 |---|---|---|---|---|---|
-| **Node.js Unit Tests** | [`/node-unit-tests`](./catalog-prompts.md#1-node-unit-tests) | [`Unit Tester`](./catalog-agents.md#4-unit-tester) | [`node-unit-tests`](./catalog-instructions.md#3-node-unit-tests) | — | Jest |
-| **Node.js HTTP API Tests** | [`/node-api-tests`](./catalog-prompts.md#2-node-api-tests) | [`API Tester`](./catalog-agents.md#5-api-tester) | [`node-api-tests`](./catalog-instructions.md#4-node-api-tests) | — | Supertest / Jest |
-| **Angular Component Specs** | [`/angular-unit-tests`](./catalog-prompts.md#3-angular-unit-tests) | [`Unit Tester`](./catalog-agents.md#4-unit-tester) | [`angular-unit-tests`](./catalog-instructions.md#9-angular-unit-tests) | — | Vitest (`ng test`) |
-| **Angular E2E Flows** | [`/angular-e2e-tests`](./catalog-prompts.md#4-angular-e2e-tests) | [`E2E Tester`](./catalog-agents.md#6-e2e-tester) | [`angular-e2e-tests`](./catalog-instructions.md#10-angular-e2e-tests) | — | Playwright |
-| **PostgreSQL Migration Tests** | [`/postgres-liquibase-tests`](./catalog-prompts.md#5-postgres-liquibase-tests) | [`Unit Tester`](./catalog-agents.md#4-unit-tester) | [`postgres-liquibase-tests`](./catalog-instructions.md#6-postgresql-liquibase-tests) | — | SQL Assertions |
-| **k6 Performance Tests** | [`/performance-tests`](./catalog-prompts.md#7-performance-tests) | [`Performance Tester`](./catalog-agents.md#8-performance-tester) | [`k6-performance-tests`](./catalog-instructions.md#12-k6-performance-tests) | [`k6-performance-examples`](./catalog-skills.md#8-k6-performance-examples) | k6 (Docker runner) |
-| **RESTler API Fuzzing** | [`/fuzz-tests`](./catalog-prompts.md#8-fuzz-tests) | [`Fuzz Tester`](./catalog-agents.md#9-fuzz-tester) | [`restler-fuzzing-tests`](./catalog-instructions.md#13-restler-fuzzing-tests) | [`restler-fuzzing-examples`](./catalog-skills.md#9-restler-fuzzing-examples) | Microsoft RESTler |
+| **Node.js Unit Tests** | [`/node-unit-tests`](./catalog-prompts.md#_1-node-unit-tests) | [`Unit Tester`](./catalog-agents.md#_4-unit-tester-unit-test-agent-md) | [`node-unit-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Jest |
+| **Node.js HTTP API Tests** | [`/node-api-tests`](./catalog-prompts.md#_2-node-api-tests) | [`API Tester`](./catalog-agents.md#_5-api-tester-api-test-agent-md) | [`node-api-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Supertest / Jest |
+| **Angular Component Specs** | [`/angular-unit-tests`](./catalog-prompts.md#_3-angular-unit-tests) | [`Unit Tester`](./catalog-agents.md#_4-unit-tester-unit-test-agent-md) | [`angular-unit-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Vitest (`ng test`) |
+| **Angular E2E Flows** | [`/angular-e2e-tests`](./catalog-prompts.md#_4-angular-e2e-tests) | [`E2E Tester`](./catalog-agents.md#_6-e2e-tester-e2e-test-agent-md) | [`angular-e2e-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Playwright |
+| **PostgreSQL Migration Tests** | [`/postgres-liquibase-tests`](./catalog-prompts.md#_5-postgres-liquibase-tests) | [`Unit Tester`](./catalog-agents.md#_4-unit-tester-unit-test-agent-md) | [`postgres-liquibase-tests`](./catalog-instructions.md#automated-testing-instructions) | — | SQL Assertions |
+| **k6 Performance Tests** | [`/performance-tests`](./catalog-prompts.md#_7-performance-tests) | [`Performance Tester`](./catalog-agents.md#_8-performance-tester-performance-tests-agent-md) | [`k6-performance-tests`](./catalog-instructions.md#automated-testing-instructions) | [`k6-performance-examples`](./catalog-skills.md#_8-k6-performance-examples-skills-k6-performance-examples) | k6 (Docker runner) |
+| **RESTler API Fuzzing** | [`/fuzz-tests`](./catalog-prompts.md#_8-fuzz-tests) | [`Fuzz Tester`](./catalog-agents.md#_9-fuzz-tester-fuzz-tests-agent-md) | [`restler-fuzzing-tests`](./catalog-instructions.md#automated-testing-instructions) | [`restler-fuzzing-examples`](./catalog-skills.md#_9-restler-fuzzing-examples-skills-restler-fuzzing-examples) | Microsoft RESTler |
 
 ---
 
@@ -287,15 +287,15 @@ flowchart TD
 - **Trigger**: `/postgres-liquibase-tests [db/changelog/path]`
 - **Scope & Isolation**:
   - Generates deterministic SQL test scripts validating forward migrations, rollback integrity, and soft-delete triggers.
-- **Automated Oracle**: Uses [`rollback-probe`](./catalog-skills.md#17-rollback-probe) to mechanically certify the full roundtrip lifecycle (`Forward` $\rightarrow$ `Rollback` $\rightarrow$ `Forward Re-apply`).
+- **Automated Oracle**: Uses [`rollback-probe`](./catalog-skills.md#_17-rollback-probe-skills-rollback-probe) to mechanically certify the full roundtrip lifecycle (`Forward` $\rightarrow$ `Rollback` $\rightarrow$ `Forward Re-apply`).
 - **Falsifiable Done When**:
   - Migration applies cleanly to a temporary schema, verification assertions pass, and rollback returns the schema to pristine state (`rollback-probe.mjs` exits 0).
 
 ### 6. k6 Performance & Load Benchmarking
 
 - **Trigger**: `/performance-tests [service-name]`
-- **Agent**: [`Performance Tester`](./catalog-agents.md#8-performance-tester)
-- **Scaffolding**: Employs [`k6-performance-examples`](./catalog-skills.md#8-k6-performance-examples) containing Docker Compose runners and threshold templates.
+- **Agent**: [`Performance Tester`](./catalog-agents.md#_8-performance-tester-performance-tests-agent-md)
+- **Scaffolding**: Employs [`k6-performance-examples`](./catalog-skills.md#_8-k6-performance-examples-skills-k6-performance-examples) containing Docker Compose runners and threshold templates.
 - **Falsifiable Done When**:
   - k6 scenario executes against the target endpoint asserting explicit SLA thresholds (e.g. `http_req_duration: ['p(95)<300']`, `http_req_failed: ['rate<0.01']`).
   - Outputs summary metrics in console and JSON formats.
@@ -303,15 +303,15 @@ flowchart TD
 ### 7. RESTler API Grammar Fuzzing
 
 - **Trigger**: `/fuzz-tests [openapi-path]`
-- **Agent**: [`Fuzz Tester`](./catalog-agents.md#9-fuzz-tester)
-- **Scaffolding**: Employs [`restler-fuzzing-examples`](./catalog-skills.md#9-restler-fuzzing-examples) containing compilation configurations, dictionary templates, and CI gating scripts.
+- **Agent**: [`Fuzz Tester`](./catalog-agents.md#_9-fuzz-tester-fuzz-tests-agent-md)
+- **Scaffolding**: Employs [`restler-fuzzing-examples`](./catalog-skills.md#_9-restler-fuzzing-examples-skills-restler-fuzzing-examples) containing compilation configurations, dictionary templates, and CI gating scripts.
 - **Falsifiable Done When**:
   - RESTler compiles grammar from OpenAPI specs, fuzz-lean phase passes with 0 unexpected 500 server crashes.
 
 ### 8. Anti-Tautology Falsifiability Verification
 
 - **Role**: Behavioral probe asserting tests are not vacuous or self-satisfying.
-- **Skill Engine**: [`test-probe`](./catalog-skills.md#14-test-probe) (`skills/test-probe/scripts/test-probe.mjs`).
+- **Skill Engine**: [`test-probe`](./catalog-skills.md#_14-test-probe-skills-test-probe) (`skills/test-probe/scripts/test-probe.mjs`).
 - **Mechanism**:
   - Asserts that modified code passes tests initially.
   - Temporarily reverts the source code under test to baseline HEAD.

@@ -1,0 +1,133 @@
+# Platform Rails: auto-remediation (copy to .github/workflows/remediate.yml).
+# When verify fails on a pull request, the Gate Fixer agent gets the failing gate output, fixes the code,
+# and pushes. The fix-loop is counted in a PR label (fix-loop:<n>). At the limit the Developer steps in.
+# Agents get no production secrets and minimal permissions. Lines marked CUSTOMIZE are the ones a squad adapts.
+name: remediate
+
+on:
+  workflow_run:
+    workflows: [verify]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: remediate-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+env:
+  FIX_LOOP_LIMIT: "5"
+
+jobs:
+  remediate:
+    # Only failed runs on pull requests from this repository, never from forks.
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    # The GitHub token is given only to the steps that call gh, never to the agent runner.
+    env:
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+      BASE_REF: ${{ github.event.workflow_run.pull_requests[0].base.ref }}
+    steps:
+      - name: Count the fix-loop attempts
+        id: loop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -n "$PR_NUMBER" || { echo "::error::no pull request is linked to this run"; exit 1; }
+          ATTEMPTS=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json labels \
+            --jq '[.labels[].name | select(startswith("fix-loop:")) | ltrimstr("fix-loop:") | tonumber] | max // 0')
+          HANDED=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json labels --jq '[.labels[].name] | index("needs:developer") != null')
+          echo "attempts=$ATTEMPTS" >> "$GITHUB_OUTPUT"
+          echo "handed=$HANDED" >> "$GITHUB_OUTPUT"
+          if [ "$ATTEMPTS" -ge "$FIX_LOOP_LIMIT" ]; then echo "limit=reached" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Hand over to the Developer at the limit
+        if: steps.loop.outputs.limit == 'reached' && steps.loop.outputs.handed != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create needs:developer --force --repo "$GITHUB_REPOSITORY" --description "Fix-loop limit reached"
+          gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label needs:developer
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Fix-loop limit of $FIX_LOOP_LIMIT reached. Automatic remediation stops here and the Developer steps in. The plan may be too big or too vague."
+
+      - uses: actions/checkout@v4
+        if: steps.loop.outputs.limit != 'reached'
+        with:
+          # The exact commit that failed. A moved branch makes the push below fail instead of overwriting work.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          # CUSTOMIZE: a GitHub App token or fine-grained PAT limited to this repository. A push made with the default
+          # GITHUB_TOKEN does not trigger verify again. The token is not kept in the git config, so the agent runner
+          # cannot push: only the push step below uses it.
+          token: ${{ secrets.REMEDIATE_PUSH_TOKEN }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        if: steps.loop.outputs.limit != 'reached'
+        with:
+          node-version: "22" # CUSTOMIZE
+
+      - name: Count this attempt
+        # Counted before the agent runs, so an attempt can never go uncounted and the cap holds even if a later step fails.
+        if: steps.loop.outputs.limit != 'reached'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTEMPTS: ${{ steps.loop.outputs.attempts }}
+        run: |
+          NEXT=$((ATTEMPTS + 1))
+          gh label create "fix-loop:$NEXT" --force --repo "$GITHUB_REPOSITORY" --description "Auto-remediation attempt $NEXT"
+          gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "fix-loop:$NEXT"
+          if [ "$ATTEMPTS" -gt 0 ]; then gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "fix-loop:$ATTEMPTS"; fi
+
+      - name: Collect the failing gate output
+        if: steps.loop.outputs.limit != 'reached'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed | tail -n 500 > gate-output.log
+          echo "gate-output.log" >> .git/info/exclude
+          echo "BEFORE=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/controls"
+          git archive "origin/$BASE_REF" .agents/skills | tar -x -C "$RUNNER_TEMP/controls"
+
+      - name: Run the Gate Fixer (PLACEHOLDER)
+        if: steps.loop.outputs.limit != 'reached'
+        # PLACEHOLDER: replace this step with your agent runner. It must run the Gate Fixer agent
+        # (agents/gate-fix.agent.md) with the prompt "/fix-gates gate-output.log" and commit its fix on this branch.
+        # Give the runner only its own model credential. The gate output is untrusted input: never give the agent
+        # production credentials or the ability to edit workflows, skills, or control configuration.
+        env:
+          AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
+        run: |
+          echo "::error::agent runner not configured: replace the placeholder step"
+          exit 1
+
+      - name: Require a fix commit
+        if: steps.loop.outputs.limit != 'reached'
+        run: |
+          test "$(git rev-parse HEAD)" != "$BEFORE" || { echo "::error::the agent made no commit"; exit 1; }
+
+      - name: Control integrity on the agent's commit (control-guard)
+        # Runs the copy of the control that was taken from the base branch before the agent started.
+        if: steps.loop.outputs.limit != 'reached'
+        run: node "$RUNNER_TEMP/controls/.agents/skills/control-guard/scripts/control-guard.mjs" --git "$BEFORE"
+
+      - name: Push the fix
+        if: steps.loop.outputs.limit != 'reached'
+        env:
+          PUSH_TOKEN: ${{ secrets.REMEDIATE_PUSH_TOKEN }}
+        run: |
+          test -n "$PUSH_TOKEN" || { echo "::error::REMEDIATE_PUSH_TOKEN is not set"; exit 1; }
+          AUTH=$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$AUTH"
+          git -c "http.$GITHUB_SERVER_URL/.extraheader=AUTHORIZATION: basic $AUTH" push origin "HEAD:refs/heads/$HEAD_BRANCH"

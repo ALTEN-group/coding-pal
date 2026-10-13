@@ -125,7 +125,7 @@ Use a skill when a workflow needs one or more of the following:
 - References that are too detailed for an agent body.
 - Templates that consumers copy and customize.
 
-Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `audit-reporting` accepts `--scope` arguments instead of hard-coding a service layout.
+Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `audit-reporting` accepts `--scope` arguments instead of hard-coding a service layout. A skill that owns a record contract (for example `triage`, `think-plan`, `decision-record`) may state the record's conventional location in its contract, such as `specs/issue-<n>/triage.md` or `docs/decisions/`, but every script must take that location as an argument and never default to it.
 
 ### Prompts Own Single Operations
 
@@ -176,10 +176,47 @@ Before submitting a contribution:
 4. Keep rules concise, imperative, and testable.
 5. Remove duplicated ownership from adjacent agents, skills, prompts, and instructions.
 6. Add a deterministic script and tests when output must be machine-consumable.
-7. Test new scripts with their narrowest test command.
+7. Test new scripts with their narrowest test command (`node --test skills/<name>/scripts/*.test.mjs`). CI runs all of them with `node --test skills/*/scripts/*.test.mjs` and lints Persistent Context with `context-lint.mjs`.
 8. Verify YAML frontmatter and Markdown links.
 9. Install the package in a clean consumer project with APM when changing distributable files.
 10. Update the consumer only after the shared package is published and its lockfile can resolve the new commit.
+
+## Running Tests
+
+Coding Pal uses Node.js's native test runner (`node:test` and `node:assert/strict`) so tests run with zero external dependencies.
+
+A helper script `./scripts/test.sh` is provided at the repository root.
+
+### 1. Run the Entire Test Suite
+
+Run all skill tests across the entire repository with a formatted summary:
+
+```bash
+./scripts/test.sh
+# or natively:
+node --test --test-reporter=spec skills/*/scripts/*.test.mjs
+```
+
+### 2. Run a Targeted Skill Test Suite
+
+Run tests for a single skill during local development:
+
+```bash
+./scripts/test.sh <skill-name>
+# example: ./scripts/test.sh think-plan
+# or natively:
+node --test skills/<name>/scripts/*.test.mjs
+```
+
+### 3. Lint Persistent Context Standards
+
+Verify instruction length, frontmatter fields, and detect over-broad patterns or drift:
+
+```bash
+./scripts/test.sh --lint
+# or natively:
+node skills/context-health/scripts/context-lint.mjs --root .
+```
 
 ## APM Distribution
 
@@ -261,5 +298,6 @@ npm run preview
 - [ ] Machine-consumed artifacts have deterministic validation.
 - [ ] Tests cover valid input, invalid input, and deterministic output.
 - [ ] APM installation and lockfile behavior have been verified.
+- [ ] Every new agent, prompt, instruction, and skill is listed in its catalog, in the Full Canonical Configuration Reference of `apm-distribution.md`, and (for a domain guide) in the `.vitepress/config.mjs` sidebar.
 - [ ] Documentation site builds cleanly (`npm run build` in `website/`) if docs or catalog entries were modified.
 

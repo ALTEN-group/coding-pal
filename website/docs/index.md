@@ -23,19 +23,16 @@ features:
   - icon: 📦
     title: Multi-Harness APM
     details: Author once in Coding Pal, deploy seamlessly to GitHub Copilot, Claude Code, and Cursor.
+  - icon: 🎯
+    title: Deterministic Controls
+    details: Native skills providing blast-radius guards, multi-stage gates, declarative contracts, verification gates, and falsifiability probes.
   - icon: 📐
     title: Strict Markdown Schemas
     details: Standardized YAML frontmatter, execution constraints, and falsifiable completion criteria.
   - icon: 🛡️
     title: Sharp Specialists
-    details: Dedicated agents for code auditing, finding remediation, spec generation, and test suites.
+    details: Dedicated agents for every stage of the Agentic Software Factory, from meeting packs and triage to code, release, and learning, plus auditing, spec generation, and test suites.
   - icon: ⚖️
     title: Golden Split Ownership
-    details: Clean separation between agent task scope, domain instructions, and machine-validated skills.
-  - icon: 🚀
-    title: Executable Skill Bundles
-    details: Self-contained workflows pairing normative references, scripts, templates, and fixtures.
-  - icon: 🎯
-    title: Deterministic Controls
-    details: 7 native skills providing blast-radius guards, multi-stage gates, declarative contracts, and falsifiability probes.
+    details: Each file has one job. Agents define what to do, instructions define the rules to follow, and skills check the result, so nothing is duplicated or contradictory.
 ---

@@ -16,6 +16,7 @@ Schema design is owned by the installed PostgreSQL / Liquibase instructions. Thi
 
 - Behavior the schema instruction requires: reads/writes through the view when one exists, `set_archived` for archive, `log.history` for audited tables, seed `ON CONFLICT DO NOTHING`.
 - Do not restate DDL in the test file. Call the objects the changelog already created.
+- **Acceptance-criteria traceability**: when the plan lists acceptance criteria (`AC-<n>`), include the criterion id in the name of the assertion or test case that the report lists, for example `AC-2: viewer cannot archive a row`, so Criteria Test Verification can map results to criteria.
 
 ## Execution
 

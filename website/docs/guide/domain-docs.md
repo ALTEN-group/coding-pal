@@ -78,8 +78,8 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|
-| **Spec from Code** | Explicit prompt / agent | Domain instructions | [`spec-from-code`](./catalog-skills.md#2-spec-from-code) | `docs/specs/*.md` (OpenAPI, DB schemas, async jobs) |
-| **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#5-vitepress-docs) | [`vitepress-docs`](./catalog-instructions.md#documentation--architecture-instructions) | [`vitepress-docs-examples`](./catalog-skills.md#3-vitepress-docs-examples) | Full VitePress site (`website/docs/`, Docker, CI) |
+| **Spec from Code** | Explicit prompt / agent | Domain instructions | [`spec-from-code`](./catalog-skills.md#_2-spec-from-code-skills-spec-from-code) | `docs/specs/*.md` (OpenAPI, DB schemas, async jobs) |
+| **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#_6-vitepress-docs) | [`vitepress-docs`](./catalog-instructions.md#specs-docs-instructions) | [`vitepress-docs-examples`](./catalog-skills.md#_3-vitepress-docs-examples-skills-vitepress-docs-examples) | Full VitePress site (`website/docs/`, Docker, CI) |
 
 ---
 
@@ -88,11 +88,11 @@ flowchart TD
 ### 1. Reverse-Engineering Specifications: Spec from Code
 
 - **When to Run**: Documenting legacy codebases, standardizing undocumented microservices, or preparing API catalogs.
-- **Agent**: [`Spec from Code`](./catalog-agents.md#3-spec-from-code) (`spec-from-code.agent.md`)
+- **Agent**: [`Spec from Code`](./catalog-agents.md#_3-spec-from-code-spec-from-code-agent-md) (`spec-from-code.agent.md`)
 - **Execution Methodology**:
   1. Inspects route definitions, controller parameters, middleware validation schemas, and database entity models.
   2. Extracts public endpoints, HTTP methods, headers, payload schemas, query parameters, response structures, and error codes.
-  3. Formulates technical specifications conforming to the [`skills/spec-from-code/references/spec-contract.md`](./catalog-skills.md#2-spec-from-code) contract.
+  3. Formulates technical specifications conforming to the [`skills/spec-from-code/references/spec-contract.md`](./catalog-skills.md#_2-spec-from-code-skills-spec-from-code) contract.
   4. Documents database tables, columns, indexes, foreign keys, triggers, and soft-delete policies.
 - **Falsifiable Done When**:
   - All public interfaces are documented without omissions.
@@ -105,8 +105,8 @@ flowchart TD
 
 - **When to Run**: Launching or upgrading a product documentation site for an open-source library, microservice catalog, or company platform.
 - **Trigger**: `/vitepress-docs [docs-root]`
-- **Agent**: [`VitePress Docs`](./catalog-agents.md#6-vitepress-docs) (`vitepress-docs.agent.md`)
-- **Scaffolding Bundle**: Uses [`skills/vitepress-docs-examples`](./catalog-skills.md#3-vitepress-docs-examples) to supply pre-configured scaffolding assets:
+- **Agent**: [`VitePress Docs`](./catalog-agents.md#_7-vitepress-docs-vitepress-docs-agent-md) (`vitepress-docs.agent.md`)
+- **Scaffolding Bundle**: Uses [`skills/vitepress-docs-examples`](./catalog-skills.md#_3-vitepress-docs-examples-skills-vitepress-docs-examples) to supply pre-configured scaffolding assets:
   - `package.json` with pinned VitePress, Mermaid, and Markdown plugins.
   - `.vitepress/config.mjs` pre-configured with theme settings, responsive SVG logo/favicon, Mermaid optimization, and dynamic base URL resolution for GitHub Pages / local dev.
   - Multi-service Docker Compose files (`scripts/start-dev.sh`, `scripts/stop-dev.sh`, `docker/docker-compose.yml`) enabling hot-reloaded local editing on port 5174 without local Node.js dependencies.

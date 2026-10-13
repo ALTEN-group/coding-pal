@@ -1,0 +1,168 @@
+# Platform Rails: verification pipeline skeleton (copy to .github/workflows/verify.yml).
+# Lines marked CUSTOMIZE are the only ones a squad adapts. Everything else is the fixed skeleton.
+# The controls are installed under .agents/skills/ and are run, never edited, by agents. Both jobs below run them
+# from the base branch, so a pull request cannot change the controls that judge it. Protect .github/workflows/ with CODEOWNERS.
+name: verify
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22" # CUSTOMIZE
+  REPORTS: reports
+
+jobs:
+  # Where the agent cannot influence the result: a clean checkout, a clean install, the same commands as the Code loop.
+  clean-rerun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build --if-present # CUSTOMIZE
+      - name: Type check
+        run: npx tsc --noEmit # CUSTOMIZE
+      - name: Lint
+        run: npm run lint # CUSTOMIZE
+      - name: Tests
+        # CUSTOMIZE: emit a JUnit or Jest/Vitest JSON report for criteria-verify, plus mutation testing for mutation-bar
+        run: |
+          mkdir -p "$REPORTS"
+          npm test -- --reporters=default --reporters=jest-junit
+          npx stryker run --reporters json
+        env:
+          JEST_JUNIT_OUTPUT_DIR: reports
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+
+  # Deterministic controls. Each step exits non-zero on failure and the job stops at the first failure.
+  controls:
+    needs: clean-rerun
+    runs-on: ubuntu-latest
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      HEAD_REF: ${{ github.head_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: reports
+          path: reports/
+      - name: Use the controls from the base branch
+        run: |
+          mkdir -p "$RUNNER_TEMP/controls"
+          git archive "origin/$BASE_REF" .agents/skills | tar -x -C "$RUNNER_TEMP/controls"
+          echo "SKILLS=$RUNNER_TEMP/controls/.agents/skills" >> "$GITHUB_ENV"
+      - name: Resolve the work item
+        # Branches are feature/issue-<n>-<slug> or fix/issue-<n>-<slug>; the plan lives in specs/issue-<n>/.
+        run: |
+          ISSUE=$(printf '%s' "$HEAD_REF" | sed -nE 's#^(feature|fix|chore)/issue-([0-9]+)-.*#\2#p')
+          test -n "$ISSUE" || { echo "::error::branch $HEAD_REF is not feature|fix|chore/issue-<n>-<slug>"; exit 1; }
+          echo "ISSUE=$ISSUE" >> "$GITHUB_ENV"
+      - name: Fix-loop counters were never lowered (code-loop check-history)
+        # Runs before the soft reset below, which would flatten the commits this check reads. Covers every work item
+        # whose progress.json is in the pull request or on the base branch, so deleting or rewriting it cannot reset the counter.
+        run: |
+          { git diff --name-only "origin/$BASE_REF...HEAD" -- specs; git ls-tree -r --name-only "origin/$BASE_REF" -- specs; } \
+            | sed -nE 's#^(specs/issue-[0-9]+)/progress\.json$#\1#p' | sort -u > "$RUNNER_TEMP/work-items.txt"
+          while read -r ITEM; do
+            node "$SKILLS/code-loop/scripts/code-loop.mjs" check-history --dir "$ITEM" --base "origin/$BASE_REF"
+          done < "$RUNNER_TEMP/work-items.txt"
+      - name: Present the pull request as one change
+        # The soft reset keeps the files and makes the whole pull request appear as changes against HEAD,
+        # which is what the git-based guards inspect. The downloaded reports are not part of the change.
+        run: |
+          git reset --soft "origin/$BASE_REF"
+          echo "$REPORTS/" >> .git/info/exclude
+      - name: Control integrity (control-guard)
+        run: node "$SKILLS/control-guard/scripts/control-guard.mjs" --git "origin/$BASE_REF"
+      - name: Secrets (secret-guard)
+        run: node "$SKILLS/secret-guard/scripts/secret-guard.mjs" --git
+      - name: Dependencies (dependency-guard)
+        run: node "$SKILLS/dependency-guard/scripts/dependency-guard.mjs" --git
+      - name: File scope (scope-guard)
+        # CUSTOMIZE: the scopes come from the File Scope & Boundaries section of specs/issue-<n>/plan.md
+        run: node "$SKILLS/scope-guard/scripts/scope-guard.mjs" --git --scope "src/**" --scope "tests/**" --scope "specs/issue-$ISSUE/**"
+      - name: Acceptance criteria (criteria-verify)
+        run: node "$SKILLS/criteria-verify/scripts/verify-criteria.mjs" --plan "specs/issue-$ISSUE/plan.md" --report reports/junit.xml --require-test-files
+      - name: Mutation bar (mutation-bar)
+        run: |
+          git diff --name-only --diff-filter=ACMR HEAD > "$REPORTS/changed-files.txt"
+          node "$SKILLS/mutation-bar/scripts/mutation-bar.mjs" --report reports/mutation/mutation.json --changed "$REPORTS/changed-files.txt"
+      - name: Contract compatibility (contract-compat)
+        # CUSTOMIZE: path of the OpenAPI document. A breaking change needs --allow-breaking with an Accepted decision record.
+        run: |
+          git show "origin/$BASE_REF:openapi.json" > "$REPORTS/openapi.base.json"
+          node "$SKILLS/contract-compat/scripts/contract-compat.mjs" --base "$REPORTS/openapi.base.json" --head openapi.json
+      - name: Scanners
+        # CUSTOMIZE: any tool that writes SARIF, Conftest JSON, or a CycloneDX SBOM works
+        run: |
+          pip install semgrep
+          semgrep scan --config auto --sarif --output "$REPORTS/semgrep.sarif"
+          npx --yes @cyclonedx/cyclonedx-npm --output-file "$REPORTS/sbom.json"
+      - name: Security and licenses (security-gate)
+        # CUSTOMIZE: the license policy. Keep waivers.json as [] until a waiver is approved (reason, approver, expiry on each).
+        run: |
+          node "$SKILLS/security-gate/scripts/security-gate.mjs" \
+            --sarif "$REPORTS/semgrep.sarif" \
+            --sbom "$REPORTS/sbom.json" \
+            --allow-licenses "MIT,Apache-2.0,ISC,BSD-2-Clause,BSD-3-Clause" \
+            --waivers waivers.json
+
+  # The running application: smoke tests first, then the probes that need a real stack.
+  preview:
+    needs: controls
+    runs-on: ubuntu-latest
+    env:
+      BASE_REF: ${{ github.base_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Use the controls from the base branch
+        run: |
+          mkdir -p "$RUNNER_TEMP/controls"
+          git archive "origin/$BASE_REF" .agents/skills | tar -x -C "$RUNNER_TEMP/controls"
+          echo "SKILLS=$RUNNER_TEMP/controls/.agents/skills" >> "$GITHUB_ENV"
+      - name: Install
+        run: npm ci
+      - name: Start the stack
+        run: docker compose up -d --build --wait # CUSTOMIZE
+      - name: Smoke tests (preview-smoke)
+        # CUSTOMIZE: preview-routes.json lists the routes, assertions and time limits
+        run: node "$SKILLS/preview-smoke/scripts/preview-smoke.mjs" --url http://localhost:3000 --routes preview-routes.json
+      - name: Fuzz tests
+        run: npm run test:fuzz --if-present # CUSTOMIZE: for example RESTler from the OpenAPI document
+      - name: E2E tests
+        run: npx playwright test # CUSTOMIZE
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

@@ -36,6 +36,7 @@ How the admin app is structured is owned by the installed Angular admin instruct
 - User-visible chrome: login form, toolbar titles, ACL-gated pages, not-found.
 - Use roles and labels (`getByRole`, `getByText`) where stable; locators for app-specific ids (`#emailInput`, `#table-toolbar`) when that is what the DOM uses.
 - Do not assert PrimeNG/crud-builder internals. One login per describe when several pages share a session.
+- **Acceptance-criteria traceability**: when the plan lists acceptance criteria (`AC-<n>`), include the criterion id in the test name or title, for example `it('AC-2: rejects viewers', ...)`, so Criteria Test Verification can map results to criteria.
 
 ## Execution
 

@@ -15,6 +15,7 @@ How the service is structured is owned by the installed Node.js Express instruct
 - Run tests in the service container (same as `npm test` / project test script), not against a host-only Node that lacks service dependencies.
 - Group tests in `describe` blocks per endpoint (`describe("POST /api/<resource>/search", ...)`). Use `it("should ...")`.
 - Reset mocks in `beforeEach` (`jest.clearAllMocks()` or `jest.resetAllMocks()`).
+- **Acceptance-criteria traceability**: when the plan lists acceptance criteria (`AC-<n>`), include the criterion id in the test name or title, for example `it('AC-2: rejects viewers', ...)`, so Criteria Test Verification can map results to criteria.
 - Never perform real network I/O or live database connections.
 
 ## HTTP API Route Test Conventions

@@ -67,8 +67,8 @@ flowchart TD
 
 | Capability | Role | Specialist Agent | Scoping Instruction | Protocol & Skill Bundle | Gating Mechanism |
 |---|---|---|---|---|---|
-| **Codebase Audit** | Full codebase assessment | [`Code Auditor`](./catalog-agents.md#1-code-auditor) | Matching domain instructions | [`audit-reporting`](./catalog-skills.md#1-audit-reporting) | CI schema validation script |
-| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#2-audit-finding-fixer) | [`sharp-agent`](./catalog-instructions.md#1-sharp-agent) | [`audit-reporting`](./catalog-skills.md#1-audit-reporting), [`scope-guard`](./catalog-skills.md#10-scope-guard), [`secret-guard`](./catalog-skills.md#16-secret-guard), [`dependency-guard`](./catalog-skills.md#15-dependency-guard) | Narrowest test + `scope-guard.mjs` |
+| **Codebase Audit** | Full codebase assessment | [`Code Auditor`](./catalog-agents.md#_1-code-auditor-code-audit-agent-md) | Matching domain instructions | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting) | CI schema validation script |
+| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) | [`sharp-agent`](./catalog-instructions.md#universal-remediation-instructions) | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting), [`scope-guard`](./catalog-skills.md#_11-scope-guard-skills-scope-guard), [`secret-guard`](./catalog-skills.md#_16-secret-guard-skills-secret-guard), [`dependency-guard`](./catalog-skills.md#_15-dependency-guard-skills-dependency-guard) | Narrowest test + `scope-guard.mjs` |
 
 ---
 
@@ -77,13 +77,13 @@ flowchart TD
 ### 1. Codebase Audit
 
 - **When to Run**: Repository onboarding, architectural milestone reviews, security checks, and release gates.
-- **Agent**: [`Code Auditor`](./catalog-agents.md#1-code-auditor) (`code-audit.agent.md`)
+- **Agent**: [`Code Auditor`](./catalog-agents.md#_1-code-auditor-code-audit-agent-md) (`code-audit.agent.md`)
 - **Execution Methodology**:
   1. **Scope Agreement**: Confines analysis strictly to the requested repository, microservice, or subdirectory.
   2. **Stack Discovery**: Examines package manifests (`package.json`), Dockerfiles, and database changelogs.
   3. **Standard Application**: Applies active Coding Pal instructions (e.g. `node-express.instructions.md`, `postgres-liquibase.instructions.md`) as the normative criteria.
   4. **Exhaustive Reading**: Reads every source file within the agreed boundary before formulating findings (no speculative or hallucinated issues).
-  5. **Standardized Report**: Generates a structured markdown report under `docs/audits/` adhering to the contract defined in [`skills/audit-reporting/references/report-contract.md`](./catalog-skills.md#1-audit-reporting).
+  5. **Standardized Report**: Generates a structured markdown report under `docs/audits/` adhering to the contract defined in [`skills/audit-reporting/references/report-contract.md`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting).
 - **Falsifiable Done When**:
   - Every file in scope has been reviewed.
   - The audit report compiles and passes validation via the skill script:
@@ -94,11 +94,11 @@ flowchart TD
 ### 2. Surgical Finding Remediation
 
 - **When to Run**: Addressing a specific finding from an approved audit report.
-- **Agent**: [`Audit Finding Fixer`](./catalog-agents.md#2-audit-finding-fixer) (`audit-fix.agent.md`)
+- **Agent**: [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) (`audit-fix.agent.md`)
 - **Governing Constraints**:
   - **One Finding Mandate**: Takes a single finding identifier (e.g., `SEC-001`, `PERF-003`, `MAINT-007`).
   - **Zero Speculative Refactoring**: Prohibited from rewriting adjacent code, changing naming schemes, or introducing new third-party dependencies unless strictly required.
-  - **Governed by Sharp Agent**: Adheres to [`sharp-agent.instructions.md`](./catalog-instructions.md#1-sharp-agent) to prevent token waste and scope creep.
+  - **Governed by Sharp Agent**: Adheres to [`sharp-agent.instructions.md`](./catalog-instructions.md#universal-remediation-instructions) to prevent token waste and scope creep.
 - **Execution Methodology**:
   1. Reads the finding description, file paths, line numbers, and recommended remediation from the audit report.
   2. Applies the minimal, targeted modification directly to the affected lines.

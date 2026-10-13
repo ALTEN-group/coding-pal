@@ -1,9 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
 	matchPath,
 	parseNumstat,
 	evaluateScope,
+	inspectGit,
 	main,
 } from "./scope-guard.mjs";
 
@@ -134,4 +139,29 @@ test("main() CLI exits 0 on valid inputs and 1 on violations", async () => {
 		"--json",
 	]);
 	assert.equal(forbiddenCode, 1);
+});
+
+test("inspectGit keeps the first porcelain line intact (leading status space)", () => {
+	const repo = mkdtempSync(join(tmpdir(), "scope-guard-git-"));
+	try {
+		const git = (cmd) => execSync(`git ${cmd}`, { cwd: repo, stdio: "pipe" });
+		git("init -q");
+		git("config user.email test@example.com");
+		git("config user.name Test");
+		git("config commit.gpgsign false");
+		mkdirSync(join(repo, "src"));
+		writeFileSync(join(repo, "src", "a.js"), "one\n");
+		git("add -A");
+		git("commit -q -m init");
+		writeFileSync(join(repo, "src", "a.js"), "two\n");
+
+		const { files } = inspectGit({ cwd: repo });
+		assert.deepEqual(files, ["src/a.js"]);
+
+		writeFileSync(join(repo, "src", "b.js"), "new\n");
+		const second = inspectGit({ cwd: repo });
+		assert.deepEqual([...second.files].sort(), ["src/a.js", "src/b.js"]);
+	} finally {
+		rmSync(repo, { recursive: true, force: true });
+	}
 });

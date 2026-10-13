@@ -1,0 +1,130 @@
+{
+	"version": 1,
+	"assets": [
+		{
+			"id": "gatelin",
+			"name": "Gatelin",
+			"kind": "shared-service",
+			"summary": "Backend for Frontend (BFF) that gives an application its API layer: JWT sessions, role-based access control, and authenticated forwarding to internal microservices, with an Angular Admin UI. It runs behind an edge reverse proxy such as Traefik, nginx, or Envoy, which stays the public gateway.",
+			"capabilities": [
+				"JWT sessions: access and refresh token issuance, validation, and refresh",
+				"Role-based access control (RBAC/ACL) per route, property, and condition",
+				"Dynamic proxy and authenticated forwarding to internal microservices",
+				"Route, role, and permission management",
+				"CORS management",
+				"Angular-based Admin UI under /admin"
+			],
+			"keywords": [
+				"bff",
+				"backend for frontend",
+				"api layer",
+				"jwt",
+				"access token",
+				"refresh token",
+				"session",
+				"login",
+				"authentication",
+				"authorization",
+				"rbac",
+				"acl",
+				"role",
+				"permission",
+				"proxy",
+				"gateway",
+				"cors",
+				"microservices",
+				"admin ui",
+				"traefik",
+				"nginx",
+				"envoy"
+			],
+			"owner": "ALTEN",
+			"version": "0.1.0-alpha.9",
+			"maturity": "alpha",
+			"status": "active",
+			"releasedAt": "2026-09-07",
+			"interface": {
+				"type": "REST",
+				"docs": "https://gatelin.fr",
+				"integrationGuide": "https://gatelin.fr/guide/integration",
+				"frontendGuide": "https://gatelin.fr/guide/frontend",
+				"contract": "Unversioned OpenAPI 3.0.1 example (swagger/src/gatelin.openapi.example.json, info.version 1.0.0) rendered by the repository's development-only swagger/ Swagger UI service; it does not track the release tag. Endpoint reference: the api-* pages of https://gatelin.fr/guide"
+			},
+			"artifacts": [
+				{ "type": "docker-image", "ref": "ghcr.io/alten-group/gatelin" },
+				{ "type": "docker-image", "ref": "ghcr.io/alten-group/gatelin-migration" }
+			],
+			"docs": "https://gatelin.fr",
+			"repository": "https://github.com/ALTEN-group/Gatelin",
+			"license": "MIT",
+			"tests": {
+				"ci": "https://github.com/ALTEN-group/Gatelin/actions/workflows/test.yml",
+				"coverage": "badge published by CI"
+			},
+			"composesWith": ["foxnox"],
+			"replacement": null,
+			"removalDate": null
+		},
+		{
+			"id": "foxnox",
+			"name": "Foxnox",
+			"kind": "shared-service",
+			"summary": "Password and account-security service that keeps credentials, TOTP 2FA, trusted devices, and short-lived security tokens out of other services. It is an internal password store: put a BFF in front of it as the public API layer (Gatelin is one such BFF, not a requirement).",
+			"capabilities": [
+				"Credential storage: password hashes, rotation dates, expiry, and lockout state",
+				"TOTP two-factor authentication: enrollment and mid-login verification",
+				"Short-lived typed tokens for reset, unlock, recovery, and login challenges (HMAC only at rest)",
+				"Trusted devices",
+				"Security questions",
+				"Password policies",
+				"Server-rendered account workflow pages for recovery, unlock, 2FA, and devices (EN/FR, white-label ready)",
+				"Angular Admin UI"
+			],
+			"keywords": [
+				"password",
+				"credentials",
+				"password reset",
+				"account recovery",
+				"account unlock",
+				"lockout",
+				"2fa",
+				"totp",
+				"two-factor",
+				"mfa",
+				"trusted device",
+				"security question",
+				"password policy",
+				"login challenge",
+				"account security",
+				"admin ui",
+				"white-label"
+			],
+			"owner": "ALTEN",
+			"version": "0.1.0-alpha.3",
+			"maturity": "alpha",
+			"status": "active",
+			"releasedAt": "2026-10-10",
+			"interface": {
+				"type": "REST",
+				"docs": "https://alten-group.github.io/Foxnox",
+				"integrationGuide": "https://alten-group.github.io/Foxnox/guide/integration",
+				"frontendGuide": "https://alten-group.github.io/Foxnox/guide/frontend",
+				"contract": "Unversioned OpenAPI 3.0.1 example (swagger/src/foxnox.openapi.example.json, info.version 1.0.0) rendered by the repository's development-only swagger/ Swagger UI service; it does not track the release tag. Endpoint reference: the api-* pages of https://alten-group.github.io/Foxnox/guide"
+			},
+			"artifacts": [
+				{ "type": "docker-image", "ref": "ghcr.io/alten-group/foxnox" },
+				{ "type": "docker-image", "ref": "ghcr.io/alten-group/foxnox-migration" }
+			],
+			"docs": "https://alten-group.github.io/Foxnox",
+			"repository": "https://github.com/ALTEN-group/Foxnox",
+			"license": "MIT",
+			"tests": {
+				"ci": "https://github.com/ALTEN-group/Foxnox/actions/workflows/test.yml",
+				"coverage": "badge published by CI"
+			},
+			"composesWith": ["gatelin"],
+			"replacement": null,
+			"removalDate": null
+		}
+	]
+}
