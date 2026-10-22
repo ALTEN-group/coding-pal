@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALTEN Design System — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — extraits du Brand Book ALTEN (EN, June 2026)
+   ============================================================ */
+:root{
+  /* Couleurs principales */
+  --alten-azure-500:#008BD2; --alten-navy-900:#043962; --alten-ochre-300:#FFDA65;
+  /* Déclinaisons */
+  --alten-azure-700:#176F98; --alten-azure-300:#7DCAED; --alten-azure-100:#B2E0F5;
+  --alten-navy-600:#4A617D;  --alten-navy-400:#8D9CAD;  --alten-navy-200:#D2D7DE;
+  --alten-ochre-500:#FFBA00; --alten-ochre-400:#FFD500; --alten-ochre-100:#FFEF86;
+  /* Tertiaires */
+  --alten-blue-bg-100:#EBF3F9; --alten-blue-bg-200:#DAE8F3; --alten-blue-bg-300:#CBEAF8;
+  --alten-grey-100:#EBECF0; --alten-grey-300:#CDCEDA; --alten-grey-500:#8C8C9A;
+  --alten-white:#FFFFFF;
+  /* Sémantique */
+  --color-text-primary:var(--alten-navy-900);
+  --color-text-secondary:var(--alten-grey-500);
+  --color-text-accent:var(--alten-azure-500);
+  --color-text-inverse:var(--alten-white);
+  --color-bg-page:var(--alten-white);
+  --color-bg-subtle:var(--alten-blue-bg-100);
+  --color-bg-muted:var(--alten-grey-100);
+  --color-bg-emphasis:var(--alten-navy-900);
+  --color-action-primary:var(--alten-azure-500);
+  --color-action-primary-hover:var(--alten-azure-700);
+  --color-highlight-bg:var(--alten-azure-100);
+  --color-border:var(--alten-grey-300);
+  --gradient-door:linear-gradient(180deg,var(--alten-azure-500) 0%,var(--alten-ochre-300) 100%);
+  /* Typo */
+  --font-family-base:'Metropolis','Open Sans','Noto Sans',-apple-system,'Segoe UI',Arial,sans-serif;
+  --fw-light:300; --fw-regular:400; --fw-medium:500; --fw-bold:700; --fw-extrabold:800;
+  --fs-xs:.75rem; --fs-sm:.875rem; --fs-base:1rem; --fs-md:1.25rem;
+  --fs-lg:1.5625rem; --fs-xl:1.9375rem; --fs-2xl:2.4375rem; --fs-3xl:3.0625rem;
+  --lh-tight:1.15; --lh-base:1.6;
+  --ls-caps:.06em;
+  /* Espacements */
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem;
+  --sp-6:2rem; --sp-7:3rem; --sp-8:4rem; --sp-9:6rem;
+  /* Formes */
+  --radius-sm:2px; --radius-md:4px;
+  --shadow-sm:0 1px 3px rgba(4,57,98,.10);
+  --shadow-md:0 4px 12px rgba(4,57,98,.12);
+  --duration:250ms; --easing:cubic-bezier(.4,0,.2,1);
+  --container:1200px;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--font-family-base);
+  font-size:var(--fs-base);
+  line-height:var(--lh-base);
+  color:var(--color-text-primary); /* règle charte : texte toujours navy, jamais noir */
+  background:var(--color-bg-page);
+}
+.container{max-width:var(--container);margin:0 auto;padding:0 var(--sp-6)}
+section{padding:var(--sp-8) 0;border-bottom:1px solid var(--color-border)}
+h1,h2,h3,h4{line-height:var(--lh-tight);font-weight:var(--fw-extrabold)}
+p{max-width:70ch}
+code{
+  font-family:'SFMono-Regular',Consolas,monospace;
+  font-size:.85em;background:var(--alten-blue-bg-100);
+  color:var(--alten-azure-700);padding:.1em .4em;border-radius:var(--radius-sm);
+}
+
+/* ============================================================
+   PATTERNS DE TITRE (issus des text styles p.34)
+   ============================================================ */
+.title-block{
+  display:inline-block;background:var(--color-bg-emphasis);color:var(--color-text-inverse);
+  font-size:var(--fs-sm);font-weight:var(--fw-bold);text-transform:uppercase;
+  letter-spacing:var(--ls-caps);padding:var(--sp-2) var(--sp-4);margin-bottom:var(--sp-5);
+}
+.title-highlight{
+  font-size:var(--fs-xl);margin-bottom:var(--sp-4);
+}
+.title-highlight em{
+  font-style:normal;
+  background:linear-gradient(transparent 55%,var(--color-highlight-bg) 55%);
+}
+.section-intro{font-size:var(--fs-md);font-weight:var(--fw-bold);margin-bottom:var(--sp-6)}
+.subtitle-2{
+  color:var(--color-text-accent);font-size:var(--fs-sm);font-weight:var(--fw-bold);
+  text-transform:uppercase;letter-spacing:var(--ls-caps);margin:var(--sp-6) 0 var(--sp-4);
+}
+.caption{color:var(--color-text-secondary);font-size:var(--fs-sm)}
+
+/* ============================================================
+   HERO — signature : la porte ALTEN
+   ============================================================ */
+.hero{border-bottom:none;padding:var(--sp-9) 0;overflow:hidden}
+.hero .container{display:grid;grid-template-columns:1fr auto;gap:var(--sp-8);align-items:center}
+.hero h1{font-size:var(--fs-3xl);margin:var(--sp-4) 0}
+.hero h1 span{color:var(--alten-azure-500)}
+.hero p{font-size:var(--fs-md)}
+.door{
+  position:relative;width:190px;height:290px;flex-shrink:0;
+  border:2px solid transparent;
+  background:linear-gradient(var(--color-bg-page),var(--color-bg-page)) padding-box,
+             var(--gradient-door) border-box;
+  transform:perspective(700px) rotateY(-24deg);
+}
+.tri{position:absolute;width:0;height:0}
+.tri-left{
+  border-top:26px solid transparent;border-bottom:26px solid transparent;
+  border-right:42px solid var(--alten-azure-500);
+  top:-14px;left:-58px;
+}
+.tri-right{
+  border-top:15px solid transparent;border-bottom:15px solid transparent;
+  border-left:24px solid var(--alten-ochre-300);
+  bottom:34px;right:-44px;
+}
+.tri-small{
+  border-top:10px solid transparent;border-bottom:10px solid transparent;
+  border-left:16px solid var(--alten-azure-300);
+  top:48%;right:-70px;
+}
+@media(max-width:760px){
+  .hero .container{grid-template-columns:1fr}
+  .door{display:none}
+  .hero h1{font-size:var(--fs-2xl)}
+}
+
+/* ============================================================
+   COULEURS
+   ============================================================ */
+.swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-4)}
+.swatch{cursor:pointer;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow var(--duration) var(--easing)}
+.swatch:hover{box-shadow:var(--shadow-md)}
+.swatch-color{height:76px}
+.swatch-info{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-xs)}
+.swatch-info strong{display:block;font-size:var(--fs-sm)}
+.swatch-info span{color:var(--color-text-secondary);text-transform:uppercase}
+.swatch--main .swatch-color{height:120px}
+.excluded-row{display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-top:var(--sp-4)}
+.excluded{
+  display:flex;align-items:center;gap:var(--sp-3);
+  border:1px dashed var(--color-border);border-radius:var(--radius-md);
+  padding:var(--sp-2) var(--sp-4);font-size:var(--fs-sm);color:var(--color-text-secondary);
+}
+.excluded i{width:22px;height:22px;border-radius:var(--radius-sm);display:inline-block;position:relative}
+.excluded i::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to top right,transparent 46%,#fff 46%,#fff 54%,transparent 54%);
+}
+
+/* ============================================================
+   TYPOGRAPHIE
+   ============================================================ */
+.type-row{display:grid;grid-template-columns:130px 1fr;gap:var(--sp-5);align-items:baseline;padding:var(--sp-4) 0;border-bottom:1px solid var(--alten-grey-100)}
+.type-row .caption{font-family:'SFMono-Regular',Consolas,monospace}
+.t-display{font-size:var(--fs-3xl);font-weight:var(--fw-extrabold);line-height:var(--lh-tight)}
+.t-h1{font-size:var(--fs-2xl);font-weight:var(--fw-extrabold);line-height:var(--lh-tight)}
+.t-h2{font-size:var(--fs-xl);font-weight:var(--fw-extrabold);line-height:var(--lh-tight)}
+.t-h3{font-size:var(--fs-lg);font-weight:var(--fw-bold);line-height:var(--lh-tight)}
+.t-lead{font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.t-body{font-size:var(--fs-base)}
+.t-caption{font-size:var(--fs-sm);color:var(--color-text-secondary)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-4);margin-top:var(--sp-6)}
+.rule{border-radius:var(--radius-md);padding:var(--sp-4);font-size:var(--fs-sm);background:var(--color-bg-subtle)}
+.rule--dont{background:var(--color-bg-muted)}
+.rule strong{display:block;margin-bottom:var(--sp-1)}
+.rule--dont strong{color:var(--alten-navy-600)}
+
+/* ============================================================
+   ESPACEMENTS
+   ============================================================ */
+.space-row{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-2) 0;font-size:var(--fs-sm)}
+.space-row .caption{width:150px;font-family:'SFMono-Regular',Consolas,monospace}
+.space-bar{height:18px;background:var(--alten-azure-300)}
+
+/* ============================================================
+   COMPOSANTS
+   ============================================================ */
+.component-block{margin-bottom:var(--sp-7)}
+.demo{
+  border:1px solid var(--color-border);border-radius:var(--radius-md);
+  padding:var(--sp-6);display:flex;gap:var(--sp-4);flex-wrap:wrap;align-items:center;
+  background:var(--color-bg-page);
+}
+.demo--dark{background:var(--color-bg-emphasis)}
+
+/* Boutons */
+.btn{
+  display:inline-flex;align-items:center;gap:var(--sp-2);
+  font-family:var(--font-family-base);font-size:var(--fs-sm);font-weight:var(--fw-bold);
+  text-transform:uppercase;letter-spacing:var(--ls-caps);
+  padding:var(--sp-3) var(--sp-5);border-radius:var(--radius-sm);
+  border:2px solid transparent;cursor:pointer;text-decoration:none;
+  transition:background var(--duration) var(--easing),color var(--duration) var(--easing),border-color var(--duration) var(--easing);
+}
+.btn::after{ /* triangle directionnel, motif charte */
+  content:"";width:0;height:0;
+  border-top:5px solid transparent;border-bottom:5px solid transparent;
+  border-left:8px solid currentColor;
+  transition:transform var(--duration) var(--easing);
+}
+.btn:hover::after{transform:translateX(3px)}
+.btn:focus-visible{outline:3px solid var(--alten-azure-300);outline-offset:2px}
+.btn-primary{background:var(--color-action-primary);color:var(--color-text-inverse)}
+.btn-primary:hover{background:var(--color-action-primary-hover)}
+.btn-secondary{background:transparent;color:var(--alten-navy-900);border-color:var(--alten-navy-900)}
+.btn-secondary:hover{background:var(--alten-navy-900);color:var(--color-text-inverse)}
+.btn-cta{background:var(--alten-ochre-300);color:var(--alten-navy-900)}
+.btn-cta:hover{background:var(--alten-ochre-500)}
+.btn-inverse{background:transparent;color:var(--color-text-inverse);border-color:var(--color-text-inverse)}
+.btn-inverse:hover{background:var(--color-text-inverse);color:var(--alten-navy-900)}
+.btn:disabled{background:var(--alten-grey-300);color:var(--alten-grey-500);cursor:not-allowed}
+.btn:disabled::after{border-left-color:var(--alten-grey-500)}
+
+/* Badges */
+.badge{
+  display:inline-block;font-size:var(--fs-xs);font-weight:var(--fw-bold);
+  text-transform:uppercase;letter-spacing:var(--ls-caps);
+  padding:var(--sp-1) var(--sp-3);border-radius:var(--radius-sm);
+}
+.badge-navy{background:var(--alten-navy-900);color:#fff}
+.badge-azure{background:var(--alten-azure-100);color:var(--alten-azure-700)}
+.badge-ochre{background:var(--alten-ochre-100);color:var(--alten-navy-900)}
+.badge-grey{background:var(--alten-grey-100);color:var(--alten-grey-500)}
+
+/* Cartes pilier (inspirées de l'employer promise p.43) */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--sp-5)}
+.card-pillar{
+  position:relative;background:var(--alten-navy-900);color:#fff;
+  padding:var(--sp-6) var(--sp-5) var(--sp-7);
+  transition:transform var(--duration) var(--easing),box-shadow var(--duration) var(--easing);
+}
+.card-pillar:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+.card-pillar::after{ /* encoche triangulaire signature */
+  content:"";position:absolute;bottom:0;right:var(--sp-5);width:0;height:0;
+  border-left:16px solid transparent;border-right:16px solid transparent;
+  border-bottom:16px solid var(--color-bg-page);
+}
+.card-pillar h4{color:var(--alten-ochre-300);font-size:var(--fs-sm);text-transform:uppercase;letter-spacing:var(--ls-caps);margin-bottom:var(--sp-3)}
+.card-pillar p{font-size:var(--fs-sm);font-weight:var(--fw-light)}
+
+.card-light{
+  background:var(--color-bg-subtle);padding:var(--sp-6) var(--sp-5);
+  border-top:3px solid var(--alten-azure-500);
+}
+.card-light h4{font-size:var(--fs-md);margin-bottom:var(--sp-2)}
+.card-light p{font-size:var(--fs-sm)}
+
+/* Highlight inline */
+.hl{background:linear-gradient(transparent 15%,var(--color-highlight-bg) 15%,var(--color-highlight-bg) 90%,transparent 90%);padding:0 .15em}
+
+/* Formulaires */
+.form-demo{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--sp-5);width:100%}
+.field label{display:block;font-size:var(--fs-sm);font-weight:var(--fw-bold);margin-bottom:var(--sp-2)}
+.field input,.field select{
+  width:100%;font-family:var(--font-family-base);font-size:var(--fs-base);
+  color:var(--color-text-primary);padding:var(--sp-3);
+  border:1px solid var(--color-border);border-radius:var(--radius-sm);
+  background:#fff;transition:border-color var(--duration) var(--easing),box-shadow var(--duration) var(--easing);
+}
+.field input:focus,.field select:focus{
+  outline:none;border-color:var(--alten-azure-500);
+  box-shadow:0 0 0 3px var(--alten-azure-100);
+}
+.field .hint{font-size:var(--fs-xs);color:var(--color-text-secondary);margin-top:var(--sp-1)}
+
+/* Tableau */
+table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+th{
+  text-align:left;background:var(--alten-navy-900);color:#fff;
+  font-weight:var(--fw-bold);text-transform:uppercase;letter-spacing:var(--ls-caps);
+  font-size:var(--fs-xs);padding:var(--sp-3) var(--sp-4);
+}
+td{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--alten-grey-100)}
+tr:nth-child(even) td{background:var(--alten-blue-bg-100)}
+
+/* Data viz */
+.dataviz{display:flex;align-items:flex-end;gap:var(--sp-3);height:150px;width:100%;max-width:460px}
+.bar{flex:1;border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+
+footer{padding:var(--sp-7) 0;text-align:center;color:var(--color-text-secondary);font-size:var(--fs-sm)}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--alten-navy-900);color:#fff;font-size:var(--fs-sm);
+  padding:var(--sp-3) var(--sp-5);border-radius:var(--radius-md);
+  opacity:0;transition:all var(--duration) var(--easing);pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container">
+    <div>
+      <span class="title-block">Design System · v1.0</span>
+      <h1>ALTEN<br><span>Design System</span></h1>
+      <p>Fondations et composants dérivés du Brand Book ALTEN (juin 2026), prêts à intégrer sur le web. Le texte courant est toujours en navy, l'azure porte l'action, l'ochre attire l'œil — et la porte reste notre signature.</p>
+    </div>
+    <div class="door">
+      <span class="tri tri-left"></span>
+      <span class="tri tri-right"></span>
+      <span class="tri tri-small"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COULEURS ============ -->
+<section>
+  <div class="container">
+    <span class="title-block">01 · Fondations</span>
+    <h2 class="title-highlight">Palette de <em>couleurs</em></h2>
+    <p class="section-intro">Un trio de teintes contrastées, décliné en nuances pour la donnée et les fonds.</p>
+
+    <h3 class="subtitle-2">Couleurs principales</h3>
+    <div class="swatch-grid">
+      <div class="swatch swatch--main" data-hex="#008BD2"><div class="swatch-color" style="background:#008BD2"></div><div class="swatch-info"><strong>Azure Blue</strong><span>#008BD2</span></div></div>
+      <div class="swatch swatch--main" data-hex="#043962"><div class="swatch-color" style="background:#043962"></div><div class="swatch-info"><strong>Navy Blue</strong><span>#043962</span></div></div>
+      <div class="swatch swatch--main" data-hex="#FFDA65"><div class="swatch-color" style="background:#FFDA65"></div><div class="swatch-info"><strong>Ochre Yellow</strong><span>#FFDA65</span></div></div>
+    </div>
+
+    <h3 class="subtitle-2">Couleurs secondaires — dégradés de données</h3>
+    <div class="swatch-grid">
+      <div class="swatch" data-hex="#176F98"><div class="swatch-color" style="background:#176F98"></div><div class="swatch-info"><strong>Azure 700</strong><span>#176F98</span></div></div>
+      <div class="swatch" data-hex="#7DCAED"><div class="swatch-color" style="background:#7DCAED"></div><div class="swatch-info"><strong>Azure 300</strong><span>#7DCAED</span></div></div>
+      <div class="swatch" data-hex="#B2E0F5"><div class="swatch-color" style="background:#B2E0F5"></div><div class="swatch-info"><strong>Azure 100</strong><span>#B2E0F5</span></div></div>
+      <div class="swatch" data-hex="#4A617D"><div class="swatch-color" style="background:#4A617D"></div><div class="swatch-info"><strong>Navy 600</strong><span>#4A617D</span></div></div>
+      <div class="swatch" data-hex="#8D9CAD"><div class="swatch-color" style="background:#8D9CAD"></div><div class="swatch-info"><strong>Navy 400</strong><span>#8D9CAD</span></div></div>
+      <div class="swatch" data-hex="#D2D7DE"><div class="swatch-color" style="background:#D2D7DE"></div><div class="swatch-info"><strong>Navy 200</strong><span>#D2D7DE</span></div></div>
+      <div class="swatch" data-hex="#FFBA00"><div class="swatch-color" style="background:#FFBA00"></div><div class="swatch-info"><strong>Ochre 500</strong><span>#FFBA00</span></div></div>
+      <div class="swatch" data-hex="#FFD500"><div class="swatch-color" style="background:#FFD500"></div><div class="swatch-info"><strong>Ochre 400</strong><span>#FFD500</span></div></div>
+      <div class="swatch" data-hex="#FFEF86"><div class="swatch-color" style="background:#FFEF86"></div><div class="swatch-info"><strong>Ochre 100</strong><span>#FFEF86</span></div></div>
+    </div>
+
+    <h3 class="subtitle-2">Couleurs tertiaires — fonds, lignes, texte secondaire</h3>
+    <div class="swatch-grid">
+      <div class="swatch" data-hex="#EBF3F9"><div class="swatch-color" style="background:#EBF3F9"></div><div class="swatch-info"><strong>Blue BG 100</strong><span>#EBF3F9</span></div></div>
+      <div class="swatch" data-hex="#DAE8F3"><div class="swatch-color" style="background:#DAE8F3"></div><div class="swatch-info"><strong>Blue BG 200</strong><span>#DAE8F3</span></div></div>
+      <div class="swatch" data-hex="#CBEAF8"><div class="swatch-color" style="background:#CBEAF8"></div><div class="swatch-info"><strong>Blue BG 300</strong><span>#CBEAF8</span></div></div>
+      <div class="swatch" data-hex="#EBECF0"><div class="swatch-color" style="background:#EBECF0"></div><div class="swatch-info"><strong>Grey 100 · fonds</strong><span>#EBECF0</span></div></div>
+      <div class="swatch" data-hex="#CDCEDA"><div class="swatch-color" style="background:#CDCEDA"></div><div class="swatch-info"><strong>Grey 300 · lignes</strong><span>#CDCEDA</span></div></div>
+      <div class="swatch" data-hex="#8C8C9A"><div class="swatch-color" style="background:#8C8C9A"></div><div class="swatch-info"><strong>Grey 500 · texte 2nd</strong><span>#8C8C9A</span></div></div>
+    </div>
+
+    <h3 class="subtitle-2">Exclusions de la charte</h3>
+    <p class="caption">Ces couleurs appartiennent au logo uniquement et sont exclues de toute communication et interface :</p>
+    <div class="excluded-row">
+      <div class="excluded"><i style="background:#E30513"></i> Rouge pur #E30513</div>
+      <div class="excluded"><i style="background:#FEEB17"></i> Jaune pur #FEEB17</div>
+      <div class="excluded"><i style="background:#000000"></i> Noir #000000 (texte)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TYPOGRAPHIE ============ -->
+<section>
+  <div class="container">
+    <span class="title-block">02 · Fondations</span>
+    <h2 class="title-highlight">Typographie & <em>hiérarchie</em></h2>
+    <p class="section-intro">Metropolis sur tous les médias ; Open Sans et Noto Sans en alternatives web officielles.</p>
+
+    <div class="type-row"><span class="caption">Display · 49/800</span><div class="t-display">Building tomorrow's world</div></div>
+    <div class="type-row"><span class="caption">H1 · 39/800</span><div class="t-h1">Titre de page principal</div></div>
+    <div class="type-row"><span class="caption">H2 · 31/800</span><div class="t-h2">Titre de section</div></div>
+    <div class="type-row"><span class="caption">H3 · 25/700</span><div class="t-h3">Sous-titre de contenu</div></div>
+    <div class="type-row"><span class="caption">Lead · 20/700</span><div class="t-lead">Introduction en tête de section, toujours en gras navy.</div></div>
+    <div class="type-row"><span class="caption">Body · 16/400</span><div class="t-body">Texte courant en navy — jamais en noir. On peut <span class="hl">surligner un mot-clé</span> avec le style highlight de la charte.</div></div>
+    <div class="type-row"><span class="caption">Caption · 14/400</span><div class="t-caption">Légende ou détail, en gris 500.</div></div>
+
+    <div class="rules">
+      <div class="rule"><strong>✓ À faire</strong>Texte courant en navy blue. ALTEN toujours écrit en capitales. Hiérarchie par les graisses (light → extrabold).</div>
+      <div class="rule rule--dont"><strong>✗ À éviter</strong>Texte en noir. Texte en jaune (lisibilité insuffisante). Abus de capitales dans les paragraphes.</div>
+      <div class="rule"><strong>ℹ Scotch Display</strong>Police éditoriale premium sous licence Adobe : embed web non autorisé — réservée aux campagnes print/vidéo.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ESPACEMENTS ============ -->
+<section>
+  <div class="container">
+    <span class="title-block">03 · Fondations</span>
+    <h2 class="title-highlight">Espacements & <em>rythme</em></h2>
+    <p class="section-intro">Échelle sur base 4 px pour garantir un rythme vertical cohérent.</p>
+    <div class="space-row"><span class="caption">--space-1 · 4px</span><div class="space-bar" style="width:4px"></div></div>
+    <div class="space-row"><span class="caption">--space-2 · 8px</span><div class="space-bar" style="width:8px"></div></div>
+    <div class="space-row"><span class="caption">--space-3 · 12px</span><div class="space-bar" style="width:12px"></div></div>
+    <div class="space-row"><span class="caption">--space-4 · 16px</span><div class="space-bar" style="width:16px"></div></div>
+    <div class="space-row"><span class="caption">--space-5 · 24px</span><div class="space-bar" style="width:24px"></div></div>
+    <div class="space-row"><span class="caption">--space-6 · 32px</span><div class="space-bar" style="width:32px"></div></div>
+    <div class="space-row"><span class="caption">--space-7 · 48px</span><div class="space-bar" style="width:48px"></div></div>
+    <div class="space-row"><span class="caption">--space-8 · 64px</span><div class="space-bar" style="width:64px"></div></div>
+    <div class="space-row"><span class="caption">--space-9 · 96px</span><div class="space-bar" style="width:96px"></div></div>
+  </div>
+</section>
+
+<!-- ============ COMPOSANTS ============ -->
+<section>
+  <div class="container">
+    <span class="title-block">04 · Composants</span>
+    <h2 class="title-highlight">Bibliothèque de <em>composants</em></h2>
+    <p class="section-intro">Chaque composant applique les tokens ; le triangle directionnel signe les actions.</p>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Boutons</h3>
+      <div class="demo">
+        <button class="btn btn-primary">Action principale</button>
+        <button class="btn btn-secondary">Action secondaire</button>
+        <button class="btn btn-cta">Rejoignez-nous</button>
+        <button class="btn btn-primary" disabled>Désactivé</button>
+      </div>
+      <div class="demo demo--dark" style="margin-top:var(--sp-3)">
+        <button class="btn btn-inverse">Sur fond navy</button>
+        <button class="btn btn-cta">CTA ochre</button>
+      </div>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Badges & labels</h3>
+      <div class="demo">
+        <span class="badge badge-navy">Corporate</span>
+        <span class="badge badge-azure">Digital</span>
+        <span class="badge badge-ochre">Recrutement</span>
+        <span class="badge badge-grey">Archive</span>
+      </div>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Cartes pilier — encoche triangulaire signature</h3>
+      <div class="cards">
+        <div class="card-pillar"><h4>Technological challenges</h4><p>Nous mettons l'expertise de nos consultants au service de projets stimulants.</p></div>
+        <div class="card-pillar"><h4>Inspiring togetherness</h4><p>Nous encourageons le partage d'expérience pour créer de la valeur.</p></div>
+        <div class="card-pillar"><h4>Fulfilling opportunities</h4><p>Nous accélérons le développement personnel et professionnel.</p></div>
+        <div class="card-pillar"><h4>Sustainable commitment</h4><p>La responsabilité sociale est l'affaire de tous.</p></div>
+      </div>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Cartes de contenu</h3>
+      <div class="cards">
+        <div class="card-light"><h4>Aéronautique</h4><p>Conception et certification des systèmes embarqués de nouvelle génération.</p></div>
+        <div class="card-light"><h4>Énergie & environnement</h4><p>Accélérer la transition énergétique par l'ingénierie durable.</p></div>
+        <div class="card-light"><h4>Sciences de la vie</h4><p>Innovation au service de la santé et du patient.</p></div>
+      </div>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Formulaires</h3>
+      <div class="demo">
+        <div class="form-demo">
+          <div class="field">
+            <label for="name">Nom complet</label>
+            <input id="name" type="text" placeholder="Marie Dupont">
+            <div class="hint">Tel qu'il apparaît sur vos documents officiels.</div>
+          </div>
+          <div class="field">
+            <label for="sector">Secteur d'activité</label>
+            <select id="sector"><option>Aéronautique</option><option>Automobile</option><option>Télécoms</option></select>
+            <div class="hint">12 secteurs disponibles.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Tableau de données</h3>
+      <table>
+        <thead><tr><th>Indicateur</th><th>2024</th><th>2025</th><th>Évolution</th></tr></thead>
+        <tbody>
+          <tr><td>Collaborateurs</td><td>50 000</td><td>57 700</td><td style="color:var(--alten-azure-700);font-weight:700">+15,4 %</td></tr>
+          <tr><td>Pays</td><td>30</td><td>30+</td><td>—</td></tr>
+          <tr><td>Clients</td><td>6 200</td><td>6 500</td><td style="color:var(--alten-azure-700);font-weight:700">+4,8 %</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="component-block">
+      <h3 class="subtitle-2">Data visualisation — ordre des couleurs</h3>
+      <div class="demo">
+        <div class="dataviz" role="img" aria-label="Exemple d'ordre des couleurs pour graphiques">
+          <div class="bar" style="height:90%;background:var(--alten-azure-500)"></div>
+          <div class="bar" style="height:72%;background:var(--alten-navy-900)"></div>
+          <div class="bar" style="height:58%;background:var(--alten-ochre-500)"></div>
+          <div class="bar" style="height:44%;background:var(--alten-azure-300)"></div>
+          <div class="bar" style="height:32%;background:var(--alten-navy-400)"></div>
+          <div class="bar" style="height:22%;background:var(--alten-ochre-100)"></div>
+        </div>
+      </div>
+      <p class="caption" style="margin-top:var(--sp-3)">Séquence : azure 500 → navy 900 → ochre 500 → azure 300 → navy 400 → ochre 100.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    ALTEN Design System v1.0 — dérivé du Brand Book EN, juin 2026 · Cliquez sur une pastille de couleur pour copier son code hex.
+  </div>
+</footer>
+
+<div class="toast" id="toast">Copié !</div>
+
+<script>
+// Copie du hex au clic sur une pastille
+const toast = document.getElementById('toast');
+let timer;
+document.querySelectorAll('.swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    const hex = sw.dataset.hex;
+    navigator.clipboard.writeText(hex).then(() => {
+      toast.textContent = hex + ' copié';
+      toast.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(() => toast.classList.remove('show'), 1600);
+    });
+  });
+});
+</script>
+</body>
+</html>
