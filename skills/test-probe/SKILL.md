@@ -23,8 +23,11 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 2. Run the probe specifying the narrow test command and the modified source file(s):
 
 ```bash
-# Verify that the test fails when the fix is removed
+# Verify that the test fails when the fix is removed (defaults to reverting against HEAD)
 node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
+
+# Compare and unpatch against a branch base ref (e.g. in CI after commits)
+node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js" --base origin/main
 
 # Run with JSON output for automated agent ingestion
 node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js" --json

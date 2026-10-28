@@ -5,7 +5,7 @@ applyTo: "**/think.md"
 
 # Specification Standards: Think
 
-When authoring or validating the Think record, follow the installed `think-plan` skill (read its `references/think-plan-contract.md`).
+When authoring or validating the Think record, follow the installed `think` skill (read its `references/think-contract.md`).
 
 ## Phase Separation
 
@@ -18,7 +18,7 @@ When authoring or validating the Think record, follow the installed `think-plan`
 
 - **Options, not conclusions**: Record 2 to 4 credible options with trade-offs, cost, and risk, including Forge reuse versus custom build, then the chosen approach with its reasoning.
 - **Compose before you build**: Bind pre-approved Forge assets. A custom build needs a recorded reason and a note of what the Forge catalog was searched for.
-- **Bind Forge assets as `forge/<id>@<version>`** and check them with the `forge` skill.
+- **Bind Forge assets as `forge/<id>@<version>`** (checked with the `forge` skill when installed), or state `- **None:** <reason>` for a custom build.
 - **Ground in reality**: Trace requests through actual codebase components and layers. Never hallucinate nonexistent layers or Forge assets.
 - **Respect Persistent Context**: Read instructions, specifications, and decision records, and list the ones that bound the solution.
 - **Blast radius is set here, once**: Classify the tier from the affected APIs, schemas, queues, and consumers. Name the rollback mechanism for High and Critical.

@@ -91,15 +91,16 @@ flowchart TD
 - **Governing Contract**: [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/scope-guard/references/guard-contract.md)
 - **Workflow & Command**:
   ```bash
-  # Check git working tree changes against allowed scopes
+  # Check git working tree changes (or branch diff via --base origin/main) against allowed scopes
   node .agents/skills/scope-guard/scripts/scope-guard.mjs \
     --scope "src/auth/**,tests/auth/**" \
     --git \
+    --base origin/main \
     --max-additions 150 \
     --max-deletions 50
   ```
 - **Invariants Enforced**:
-  - Every modified file must match declared glob patterns in `--scope`.
+  - Every modified file must match declared glob patterns in `--scope` (supports `--base <git-ref>`, default `HEAD`).
   - Automatic rejection of forbidden sentinels (`package-lock.json`, `.env*`, root configs) unless explicitly allowed.
   - Strict churn thresholds on additions and deletions prevent mass refactorings.
 
@@ -112,11 +113,11 @@ flowchart TD
 - **Governing Contract**: [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/dependency-guard/references/dependency-contract.md)
 - **Workflow & Command**:
   ```bash
-  # Check git changes to package.json against baseline HEAD
+  # Check git changes to package.json against baseline HEAD (or --base origin/main)
   node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git
 
   # Permit specific, pre-approved additions
-  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --allow "zod,dotenv"
+  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --base origin/main --allow "zod,dotenv"
   ```
 - **Invariants Enforced**:
   - Rejects additions to `dependencies` or `devDependencies` without explicit `--allow` authorization.
@@ -132,7 +133,7 @@ flowchart TD
 - **Governing Contract**: [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/secret-guard/references/secret-contract.md)
 - **Workflow & Command**:
   ```bash
-  # Scan added lines in git diff against HEAD
+  # Scan added lines in git diff against HEAD (or --base origin/main)
   node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
 
   # Scan specific source files directly
@@ -194,14 +195,15 @@ flowchart TD
 - **Governing Contract**: [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/test-probe/references/probe-contract.md)
 - **Workflow & Command**:
   ```bash
-  # Assert test suite fails when source fix is temporarily reverted
+  # Assert test suite fails when source fix is temporarily reverted (against HEAD or --base origin/main)
   node .agents/skills/test-probe/scripts/test-probe.mjs \
     --test-cmd "npm test -- tests/auth.test.js" \
-    --source "src/auth/service.js"
+    --source "src/auth/service.js" \
+    --base origin/main
   ```
 - **Invariants Enforced**:
   - Asserts that modified code passes the test suite initially.
-  - Temporarily inverts/reverts the source file to baseline `HEAD`.
+  - Temporarily inverts/reverts the source file to baseline `HEAD` (or `--base <git-ref>`).
   - Re-executes the test command against unpatched code: **fails if tests pass (tautological test detected)**!
   - Atomically restores the modified source file in a `finally` block regardless of test outcomes.
 

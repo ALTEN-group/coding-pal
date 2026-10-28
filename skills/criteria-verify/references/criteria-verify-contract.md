@@ -11,7 +11,7 @@ The gate is deterministic: the same `plan.md` and the same reports always produc
 | Input | Flag | Content |
 |---|---|---|
 | Plan record | `--plan <plan.md>` | `specs/issue-<n>/plan.md`: the `## Acceptance Criteria` and `## Test Plan` sections |
-| Test reports | `--report <file>` (repeatable) | JUnit XML, or Jest/Vitest JSON. Several reports are combined (for example unit and API test reports) |
+| Test reports | `--report <file>` (repeatable) | JUnit XML, Jest/Vitest JSON, or TAP / runner log. Several reports are combined (for example unit and API test reports) |
 | File check | `--require-test-files` | Optional. Each Test Plan test file must appear among the reported test files |
 | Output | `--json` | Optional. Print the result as JSON instead of a Markdown table |
 
@@ -28,8 +28,9 @@ The gate is deterministic: the same `plan.md` and the same reports always produc
 |---|---|---|---|
 | JUnit XML | first character `<` | `<testcase name classname>`; status from child `<failure>`, `<error>` (failed), `<skipped>` | `file` attribute of the testcase or the nearest `<testsuite>`; else a path-like `classname` |
 | Jest / Vitest JSON | first character `{` | `testResults[].assertionResults[]` `fullName`, `title`, `ancestorTitles`; `status` | `testResults[].name` |
+| TAP / runner log | `TAP version` header, `ok <n>`/`not ok <n>`, or `ok   <name>`/`FAIL <name>` lines | test description after `-` or status token; `# SKIP` / `# TODO` directives count as skipped | preceding `# file: <path>` or `# Subtest: <path>` comment line when present |
 
-- Jest/Vitest statuses other than `passed` and `failed` (`pending`, `skipped`, `todo`, `disabled`) count as **skipped**.
+- Jest/Vitest statuses other than `passed` and `failed` (`pending`, `skipped`, `todo`, `disabled`) and TAP `# SKIP` / `# TODO` directives count as **skipped**.
 - A report with no test results is an error: an empty report cannot prove anything.
 - XML comments and CDATA sections are ignored. The parser is regex-based and does not validate the XML.
 - jest-junit omits the file path by default. Use Jest/Vitest JSON, or configure `addFileAttribute: true`, when you pass `--require-test-files`.

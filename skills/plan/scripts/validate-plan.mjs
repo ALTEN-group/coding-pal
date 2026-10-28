@@ -122,7 +122,6 @@ function isValidDate(value) {
 	return !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
 }
 
-/** A signed decision record carries a named human Architect and a real date; AI drafts, the Architect signs. */
 function checkSignature(status, filename) {
 	const m = status.match(SIGNED_BY);
 	if (!m) fail(`${filename} Decision Record "Status" "${status}" must read "Signed by <name> (Architect) on YYYY-MM-DD"`);
@@ -134,12 +133,6 @@ function checkSignature(status, filename) {
 
 const APPROVER = /^(.+?) \((Developer|Architect)\) on (\d{4}-\d{2}-\d{2})$/;
 
-/**
- * Checks an "Approved By" value for the given stage. A draft carries exactly "Pending"; an approved file names
- * the humans who approved it, in one of the allowed role sequences. AI drafts, people approve.
- * @param {string[][]} allowedRoles
- * @returns {{status: "pending"|"approved", approvals: {name: string, role: string, date: string}[]}}
- */
 function checkApproval(value, stage, allowedRoles, where, filename) {
 	if (stage === "draft") {
 		if (value !== PENDING) fail(`${filename} ${where} "Approved By" must be exactly "${PENDING}" at the draft stage; only a person approves, after review (found "${value}")`);
@@ -204,7 +197,6 @@ function parseTable(body, columns, where, filename) {
 	});
 }
 
-/** think.md carries no source code and no task checklist: only text or diagram fences, no checkbox items, no step headings. */
 function checkThinkHasNoCode(markdown, filename) {
 	for (const m of markdown.matchAll(/^[ \t]*(?:`{3,}|~{3,})[ \t]*([^\s`~]*)/gm)) {
 		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code belongs in the Plan's "New Code" fields)`);
@@ -214,8 +206,29 @@ function checkThinkHasNoCode(markdown, filename) {
 	if (/^#{3,4} Step \d+/m.test(masked)) fail(`${filename} must not contain implementation steps; they belong in the Plan`);
 }
 
+function parseOptions(body, filename) {
+	const masked = maskFences(body);
+	const heads = [...masked.matchAll(/^### Option (\d+):\s+(.+)$/gm)];
+	if (heads.length < 2 || heads.length > 4) {
+		fail(`${filename} "## Options Considered" must contain 2 to 4 options formatted "### Option <N>: <Name>" (found ${heads.length})`);
+	}
+	return heads.map((m, i) => {
+		const number = Number(m[1]);
+		if (number !== i + 1) fail(`${filename} option numbers must be sequential. Expected Option ${i + 1}, found Option ${number}`);
+		const end = i + 1 < heads.length ? heads[i + 1].index : body.length;
+		const fields = fieldMap(parseFields(body.slice(m.index + m[0].length, end)));
+		const where = `Option ${number}`;
+		need(fields, "Approach", where, filename, { allowNone: false });
+		const source = OPTION_SOURCES.find((s) => s.toLowerCase() === need(fields, "Source", where, filename, { allowNone: false }).toLowerCase());
+		if (!source) fail(`${filename} ${where} "Source" must be one of: ${OPTION_SOURCES.join(", ")}`);
+		for (const label of ["Trade-offs", "Cost", "Risk"]) need(fields, label, where, filename, { allowNone: false });
+		return { number, name: m[2].trim(), source };
+	});
+}
+
 /**
- * Validates the contents of a think.md markdown file.
+ * Validates the contents of a think.md markdown file for cross-checking with plan.md.
+ * Included directly in validate-plan.mjs so the plan skill is self-contained when installed standalone.
  * @param {string} rawMarkdown
  * @param {string} [filename="think.md"]
  * @param {{stage?: "draft"|"approved"}} [settings]
@@ -320,26 +333,6 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	}
 
 	return { title: h1[1].trim(), options, selected, tier, rollback, decisionRequired, contextUpdates, approval };
-}
-
-function parseOptions(body, filename) {
-	const masked = maskFences(body);
-	const heads = [...masked.matchAll(/^### Option (\d+):\s+(.+)$/gm)];
-	if (heads.length < 2 || heads.length > 4) {
-		fail(`${filename} "## Options Considered" must contain 2 to 4 options formatted "### Option <N>: <Name>" (found ${heads.length})`);
-	}
-	return heads.map((m, i) => {
-		const number = Number(m[1]);
-		if (number !== i + 1) fail(`${filename} option numbers must be sequential. Expected Option ${i + 1}, found Option ${number}`);
-		const end = i + 1 < heads.length ? heads[i + 1].index : body.length;
-		const fields = fieldMap(parseFields(body.slice(m.index + m[0].length, end)));
-		const where = `Option ${number}`;
-		need(fields, "Approach", where, filename, { allowNone: false });
-		const source = OPTION_SOURCES.find((s) => s.toLowerCase() === need(fields, "Source", where, filename, { allowNone: false }).toLowerCase());
-		if (!source) fail(`${filename} ${where} "Source" must be one of: ${OPTION_SOURCES.join(", ")}`);
-		for (const label of ["Trade-offs", "Cost", "Risk"]) need(fields, label, where, filename, { allowNone: false });
-		return { number, name: m[2].trim(), source };
-	});
 }
 
 function parseStepBlock(block, expectedNumber, filename) {
@@ -598,15 +591,13 @@ export async function runValidator(args = process.argv.slice(2)) {
 		console.error(`✗ Unknown --stage "${opts.stage}": use one of ${STAGES.join(", ")}.`);
 		return 1;
 	}
-	if (opts.help || (!opts.think && !opts.plan && !opts.dir)) {
+	if (opts.help || (!opts.plan && !opts.dir)) {
 		console.log(`Usage:
-  node validate-specs.mjs --think <path/to/think.md> [--stage draft|approved]
-  node validate-specs.mjs --plan <path/to/plan.md> [--stage draft|approved] [--allow-open-questions]
-  node validate-specs.mjs --think <think.md> --plan <plan.md>   (also cross-checks the two files)
-  node validate-specs.mjs --dir <specs-directory> [--stage draft|approved]
+  node validate-plan.mjs --plan <path/to/plan.md> [--think <path/to/think.md>] [--stage draft|approved] [--allow-open-questions]
+  node validate-plan.mjs --dir <specs-directory> [--stage draft|approved] [--allow-open-questions]
 
-Stages: "draft" (default) requires "Approved By: Pending" in both files; "approved" requires the named Developer
-and Architect approvals. The agent only ever validates drafts; people approve.
+Stages: "draft" (default) requires "Approved By: Pending"; "approved" requires the named Developer
+(and optionally Architect) approvals. When --dir or --think is provided, think.md is also validated and cross-checked.
 `);
 		return opts.help ? 0 : 1;
 	}
@@ -623,43 +614,45 @@ and Architect approvals. The agent only ever validates drafts; people approve.
 		const planInDir = join(opts.dir, "plan.md");
 		if (await fileExists(thinkInDir)) targetThink = thinkInDir;
 		if (await fileExists(planInDir)) targetPlan = planInDir;
-		if (!targetThink && !targetPlan) {
-			console.error(`Error: Directory ${opts.dir} contains neither think.md nor plan.md`);
+		if (!targetPlan) {
+			console.error(`Error: Directory ${opts.dir} does not contain plan.md`);
 			return 1;
 		}
-		if (targetPlan && !targetThink) {
+		if (!targetThink) {
 			console.error(`Error: Directory ${opts.dir} contains plan.md without think.md. plan.md must be derived from think.md.`);
 			return 1;
 		}
 	}
 
-	let validatedCount = 0;
 	let think = null;
 
 	if (targetThink) {
+		if (!(await fileExists(targetThink))) {
+			console.error(`Error: File not found: ${targetThink}`);
+			return 1;
+		}
 		try {
 			think = validateThinkContent(await readFile(targetThink, "utf-8"), targetThink, { stage: opts.stage });
 			console.log(`✓ [think.md] Validated: "${think.title}" (blast radius ${think.tier}, ${think.options.length} options, ${opts.stage}) (${targetThink})`);
-			validatedCount++;
 		} catch (err) {
 			console.error(`✗ [think.md] Validation failed: ${err.message}`);
 			return 1;
 		}
 	}
 
-	if (targetPlan) {
-		try {
-			const result = validatePlanContent(await readFile(targetPlan, "utf-8"), targetPlan, { think, allowOpenQuestions: opts.allowOpenQuestions, stage: opts.stage });
-			console.log(`✓ [plan.md] Validated: "${result.title}" with ${result.steps.length} atomic steps and ${result.criteria.length} acceptance criteria, ${opts.stage} (${targetPlan})`);
-			validatedCount++;
-		} catch (err) {
-			console.error(`✗ [plan.md] Validation failed: ${err.message}`);
-			return 1;
-		}
+	if (!(await fileExists(targetPlan))) {
+		console.error(`Error: File not found: ${targetPlan}`);
+		return 1;
 	}
 
-	console.log(`Successfully validated ${validatedCount} specification file(s).`);
-	return 0;
+	try {
+		const result = validatePlanContent(await readFile(targetPlan, "utf-8"), targetPlan, { think, allowOpenQuestions: opts.allowOpenQuestions, stage: opts.stage });
+		console.log(`✓ [plan.md] Validated: "${result.title}" with ${result.steps.length} atomic steps and ${result.criteria.length} acceptance criteria, ${opts.stage} (${targetPlan})`);
+		return 0;
+	} catch (err) {
+		console.error(`✗ [plan.md] Validation failed: ${err.message}`);
+		return 1;
+	}
 }
 
 const isEntry = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

@@ -23,8 +23,9 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 2. Run the secret guard against git changes or files:
 
 ```bash
-# Scan git working tree changes against HEAD
+# Scan git working tree changes against HEAD (or pass --base <git-ref>, e.g. origin/main)
 node scripts/secret-guard.mjs --git
+node scripts/secret-guard.mjs --git --base origin/main
 
 # Scan specific files
 node scripts/secret-guard.mjs --file src/config.js

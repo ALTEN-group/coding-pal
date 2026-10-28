@@ -11,8 +11,9 @@ A **Dependency Guard** mechanically prevents agents from introducing unvetted, u
 ## CLI Usage
 
 ```bash
-# Check git working tree changes against baseline HEAD
+# Check git working tree changes against baseline HEAD (or --base <git-ref>)
 node scripts/dependency-guard.mjs --git
+node scripts/dependency-guard.mjs --git --base origin/main
 
 # Check with explicit allowed new packages
 node scripts/dependency-guard.mjs --git --allow "zod,dotenv"

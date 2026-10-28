@@ -41,6 +41,7 @@ export const SECRET_RULES = [
 export function parseArgs(argv) {
 	const options = {
 		useGit: false,
+		base: "HEAD",
 		files: [],
 		text: null,
 		json: false,
@@ -51,6 +52,8 @@ export function parseArgs(argv) {
 		const arg = argv[i];
 		if (arg === "--git") {
 			options.useGit = true;
+		} else if (arg === "--base") {
+			options.base = argv[++i];
 		} else if (arg === "--file") {
 			options.files.push(argv[++i]);
 		} else if (arg === "--text") {
@@ -96,8 +99,8 @@ export function scanLines(linesWithContext) {
 	return violations;
 }
 
-export function scanGitDiff(cwd = process.cwd()) {
-	const res = spawnSync("git diff -U0 HEAD", {
+export function scanGitDiff(cwd = process.cwd(), base = "HEAD") {
+	const res = spawnSync(`git diff -U0 "${base}"`, {
 		shell: true,
 		cwd,
 		encoding: "utf-8",
@@ -172,7 +175,7 @@ Options:
 		const targets = [];
 
 		if (options.useGit) {
-			targets.push(...scanGitDiff(options.cwd));
+			targets.push(...scanGitDiff(options.cwd, options.base));
 		}
 
 		if (options.files.length > 0) {

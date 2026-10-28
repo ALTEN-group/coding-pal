@@ -5,7 +5,7 @@ applyTo: "**/plan.md"
 
 # Specification Standards: Plan
 
-When authoring or validating the Plan record, follow the installed `think-plan` skill (read its `references/think-plan-contract.md`).
+When authoring or validating the Plan record, follow the installed `plan` skill (read its `references/plan-contract.md`).
 
 ## Phase Separation
 

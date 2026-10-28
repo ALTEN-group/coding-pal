@@ -7,7 +7,7 @@ The Scope Guard contract defines deterministic rules for asserting that changes 
 ## 2. Invariants & Rules
 
 1. **Allowed Paths (`allowed_paths`)**:
-   - Every file modified, added, or deleted in the working tree or diff must match at least one authorized path pattern or prefix.
+   - Every file modified, added, or deleted in the working tree or diff (against `HEAD` by default, or `--base <git-ref>` when comparing a branch) must match at least one authorized path pattern or prefix.
    - If no allowed paths are specified, all files are permitted unless matching a forbidden path.
 2. **Forbidden Paths (`forbidden_paths`)**:
    - No file matching a forbidden path pattern (e.g., package manager lockfiles, environment secrets, master database changelogs) may be modified, added, or deleted under any circumstances.

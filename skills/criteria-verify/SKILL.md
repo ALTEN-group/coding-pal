@@ -1,6 +1,6 @@
 ---
 name: criteria-verify
-description: 'Prove that every acceptance criterion (AC-<n>) in a plan.md has at least one passing test and that no test mapped to a criterion failed, by reading JUnit XML or Jest/Vitest JSON reports and printing a criterion-by-criterion verdict table. Use when the agent loop or CI (Prove stage) must gate a change on Criteria Test Verification.'
+description: 'Prove that every acceptance criterion (AC-<n>) in a plan.md has at least one passing test and that no test mapped to a criterion failed, by reading JUnit XML, Jest/Vitest JSON, or TAP / runner log reports and printing a criterion-by-criterion verdict table. Use when the agent loop or CI (Prove stage) must gate a change on Criteria Test Verification.'
 license: MIT
 ---
 
@@ -21,7 +21,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 ## Workflow
 
 1. **Read `references/criteria-verify-contract.md` now.** It is the authoritative source for the mapping rule, report formats, verdicts, and exit codes.
-2. Name each test with the criterion it verifies, for example `it("AC-2 rejects viewers", ...)`, and make the test runner write a report (JUnit XML or Jest/Vitest JSON).
+2. Name each test with the criterion it verifies, for example `it("AC-2 rejects viewers", ...)`, and make the test runner write a report (JUnit XML, Jest/Vitest JSON, or TAP / runner log).
 3. Run the gate from the repository root:
 
 ```bash

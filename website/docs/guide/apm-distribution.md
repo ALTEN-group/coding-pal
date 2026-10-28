@@ -113,9 +113,11 @@ dependencies:
     - ALTEN-group/coding-pal/agents/code-audit.agent.md
     - ALTEN-group/coding-pal/agents/audit-fix.agent.md
     - ALTEN-group/coding-pal/agents/spec-from-code.agent.md
-    - ALTEN-group/coding-pal/agents/think-plan.agent.md
+    - ALTEN-group/coding-pal/agents/think.agent.md
+    - ALTEN-group/coding-pal/agents/plan.agent.md
     - ALTEN-group/coding-pal/agents/meeting-pack.agent.md
     - ALTEN-group/coding-pal/agents/code.agent.md
+    - ALTEN-group/coding-pal/agents/prove.agent.md
     - ALTEN-group/coding-pal/agents/gate-fix.agent.md
     - ALTEN-group/coding-pal/agents/release.agent.md
     - ALTEN-group/coding-pal/agents/learn.agent.md
@@ -140,6 +142,7 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/triage.prompt.md
     - ALTEN-group/coding-pal/prompts/triage-review.prompt.md
     - ALTEN-group/coding-pal/prompts/code.prompt.md
+    - ALTEN-group/coding-pal/prompts/prove.prompt.md
     - ALTEN-group/coding-pal/prompts/fix-gates.prompt.md
     - ALTEN-group/coding-pal/prompts/release-plan.prompt.md
     - ALTEN-group/coding-pal/prompts/outcome-review.prompt.md
@@ -168,10 +171,12 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
     - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/think-plan.instructions.md
+    - ALTEN-group/coding-pal/instructions/think.instructions.md
+    - ALTEN-group/coding-pal/instructions/plan.instructions.md
     - ALTEN-group/coding-pal/instructions/meeting-pack.instructions.md
     - ALTEN-group/coding-pal/instructions/triage.instructions.md
     - ALTEN-group/coding-pal/instructions/code-loop.instructions.md
+    - ALTEN-group/coding-pal/instructions/prove.instructions.md
     - ALTEN-group/coding-pal/instructions/prove-controls.instructions.md
     - ALTEN-group/coding-pal/instructions/release.instructions.md
     - ALTEN-group/coding-pal/instructions/learn.instructions.md
@@ -193,11 +198,13 @@ dependencies:
         - restler-fuzzing-examples
         - audit-reporting
         - spec-from-code
-        - think-plan
+        - think
+        - plan
         - meeting-pack
         - triage
         - code-loop
         - pr-record
+        - prove
         - criteria-verify
         - mutation-bar
         - contract-compat

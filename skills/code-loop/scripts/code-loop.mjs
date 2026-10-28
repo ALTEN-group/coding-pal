@@ -124,7 +124,8 @@ export function parsePlanApproval(rawPlan, filename = "plan.md") {
 	return { approved: true, value, reason: null };
 }
 
-function assertApproved(approval) {
+function assertApproved(approval, allowPending = false) {
+	if (allowPending && /^pending$/i.test(approval.value)) return;
 	if (!approval.approved) fail(`${APPROVAL_MESSAGE} (${approval.reason})`);
 }
 
@@ -390,7 +391,7 @@ function issueName(dir) {
 }
 
 function parseArgs(args) {
-	const parsed = { command: null, positional: null, dir: null, reason: null, limit: null, base: null, json: false, help: false };
+	const parsed = { command: null, positional: null, dir: null, reason: null, limit: null, base: null, json: false, allowPendingApproval: false, help: false };
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		if (arg === "--dir" && args[i + 1] !== undefined) parsed.dir = args[++i];
@@ -398,6 +399,7 @@ function parseArgs(args) {
 		else if (arg === "--reason" && args[i + 1] !== undefined) parsed.reason = args[++i];
 		else if (arg === "--limit" && args[i + 1] !== undefined) parsed.limit = args[++i];
 		else if (arg === "--json") parsed.json = true;
+		else if (arg === "--allow-pending-approval") parsed.allowPendingApproval = true;
 		else if (arg === "--help" || arg === "-h") parsed.help = true;
 		else if (arg.startsWith("--")) fail(`unknown option or missing value for "${arg}"`);
 		else if (!parsed.command) parsed.command = arg;
@@ -478,7 +480,8 @@ export async function runCodeLoop(args = process.argv.slice(2), { now = () => ne
 		const plan = await readFile(planPath, "utf-8");
 		const steps = parsePlanSteps(plan, planPath);
 		const approval = parsePlanApproval(plan, planPath);
-		if (opts.command === "start" || opts.command === "next") assertApproved(approval);
+		const allowPending = opts.allowPendingApproval || process.env.ALLOW_PENDING_APPROVAL === "1";
+		if (opts.command === "start" || opts.command === "next") assertApproved(approval, allowPending);
 		const state = await loadState(opts.dir, steps, planSha256(plan), limit);
 
 		let message;

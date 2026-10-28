@@ -229,7 +229,7 @@ classDiagram
 | Blast-radius & file churn boundary | **Guard** (`skills/`) | `skills/scope-guard/scripts/scope-guard.mjs` prevents out-of-scope diffs |
 | Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
 | Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
-| Falsifiable execution certification | **Gate** | Narrowest test suite command + `validate-specs.mjs` |
+| Falsifiable execution certification | **Gate** | Narrowest test suite command + `validate-think.mjs` / `validate-plan.mjs` |
 | Task coverage completion | **Agent** (`Done When`) | "Every file in scope has been examined" |
 | Artifact validity completion | **Skill** (`Done When`) | "Report satisfies the validation contract" |
 | CI publication, gating, and PR checks | **Consuming Workflow** | GitHub Actions workflow in consumer repo |
@@ -272,8 +272,8 @@ flowchart TD
 
 | Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
 |---|---|---|---|---|
-| `think.md` | **Think** | Planning session / `Think Planner` agent | `skills/think-plan/` | Options considered, chosen approach, Forge asset bindings, constraints and invariants, **blast radius tier**, decision record, and Persistent Context updates. **No code.** |
-| `plan.md` | **Plan** | Planning session / `Think Planner` agent | `skills/think-plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, **`New Code`**, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. |
+| `think.md` | **Think** | Planning session / `Thinker` agent | `skills/think/` | Options considered, chosen approach, Forge asset bindings, constraints and invariants, **blast radius tier**, decision record, and Persistent Context updates. **No code.** |
+| `plan.md` | **Plan** | Planning session / `Planner` agent | `skills/plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, **`New Code`**, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. |
 
 ### Downstream Execution Discipline
 When an AI build agent implements functionality from `plan.md`:

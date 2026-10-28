@@ -314,7 +314,7 @@ flowchart TD
 - **Skill Engine**: [`test-probe`](./catalog-skills.md#_14-test-probe-skills-test-probe) (`skills/test-probe/scripts/test-probe.mjs`).
 - **Mechanism**:
   - Asserts that modified code passes tests initially.
-  - Temporarily reverts the source code under test to baseline HEAD.
+  - Temporarily reverts the source code under test to baseline HEAD (or `--base <git-ref>`).
   - Re-executes the test suite against the unpatched source: **fails if tests pass (tautology detection)**!
   - Restores modified source code atomically.
 - **Done When**:

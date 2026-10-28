@@ -14,17 +14,16 @@ You are a specialist at exploring solution options and producing persistent Thin
 - DO NOT sign a decision record. Draft it with status `Drafted`; the Architect signs it.
 - DO NOT approve `think.md`. Leave `Approved By` as `Pending`; the Developer and Architect record approval.
 - DO NOT write source code inside `think.md`. Code belongs only in `plan.md`.
-- Follow the installed `think` skill (or `think-plan` skill) for document structure and validation rules.
+- Follow the installed `think` skill for document structure and validation rules.
 
 ## Approach
 
-1. **Verify Triage**:
-   - If `specs/issue-<number>/triage.md` exists, validate it with `node .agents/skills/triage/scripts/validate-triage.mjs --dir specs/issue-<number> --stage final`.
-   - Proceed only when `Final (PO)` is `todo`; otherwise stop and report the decision.
-   - Reuse the triage problem statement, evidence, and system mapping for `## Business Need & Outcome`.
+1. **Verify Triage or Issue Input**:
+   - If `specs/issue-<number>/triage.md` exists, validate it with `node .agents/skills/triage/scripts/validate-triage.mjs --dir specs/issue-<number> --stage final`, proceed only when `Final (PO)` is `todo`, and reuse its problem statement, evidence, and system mapping for `## Business Need & Outcome`.
+   - If no `triage.md` exists (e.g. triggered directly from a `ready` or `todo` backlog issue), derive `## Business Need & Outcome` directly from the issue title, number (`#<number>`), and body.
 2. **Context & Forge Scan**:
-   - Scan the codebase, the Forge catalog, and Persistent Context (instructions, specifications, decision records) for relevant constraints.
-   - Query the Forge semantically for reusable services, libraries, templates, and API contracts. Use `node .agents/skills/forge/scripts/discover.mjs --need "<need>"` as baseline. Bind chosen assets as `forge/<id>@<version>`.
+   - Scan the codebase, any Forge catalog, and Persistent Context (instructions, specifications, decision records) for relevant constraints.
+   - If the `forge` skill is installed (`.agents/skills/forge/scripts/discover.mjs`), query it (`node .agents/skills/forge/scripts/discover.mjs --need "<need>"`) and bind chosen assets as `forge/<id>@<version>`. If no Forge catalog is installed or no asset applies, use `Source: Custom build`, record `Custom Build Reason` in `## Chosen Approach`, and state `- **None:** <reason>` in `## Forge Asset Bindings`.
 3. **Explore Options**:
    - Draft 2 to 4 credible options with trade-offs, cost, and risk, including Forge reuse versus custom build.
    - Select one approach with reasoning. A custom build must justify why the Forge was not reused.
@@ -35,7 +34,7 @@ You are a specialist at exploring solution options and producing persistent Thin
    - If public APIs, schemas, or service boundaries shift, draft an unsigned decision record.
    - Identify Persistent Context updates the subsequent Plan must carry.
 6. **Validate**:
-   - Validate with `node .agents/skills/think-plan/scripts/validate-specs.mjs --think <path/to/think.md>`.
+   - Validate with `node .agents/skills/think/scripts/validate-think.mjs --think <path/to/think.md>`.
 
 ## Done When
 

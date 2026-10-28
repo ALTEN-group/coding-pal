@@ -175,3 +175,18 @@ test("a comment marker inside CDATA output cannot hide a failing testcase that f
 test("reads a Jest JSON report that starts with a byte order mark", () => {
 	assert.equal(parseReport(`\uFEFF${jestPass}`, "jest.json").length, 3);
 });
+
+test("parses TAP and runner line reports with optional # file: headers", () => {
+	const tapReport = [
+		"# file: tests/routes/role.test.js",
+		"ok   AC-1 rejects unauthenticated requests",
+		"ok 2 - AC-2 rejects viewers",
+		"ok   AC-3 creates a role",
+		"ok   unrelated test",
+	].join("\n");
+	const tests = parseReport(tapReport, "test-output.log");
+	assert.equal(tests.length, 4);
+	assert.equal(tests[0].file, "tests/routes/role.test.js");
+	const result = evaluate(validPlan, tests, { requireTestFiles: true });
+	assert.equal(result.pass, true);
+});

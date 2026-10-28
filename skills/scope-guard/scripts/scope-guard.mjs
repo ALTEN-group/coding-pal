@@ -163,12 +163,18 @@ export function evaluateScope({
 /**
  * Inspects a live git working tree.
  */
-export function inspectGit({ cwd = process.cwd(), stagedOnly = false } = {}) {
+export function inspectGit({ cwd = process.cwd(), stagedOnly = false, base = null } = {}) {
 	try {
+		const files = [];
+		if (base) {
+			const baseFiles = execSync(`git diff --name-only "${base}"`, { cwd, encoding: "utf8" });
+			for (const line of baseFiles.split("\n")) {
+				if (line.trim()) files.push(line.trim());
+			}
+		}
 		const statusCmd = stagedOnly ? "git diff --name-only --cached" : "git status --porcelain";
 		const statusOutput = execSync(statusCmd, { cwd, encoding: "utf8" });
 
-		const files = [];
 		// Do not trim the output: the first porcelain line may start with a status space (" M path").
 		for (const line of statusOutput.split("\n")) {
 			if (!line.trim()) continue;
@@ -185,7 +191,7 @@ export function inspectGit({ cwd = process.cwd(), stagedOnly = false } = {}) {
 			}
 		}
 
-		const diffCmd = stagedOnly ? "git diff --cached --numstat" : "git diff HEAD --numstat";
+		const diffCmd = base ? `git diff "${base}" --numstat` : stagedOnly ? "git diff --cached --numstat" : "git diff HEAD --numstat";
 		let diffOutput = "";
 		try {
 			diffOutput = execSync(diffCmd, { cwd, encoding: "utf8" });
@@ -195,7 +201,7 @@ export function inspectGit({ cwd = process.cwd(), stagedOnly = false } = {}) {
 		}
 
 		const diffStats = parseNumstat(diffOutput);
-		return { files, diffStats };
+		return { files: [...new Set(files)], diffStats };
 	} catch (error) {
 		throw new ScopeGuardError(`Failed to inspect git repository: ${error.message}`);
 	}
@@ -218,6 +224,7 @@ export async function main(argv = process.argv.slice(2)) {
 	let maxDeletions;
 	let isJson = false;
 	let useGit = false;
+	let base = null;
 	const explicitFiles = [];
 
 	for (let i = 0; i < argv.length; i++) {
@@ -232,6 +239,8 @@ export async function main(argv = process.argv.slice(2)) {
 			maxDeletions = Number.parseInt(argv[++i], 10);
 		} else if (arg === "--git") {
 			useGit = true;
+		} else if (arg === "--base") {
+			base = argv[++i];
 		} else if (arg === "--file") {
 			explicitFiles.push(argv[++i]);
 		} else if (arg === "--json") {
@@ -260,7 +269,7 @@ Options:
 	let diffStats = [];
 
 	if (useGit) {
-		const gitResult = inspectGit();
+		const gitResult = inspectGit({ base });
 		files = [...new Set([...files, ...gitResult.files])];
 		diffStats = gitResult.diffStats;
 	}

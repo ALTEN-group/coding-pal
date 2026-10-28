@@ -102,7 +102,7 @@ flowchart TD
 * *Examples in Coding Pal*:
   - `skills/contract-validator/references/contract-schema.md` & `validate-contract.mjs` (generic declarative schema validation).
   - `skills/audit-reporting/references/report-contract.md` (audit markers, finding categories, severity limits).
-  - `skills/think-plan/references/think-plan-contract.md` (specification headings, invariant sections, bootability checklists).
+  - `skills/think/references/think-contract.md` & `skills/plan/references/plan-contract.md` (specification headings, invariant sections, bootability checklists).
   - `skills/triage/references/triage-contract.md` (evidence table, scorecard scale, decision rules, ledger and weights).
   - `skills/meeting-pack/references/meeting-pack-contract.md` (transcript format, pack sections, confirmation stages, glossary).
   - `skills/scope-guard/references/guard-contract.md` (path matching semantics, forbidden file lists).
@@ -121,7 +121,7 @@ flowchart TD
 * **Purpose**: Replaces subjective self-confidence ("I tested it and it works") with an executable verification command that yields 0 on success or structured diagnostics for agent self-repair.
 * *Mechanisms*:
   - **Multi-Stage Verification Gate**: Runs linting, type checks, and narrowest tests sequentially with fail-fast semantics (`skills/task-gate/scripts/task-gate.mjs`).
-  - **Specification Validator**: Checks that `think.md` and `plan.md` are structurally complete, that every in-scope file and acceptance criterion is covered by a step with its code, and that the two records agree on blast radius, before build agents touch source code (`skills/think-plan/scripts/validate-specs.mjs`).
+  - **Specification Validators**: Check that `think.md` and `plan.md` are structurally complete, that every in-scope file and acceptance criterion is covered by a step with its code, and that the two records agree on blast radius, before build agents touch source code (`skills/think/scripts/validate-think.mjs` and `skills/plan/scripts/validate-plan.mjs`).
   - **Triage Validator**: Checks that `triage.md` carries real, verbatim evidence, a coarse scorecard, and a proposed (never final) AI decision before the Product Owner reviews it (`skills/triage/scripts/validate-triage.mjs`).
   - **Meeting Pack Validator**: Checks that a Meeting Pack matches its immutable transcript (SHA-256), that every quote is verbatim and client-attributed, that terminology agrees with the glossary, and that only named people confirm it (`skills/meeting-pack/scripts/validate-meeting.mjs`).
   - **Narrowest Test Command**: Runs the focused test suite specifically covering modified files (`npm test -- --findRelatedTests`).
@@ -145,7 +145,7 @@ Deterministic controls operate across four distinct phases of the agent executio
 | **1. Ingress / Pre-flight** | `Baseline Sentinel` | Verifies clean git working tree, clean compilation, and passing test suite before agent edits. | Aborts early; prevents attributing pre-existing errors to the agent. |
 | **2. In-flight / Execution** | `Guard` & `Hook` | Scope whitelisting (`allowedPaths`), forbidden lockfile detection, AST rule checking, diff churn limits. | Blocks unauthorized tool action; returns mechanical error to agent context. |
 | **3. Egress / Completion** | `Gate` / `Verifier` | Structural Markdown/JSON validators, narrowest test run, lint and type checks (`tsc --noEmit`). | Prevents declaring completion; provides structured diagnostics for self-repair. |
-| **4. Multi-Agent Hand-off** | `Contract` / `Oracle` | Inter-agent artifact validation (e.g., `validate-specs.mjs` verifying `think.md` before `plan.md` starts). | Rejects artifact hand-off; halts orchestration pipeline before errors compound. |
+| **4. Multi-Agent Hand-off** | `Contract` / `Oracle` | Inter-agent artifact validation (e.g., `validate-think.mjs` verifying `think.md` before `plan.md` starts, and `validate-plan.mjs` verifying `plan.md` before Code starts). | Rejects artifact hand-off; halts orchestration pipeline before errors compound. |
 
 ---
 
@@ -171,7 +171,7 @@ flowchart TD
         V1["audit-reporting<br/>audit-report.mjs"]
         V2["scope-guard<br/>scope-guard.mjs"]
         V3["Narrowest Test Command<br/>Anti-Tautology Check"]
-        V4["Schema / Link Validator<br/>validate-specs.mjs"]
+        V4["Schema / Link Validator<br/>validate-think.mjs / validate-plan.mjs"]
     end
 
     ENG --> AG1 --> V1
@@ -212,7 +212,7 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 | **Anti-tautology falsifiability probe** | `skills/test-probe/scripts/test-probe.mjs` verifies tests fail when fix is removed | Probe (`skills/test-probe`) |
 | **Migration rollback probe** | `skills/rollback-probe/scripts/rollback-probe.mjs` verifies reversibility & idempotency | Probe (`skills/rollback-probe`) |
 | **Artifact validator script** | `skills/audit-reporting/scripts/audit-report.mjs` checks report structure | Gate (Skill) |
-| **Specification validator** | `skills/think-plan/scripts/validate-specs.mjs` checks headings, scope and criteria coverage, bootability & blast radius | Gate (Skill) |
+| **Specification validators** | `skills/think/scripts/validate-think.mjs` & `skills/plan/scripts/validate-plan.mjs` check headings, scope and criteria coverage, bootability & blast radius | Gate (Skill) |
 | **Meeting Pack validator** | `skills/meeting-pack/scripts/validate-meeting.mjs` checks the transcript digest, verbatim client quotes, and named confirmations | Gate (Skill) |
 | **Criteria Test Verification** | `skills/criteria-verify/scripts/verify-criteria.mjs` proves every `AC-<n>` has a passing test | Gate (Skill) |
 | **Mutation Testing Bar** | `skills/mutation-bar/scripts/mutation-bar.mjs` scores mutation reports with raise-only thresholds | Gate (Skill) |

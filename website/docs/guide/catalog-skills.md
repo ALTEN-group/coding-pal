@@ -8,10 +8,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 | Skill Directory | Type | Paired Primitive | Description |
 |---|---|---|---|
-| `skills/think-plan/` | Protocol & Validator | `think-plan` instruction, `Think Planner` agent | Contract and deterministic validator for the Think record (`think.md`) and the Plan record (`plan.md`), including their cross-check. |
+| `skills/think/` | Protocol & Validator | `think` instruction, `Thinker` agent | Contract and deterministic validator (`validate-think.mjs`) for the Think record (`think.md`). |
+| `skills/plan/` | Protocol & Validator | `plan` instruction, `Planner` agent | Contract and deterministic validator (`validate-plan.mjs`) for the Plan record (`plan.md`), including cross-checks against `think.md`. |
 | `skills/code-loop/` | Gate & Tracker | `code-loop` instruction, `Code Agent`, `Gate Fixer` | Steps through a validated plan, records progress in `progress.json`, enforces the fix-loop limit, and guards short-lived agent branches. |
 | `skills/pr-record/` | Protocol & Validator | `Code Agent`, `code-loop` instruction | Pull request contract: links, acceptance-criteria traceability, dependencies, blast radius, and the human-validation record by tier. |
-| `skills/criteria-verify/` | Gate & Verifier | `Gate Fixer`, CI | Criteria Test Verification: every `AC-<n>` has a passing mapped test, from JUnit or Jest/Vitest JSON. |
+| `skills/prove/` | Protocol & Validator | `Prove Validator` agent, `prove` instruction | Prove record contract (`specs/issue-<n>/prove.md`) and deterministic validator (`validate-prove.mjs`) verifying all 13 controls, criteria traceability, semantic review, findings, and verdict. |
+| `skills/criteria-verify/` | Gate & Verifier | `Gate Fixer`, CI | Criteria Test Verification: every `AC-<n>` has a passing mapped test, from JUnit XML, Jest/Vitest JSON, or TAP / runner logs. |
 | `skills/mutation-bar/` | Gate & Verifier | `Gate Fixer`, CI | Mutation Testing Bar from Stryker or summary JSON, raise-only thresholds. |
 | `skills/contract-compat/` | Contract | `Gate Fixer`, CI | Breaking-change detection between two OpenAPI or JSON Schema documents, with a signed decision record as the only override. |
 | `skills/security-gate/` | Guard & Security | `Gate Fixer`, CI | SARIF, Conftest/OPA and CycloneDX license gate with approved, expiring waivers. |
@@ -24,7 +26,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/telemetry-scan/` | Behavioral Probe | `Learn Analyst` | Predictive monitoring from exported telemetry: anomalies, trends, breaches, and the deploys that precede them. |
 | `skills/learn-signals/` | Protocol & Emitter | `Learn Analyst`, `triage` skill | Turns incidents, invalidated hypotheses, and findings into Triage issue bodies. |
 | `skills/context-health/` | Guard & Audit | `Learn Analyst` | Persistent Context lint and a corrections log that proposes new artifacts after two corrections. |
-| `skills/forge/` | Catalog & Validator | `forge` instruction, `Forge Curator`, `Think Planner` | The Forge catalog (Gatelin, Foxnox), certification rules, deterministic discovery, binding checks, and health signals. |
+| `skills/forge/` | Catalog & Validator | `forge` instruction, `Forge Curator`, `Thinker` | The Forge catalog (Gatelin, Foxnox), certification rules, deterministic discovery, binding checks, and health signals. |
 | `skills/decision-record/` | Protocol & Validator | `decision-record` instruction, `Decision Scribe` | Decision records and escalations: AI drafts, a named Architect signs. |
 | `skills/flow-metrics/` | Metrics | `Learn Analyst`, retrospectives | The factory's metrics computed from a JSONL event log. |
 | `skills/meeting-pack/` | Protocol & Validator | `meeting-pack` instruction, `Meeting Analyst` agent | Meeting Pack contract, plain-text transcript normalizer, deterministic validator (verbatim quotes, glossary, confirmations), and Triage emission. |
@@ -114,17 +116,21 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - OpenAPI compiler configurations, fuzzing dictionary templates, and headless CI runner scripts.
 
-### 10. Think & Plan (`skills/think-plan/`)
+### 10. Think (`skills/think/`) & Plan (`skills/plan/`)
 - **Category**: Protocol & Validator
 - **Contents**:
-  - `SKILL.md`: Step-by-step guidance on authoring, formatting, and verifying `think.md` and `plan.md`.
-  - `references/think-plan-contract.md`: Authoritative schema for `think.md` (options, chosen approach, Forge bindings, system flow, constraints, blast radius, decision record, Persistent Context updates) and `plan.md` (file scope, acceptance criteria, steps with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, `Serves`, test plan, blast radius check).
-  - `scripts/validate-specs.mjs`: Deterministic Node.js validator asserting both contracts, file-scope and acceptance-criteria coverage, reverse steps, and the `think.md` to `plan.md` cross-check before build agents touch source code.
-  - `scripts/validate-specs.test.mjs` and `scripts/spec-fixtures.mjs`: Test suite and shared valid fixtures.
+  - `skills/think/SKILL.md` & `references/think-contract.md`: Authoritative schema for `think.md` (options, chosen approach, Forge bindings, system flow, constraints, blast radius, decision record, Persistent Context updates).
+  - `skills/think/scripts/validate-think.mjs`: Standalone deterministic Node.js validator for `think.md` (`--think` or `--dir`, with `--stage draft|approved`).
+  - `skills/plan/SKILL.md` & `references/plan-contract.md`: Authoritative schema for `plan.md` (file scope, acceptance criteria, steps with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, `Serves`, test plan, blast radius check).
+  - `skills/plan/scripts/validate-plan.mjs`: Standalone deterministic Node.js validator for `plan.md` (`--plan` or `--dir`, with `--think` cross-check and `--stage draft|approved`).
+  - `scripts/*.test.mjs` and `scripts/*-fixtures.mjs`: Test suites and valid fixtures for each skill.
 - **Workflow**:
   ```bash
-  # Validate specifications directory in CI or local harness
-  node .agents/skills/think-plan/scripts/validate-specs.mjs --dir specs
+  # Validate think.md in CI or local harness
+  node .agents/skills/think/scripts/validate-think.mjs --think specs/issue-42/think.md
+
+  # Validate plan.md and cross-check against think.md
+  node .agents/skills/plan/scripts/validate-plan.mjs --dir specs/issue-42
   ```
 
 ### 11. Scope Guard (`skills/scope-guard/`)
@@ -132,12 +138,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - `SKILL.md`: Step-by-step guidance on validating agent blast radius and diff bounds.
   - `references/guard-contract.md`: Invariant specification defining path matching semantics, forbidden file rules (`*.lock`, `*-lock.json`, `.env*`), churn bounds, and exit code contracts.
-  - `scripts/scope-guard.mjs`: Fast, zero-dependency Node.js CLI asserting that repository diffs stay within permitted scopes and limits.
+  - `scripts/scope-guard.mjs`: Fast, zero-dependency Node.js CLI asserting that repository diffs (against `HEAD` or `--base <git-ref>`) stay within permitted scopes and limits.
   - `scripts/scope-guard.test.mjs`: Node.js test suite proving guard evaluation across valid and invalid inputs.
 - **Workflow**:
   ```bash
   # Assert current git changes stay within permitted scope and churn limits
-  node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --scope "src/auth/**" --max-additions 100
+  node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --base origin/main --scope "src/auth/**" --max-additions 100
   ```
 
 ### 12. Task Gate (`skills/task-gate/`)
@@ -171,12 +177,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - `SKILL.md`: Anti-tautology and test efficacy verification workflow.
   - `references/probe-contract.md`: Falsifiability lifecycle contract (Baseline $\rightarrow$ Inversion $\rightarrow$ Assertion $\rightarrow$ Restoration).
-  - `scripts/test-probe.mjs`: Automated probe temporarily unpatching source code to prove that newly generated tests actually fail without the fix.
+  - `scripts/test-probe.mjs`: Automated probe temporarily unpatching source code (against `HEAD` or `--base <git-ref>`) to prove that newly generated tests actually fail without the fix.
   - `scripts/test-probe.test.mjs`: Test suite proving detection of vacuous tests and atomic file restoration.
 - **Workflow**:
   ```bash
   # Verify that a test suite fails when the source fix is absent
-  node .agents/skills/test-probe/scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
+  node .agents/skills/test-probe/scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js" --base origin/main
   ```
 
 ### 15. Dependency Guard (`skills/dependency-guard/`)
@@ -184,12 +190,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - `SKILL.md`: Dependency blast-radius guidance and policy workflows.
   - `references/dependency-contract.md`: Manifest invariant contract defining zero-unprompted-dependency rules and banned libraries.
-  - `scripts/dependency-guard.mjs`: Node.js CLI inspecting package.json diffs against git HEAD to block unvetted libraries.
+  - `scripts/dependency-guard.mjs`: Node.js CLI inspecting package.json diffs against git `HEAD` (or `--base <git-ref>`) to block unvetted libraries.
   - `scripts/dependency-guard.test.mjs`: Test suite covering new package detection, allow-lists, banned lists, and loose versions.
 - **Workflow**:
   ```bash
   # Assert no unauthorized dependencies were added to package.json
-  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --allow "zod,dotenv"
+  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --base origin/main --allow "zod,dotenv"
   ```
 
 ### 16. Secret Guard (`skills/secret-guard/`)
@@ -197,12 +203,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - `SKILL.md`: Secret leak prevention workflow and remediation steps.
   - `references/secret-contract.md`: Credential pattern contract (AWS keys, private keys, platform tokens, high-entropy assignments).
-  - `scripts/secret-guard.mjs`: Fast regex and entropy scanner asserting diffs or source files contain zero hardcoded secrets.
+  - `scripts/secret-guard.mjs`: Fast regex and entropy scanner asserting diffs (against `HEAD` or `--base <git-ref>`) or source files contain zero hardcoded secrets.
   - `scripts/secret-guard.test.mjs`: Test suite asserting detection and secret masking across credentials.
 - **Workflow**:
   ```bash
   # Scan git diff for hardcoded credentials before commit
-  node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+  node .agents/skills/secret-guard/scripts/secret-guard.mjs --git --base origin/main
   ```
 
 ### 17. Rollback Probe (`skills/rollback-probe/`)
@@ -267,7 +273,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ### 22. Criteria Verify (`skills/criteria-verify/`)
 - **Category**: Gate & Verifier
-- **Contents**: `scripts/verify-criteria.mjs` maps tests to `AC-<n>` by name from JUnit XML or Jest/Vitest JSON and fails on any uncovered, failing, or skipped-only criterion.
+- **Contents**: `scripts/verify-criteria.mjs` maps tests to `AC-<n>` by name or file path from JUnit XML, Jest/Vitest JSON, or TAP / runner logs (`TAP version ...`, `ok`/`not ok`, `ok   <name>`/`FAIL <name>`, `# file: <path>`) and fails on any uncovered, failing, or skipped-only criterion.
 - **Workflow**: `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs --plan specs/issue-42/plan.md --report junit.xml`
 
 ### 23. Mutation Bar (`skills/mutation-bar/`)
@@ -349,3 +355,8 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Category**: Protocol & Validator
 - **Contents**: `SKILL.md`, `references/migration-contract.md` (record structure, Application Change Policy, cross-checks), and `scripts/validate-migration.mjs` with its fixtures and tests.
 - **Workflow**: `node .agents/skills/migration-docs/scripts/validate-migration.mjs --dir docs/migration/<name>`.
+
+### 39. Prove (`skills/prove/`)
+- **Category**: Protocol & Validator
+- **Contents**: `SKILL.md`, `references/prove-contract.md` (schema for `specs/issue-<n>/prove.md`: header links, 13 required deterministic controls, criteria verification table cross-checked against `plan.md`, semantic review across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, numbered findings, and `PASS|FAIL` verdict), and `scripts/validate-prove.mjs` (`--stage draft|pass`).
+- **Workflow**: `node .agents/skills/prove/scripts/validate-prove.mjs --dir specs/issue-42 --stage pass`

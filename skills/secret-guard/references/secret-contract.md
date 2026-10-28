@@ -17,8 +17,9 @@ A **Secret Guard** mechanically prevents agents from hardcoding credentials, tok
 ## CLI Usage
 
 ```bash
-# Scan git working tree changes against baseline HEAD (added lines only)
+# Scan git working tree changes against baseline HEAD (or --base <git-ref>, added lines only)
 node scripts/secret-guard.mjs --git
+node scripts/secret-guard.mjs --git --base origin/main
 
 # Scan specific files
 node scripts/secret-guard.mjs --file src/config.js

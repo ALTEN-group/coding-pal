@@ -1,0 +1,392 @@
+#!/usr/bin/env node
+
+import { readFile, stat } from "node:fs/promises";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+
+export class ValidationError extends Error {}
+
+function fail(message) {
+	throw new ValidationError(message);
+}
+
+function normalizeNewlines(value) {
+	return value.replace(/\r\n?/g, "\n");
+}
+
+export const TIERS = ["Low", "Medium", "High", "Critical"];
+
+const THINK_REQUIRED_H2 = [
+	"Business Need & Outcome",
+	"Options Considered",
+	"Chosen Approach",
+	"Forge Asset Bindings",
+	"System Flow & Responsibilities",
+	"Constraints & Invariants",
+	"Blast Radius",
+	"Decision Record",
+	"Persistent Context Updates",
+	"Ambiguities & Open Questions",
+];
+
+export const STAGES = ["draft", "approved"];
+const PENDING = "Pending";
+
+const OPTION_SOURCES = ["Forge reuse", "Custom build", "Hybrid"];
+const NONE = "_None._";
+const PLACEHOLDER = /^(tbd|n\/a|\.\.\.|<[^>]*>)$/i;
+const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
+const BINDING_LABEL = /^forge\/[a-z0-9]+(?:-[a-z0-9]+)*@\S+$/;
+const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid"]);
+
+function isPlaceholder(value) {
+	return !value || PLACEHOLDER.test(value.trim());
+}
+
+/** Replaces every line inside a fenced code block with a filler so structural regexes cannot match code. */
+function maskFences(markdown, filename = "document") {
+	let fence = null;
+	const masked = markdown.split("\n").map((line) => {
+		const m = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+		if (fence) {
+			if (m && m[1][0] === fence.char && m[1].length >= fence.len && !m[2].trim()) fence = null;
+			return "\u0001".repeat(line.length);
+		}
+		if (m) {
+			fence = { char: m[1][0], len: m[1].length };
+			return "\u0001".repeat(line.length);
+		}
+		return line;
+	});
+	if (fence) fail(`${filename} contains an unclosed code fence`);
+	return masked.join("\n");
+}
+
+function splitSections(markdown, required, filename) {
+	const masked = maskFences(markdown, filename);
+	const matches = [...masked.matchAll(/^## (.+)$/gm)];
+	const names = matches.map((m) => m[1].trim());
+	if (names.length !== required.length) {
+		fail(`${filename} must contain exactly ${required.length} level-two headings: ${required.map((h) => `## ${h}`).join(", ")}`);
+	}
+	const sections = {};
+	matches.forEach((m, i) => {
+		if (names[i] !== required[i]) fail(`${filename} heading #${i + 1} is "## ${names[i]}", expected "## ${required[i]}"`);
+		const start = m.index + m[0].length;
+		const end = i + 1 < matches.length ? matches[i + 1].index : markdown.length;
+		const body = markdown.slice(start, end).trim();
+		if (!body) fail(`${filename} has empty section for "## ${names[i]}"`);
+		sections[names[i]] = body;
+	});
+	return sections;
+}
+
+/** Parses "- **Label:** value" fields; continuation lines (tables, sub-bullets, code) belong to the previous field. */
+function parseFields(body) {
+	const masked = maskFences(body).split("\n");
+	const entries = [];
+	body.split("\n").forEach((line, i) => {
+		const m = masked[i].match(/^- \*\*(.+?):\*\*\s*(.*)$/);
+		if (m) entries.push([m[1].trim(), m[2]]);
+		else if (entries.length) entries[entries.length - 1][1] += `\n${line}`;
+	});
+	return entries.map(([label, value]) => [label, value.trim()]);
+}
+
+function fieldMap(entries) {
+	const map = new Map();
+	for (const [label, value] of entries) map.set(label.toLowerCase(), value);
+	return map;
+}
+
+const SIGNED_BY = /^signed by (.+?) \(Architect\) on (\d{4}-\d{2}-\d{2})\.?$/i;
+const NOT_A_PERSON = /(^|[^a-z0-9])(copilot|claude|gpt|gemini|chatgpt|openai|anthropic|bot|agent|dependabot|renovate|github-actions|ai|llm)([^a-z0-9]|$)/i;
+const SIGNER_PLACEHOLDER = /^(tbd|x|<[^>]*>)$/i;
+
+function isValidDate(value) {
+	return !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
+}
+
+/** A signed decision record carries a named human Architect and a real date; AI drafts, the Architect signs. */
+function checkSignature(status, filename) {
+	const m = status.match(SIGNED_BY);
+	if (!m) fail(`${filename} Decision Record "Status" "${status}" must read "Signed by <name> (Architect) on YYYY-MM-DD"`);
+	const name = m[1].trim();
+	if (SIGNER_PLACEHOLDER.test(name)) fail(`${filename} Decision Record signer "${name}" is a placeholder; name the Architect`);
+	if (NOT_A_PERSON.test(name)) fail(`${filename} Decision Record signer "${name}" must be a person, never an AI or automation`);
+	if (!isValidDate(m[2])) fail(`${filename} Decision Record signature date ${m[2]} must be a valid date`);
+}
+
+const APPROVER = /^(.+?) \((Developer|Architect)\) on (\d{4}-\d{2}-\d{2})$/;
+
+function checkApproval(value, stage, allowedRoles, where, filename) {
+	if (stage === "draft") {
+		if (value !== PENDING) fail(`${filename} ${where} "Approved By" must be exactly "${PENDING}" at the draft stage; only a person approves, after review (found "${value}")`);
+		return { status: "pending", approvals: [] };
+	}
+	const approvals = value.split(";").map((part) => {
+		const m = part.trim().match(APPROVER);
+		return m && { name: m[1].trim(), role: m[2], date: m[3] };
+	});
+	const form = (roles) => roles.map((role) => `<name> (${role}) on YYYY-MM-DD`).join("; ");
+	const roles = approvals.map((a) => a?.role).join(",");
+	if (approvals.some((a) => !a) || !allowedRoles.some((r) => r.join(",") === roles)) {
+		fail(`${filename} ${where} "Approved By" "${value}" must read "${allowedRoles.map(form).join('" or "')}" at the approved stage`);
+	}
+	for (const { name, role, date } of approvals) {
+		if (SIGNER_PLACEHOLDER.test(name)) fail(`${filename} ${where} approver "${name}" is a placeholder; name the ${role}`);
+		if (NOT_A_PERSON.test(name)) fail(`${filename} ${where} approver "${name}" must be a person, never an AI or automation`);
+		if (!isValidDate(date)) fail(`${filename} ${where} approval date ${date} must be a valid date`);
+	}
+	if (new Set(approvals.map((a) => a.name.toLowerCase())).size !== approvals.length) {
+		fail(`${filename} ${where} "Approved By" must name two different people`);
+	}
+	return { status: "approved", approvals };
+}
+
+function need(map, label, where, filename, { allowNone = true } = {}) {
+	const value = map.get(label.toLowerCase());
+	if (value === undefined) fail(`${filename} "${where}" is missing the "- **${label}:**" field`);
+	if (!value || (!value.includes("\n") && isPlaceholder(value))) fail(`${filename} "${where}" field "${label}" is empty or a placeholder`);
+	if (!allowNone && value === NONE) fail(`${filename} "${where}" field "${label}" must not be "${NONE}"`);
+	return value;
+}
+
+function parseTier(value, label, filename) {
+	const tier = TIERS.find((t) => t.toLowerCase() === value.split(/[\s.,;:(]/)[0].toLowerCase());
+	if (!tier) fail(`${filename} ${label} must start with one of: ${TIERS.join(", ")}`);
+	return tier;
+}
+
+function extractPaths(value) {
+	return [...value.matchAll(/`([^`\n]+)`/g)].map((m) => m[1].trim().replace(/^\.\//, "")).filter(Boolean);
+}
+
+function checkPath(path, where, filename) {
+	if (path.startsWith("/") || /(^|\/)\.\.(\/|$)/.test(path) || /\s/.test(path)) {
+		fail(`${filename} ${where} path "${path}" must be a workspace-relative path without spaces or ".."`);
+	}
+}
+
+/** think.md carries no source code and no task checklist: only text or diagram fences, no checkbox items, no step headings. */
+function checkThinkHasNoCode(markdown, filename) {
+	for (const m of markdown.matchAll(/^[ \t]*(?:`{3,}|~{3,})[ \t]*([^\s`~]*)/gm)) {
+		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code belongs in the Plan's "New Code" fields)`);
+	}
+	const masked = maskFences(markdown, filename);
+	if (/^\s*[-*] \[[ xX]\]/m.test(masked)) fail(`${filename} must not contain a task checklist; steps belong in the Plan`);
+	if (/^#{3,4} Step \d+/m.test(masked)) fail(`${filename} must not contain implementation steps; they belong in the Plan`);
+}
+
+function parseOptions(body, filename) {
+	const masked = maskFences(body);
+	const heads = [...masked.matchAll(/^### Option (\d+):\s+(.+)$/gm)];
+	if (heads.length < 2 || heads.length > 4) {
+		fail(`${filename} "## Options Considered" must contain 2 to 4 options formatted "### Option <N>: <Name>" (found ${heads.length})`);
+	}
+	return heads.map((m, i) => {
+		const number = Number(m[1]);
+		if (number !== i + 1) fail(`${filename} option numbers must be sequential. Expected Option ${i + 1}, found Option ${number}`);
+		const end = i + 1 < heads.length ? heads[i + 1].index : body.length;
+		const fields = fieldMap(parseFields(body.slice(m.index + m[0].length, end)));
+		const where = `Option ${number}`;
+		need(fields, "Approach", where, filename, { allowNone: false });
+		const source = OPTION_SOURCES.find((s) => s.toLowerCase() === need(fields, "Source", where, filename, { allowNone: false }).toLowerCase());
+		if (!source) fail(`${filename} ${where} "Source" must be one of: ${OPTION_SOURCES.join(", ")}`);
+		for (const label of ["Trade-offs", "Cost", "Risk"]) need(fields, label, where, filename, { allowNone: false });
+		return { number, name: m[2].trim(), source };
+	});
+}
+
+/**
+ * Validates the contents of a think.md markdown file.
+ * @param {string} rawMarkdown
+ * @param {string} [filename="think.md"]
+ * @param {{stage?: "draft"|"approved"}} [settings]
+ */
+export function validateThinkContent(rawMarkdown, filename = "think.md", settings = {}) {
+	const stage = settings.stage ?? "draft";
+	if (!STAGES.includes(stage)) fail(`stage "${stage}" must be one of: ${STAGES.join(", ")}`);
+	const markdown = normalizeNewlines(rawMarkdown).trim();
+	if (!markdown) fail(`${filename} is empty`);
+
+	const h1 = markdown.match(/^# Think:\s+(.+)$/m);
+	if (!h1 || !h1[1].trim()) fail(`${filename} must start with a level-one heading: "# Think: <Feature or Task Name>"`);
+
+	const sections = splitSections(markdown, THINK_REQUIRED_H2, filename);
+	checkThinkHasNoCode(markdown, filename);
+
+	const business = fieldMap(parseFields(sections["Business Need & Outcome"]));
+	for (const label of ["Backlog Issue", "Problem Statement", "Consumer", "Desired Outcome"]) {
+		need(business, label, "## Business Need & Outcome", filename, { allowNone: false });
+	}
+
+	const options = parseOptions(sections["Options Considered"], filename);
+
+	const chosen = fieldMap(parseFields(sections["Chosen Approach"]));
+	const selectedRaw = need(chosen, "Selected", "## Chosen Approach", filename, { allowNone: false });
+	const selectedMatch = selectedRaw.match(/^Option (\d+)\b/i);
+	const selected = selectedMatch && options.find((o) => o.number === Number(selectedMatch[1]));
+	if (!selected) fail(`${filename} "Selected" must name one of the options, for example "Option 1" (found "${selectedRaw}")`);
+	need(chosen, "Reasoning", "## Chosen Approach", filename, { allowNone: false });
+	const approval = checkApproval(need(chosen, "Approved By", "## Chosen Approach", filename, { allowNone: false }), stage, [["Developer", "Architect"]], "## Chosen Approach", filename);
+	if (selected.source === "Custom build") {
+		need(chosen, "Custom Build Reason", "## Chosen Approach", filename, { allowNone: false });
+	}
+
+	const bindings = parseFields(sections["Forge Asset Bindings"]);
+	if (!bindings.length) fail(`${filename} "## Forge Asset Bindings" must list bindings as "- **<asset>:** <how it is composed>" or "- **None:** <reason>"`);
+	for (const [label, value] of bindings) {
+		if (!value || isPlaceholder(value)) fail(`${filename} Forge binding "${label}" needs a description`);
+	}
+	const hasNone = bindings.some(([label]) => label.toLowerCase() === "none");
+	for (const [label] of bindings) {
+		if (label.toLowerCase() !== "none" && !BINDING_LABEL.test(label)) fail(`${filename} Forge binding "${label}" must be formatted "forge/<asset-id>@<version>" (or "None")`);
+	}
+	if (hasNone && bindings.length > 1) fail(`${filename} Forge Asset Bindings cannot combine "None" with real bindings`);
+	if (hasNone && selected.source !== "Custom build") {
+		fail(`${filename} the selected option uses the Forge (${selected.source}), so Forge Asset Bindings must list the bound assets`);
+	}
+	if (!hasNone && selected.source === "Custom build") {
+		fail(`${filename} the selected option is a custom build, so Forge Asset Bindings must state "- **None:** <reason>"`);
+	}
+
+	const flow = fieldMap(parseFields(sections["System Flow & Responsibilities"]));
+	for (const label of ["Request Tracing", "Component Responsibilities", "Boundaries"]) {
+		need(flow, label, "## System Flow & Responsibilities", filename, { allowNone: false });
+	}
+
+	const constraints = fieldMap(parseFields(sections["Constraints & Invariants"]));
+	for (const label of ["Decision Records", "Non-Negotiable Rules", "Side-Effect Constraints"]) {
+		need(constraints, label, "## Constraints & Invariants", filename);
+	}
+
+	const blast = fieldMap(parseFields(sections["Blast Radius"]));
+	const tier = parseTier(need(blast, "Tier", "## Blast Radius", filename, { allowNone: false }), "Blast Radius Tier", filename);
+	need(blast, "Affected", "## Blast Radius", filename, { allowNone: false });
+	need(blast, "Rationale", "## Blast Radius", filename, { allowNone: false });
+	const rollback = need(blast, "Rollback", "## Blast Radius", filename);
+	if ((tier === "High" || tier === "Critical") && NO_ANSWER.test(rollback)) {
+		fail(`${filename} a ${tier} blast radius must name the rollback mechanism`);
+	}
+
+	const decision = fieldMap(parseFields(sections["Decision Record"]));
+	const required = need(decision, "Required", "## Decision Record", filename, { allowNone: false }).toLowerCase().split(/[\s.,;:(]/)[0];
+	if (!["yes", "no"].includes(required)) fail(`${filename} Decision Record "Required" must be "yes" or "no"`);
+	const decisionRequired = required === "yes";
+	if (decisionRequired) {
+		need(decision, "Record", "## Decision Record", filename, { allowNone: false });
+		const status = need(decision, "Status", "## Decision Record", filename, { allowNone: false });
+		if (!/^(drafted|signed)\b/i.test(status)) fail(`${filename} Decision Record "Status" must be "Drafted" (awaiting Architect) or "Signed by <name> (Architect) on YYYY-MM-DD"`);
+		if (/^signed\b/i.test(status)) checkSignature(status, filename);
+	} else {
+		need(decision, "Reason", "## Decision Record", filename, { allowNone: false });
+		if (tier === "Critical") fail(`${filename} a Critical blast radius requires a decision record`);
+	}
+
+	const updatesBody = sections["Persistent Context Updates"];
+	const contextUpdates = [];
+	if (updatesBody !== NONE) {
+		const updates = parseFields(updatesBody);
+		if (!updates.length || updates.some(([label]) => label.toLowerCase() !== "update")) {
+			fail(`${filename} "## Persistent Context Updates" must be "${NONE}" or bullets formatted "- **Update:** \`path\` - what changes"`);
+		}
+		for (const [, value] of updates) {
+			const paths = extractPaths(value);
+			if (!paths.length) fail(`${filename} each Persistent Context update must name its file in backticks`);
+			paths.forEach((p) => checkPath(p, "Persistent Context update", filename));
+			contextUpdates.push(...paths);
+		}
+	}
+
+	if (isPlaceholder(sections["Ambiguities & Open Questions"])) {
+		fail(`${filename} "## Ambiguities & Open Questions" must list questions or contain "${NONE}"`);
+	}
+
+	return { title: h1[1].trim(), options, selected, tier, rollback, decisionRequired, contextUpdates, approval };
+}
+
+async function fileExists(path) {
+	try {
+		return (await stat(path)).isFile();
+	} catch {
+		return false;
+	}
+}
+
+async function dirExists(path) {
+	try {
+		return (await stat(path)).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+function parseArgs(args) {
+	const parsed = { think: null, dir: null, stage: "draft", unknown: [] };
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === "--think" && args[i + 1]) parsed.think = args[++i];
+		else if (args[i] === "--dir" && args[i + 1]) parsed.dir = args[++i];
+		else if (args[i] === "--stage" && args[i + 1]) parsed.stage = args[++i];
+		else if (args[i] === "--help" || args[i] === "-h") parsed.help = true;
+		else parsed.unknown.push(args[i]);
+	}
+	return parsed;
+}
+
+export async function runValidator(args = process.argv.slice(2)) {
+	const opts = parseArgs(args);
+
+	if (!opts.help && opts.unknown.length) {
+		console.error(`✗ Unknown or incomplete argument(s): ${opts.unknown.join(" ")}. Run with --help for usage.`);
+		return 1;
+	}
+	if (!opts.help && !STAGES.includes(opts.stage)) {
+		console.error(`✗ Unknown --stage "${opts.stage}": use one of ${STAGES.join(", ")}.`);
+		return 1;
+	}
+	if (opts.help || (!opts.think && !opts.dir)) {
+		console.log(`Usage:
+  node validate-think.mjs --think <path/to/think.md> [--stage draft|approved]
+  node validate-think.mjs --dir <specs-directory> [--stage draft|approved]
+
+Stages: "draft" (default) requires "Approved By: Pending"; "approved" requires the named Developer
+and Architect approvals. The agent only ever validates drafts; people approve.
+`);
+		return opts.help ? 0 : 1;
+	}
+
+	let targetThink = opts.think;
+
+	if (opts.dir) {
+		if (!(await dirExists(opts.dir))) {
+			console.error(`Error: Directory not found: ${opts.dir}`);
+			return 1;
+		}
+		const thinkInDir = join(opts.dir, "think.md");
+		if (await fileExists(thinkInDir)) targetThink = thinkInDir;
+		if (!targetThink) {
+			console.error(`Error: Directory ${opts.dir} does not contain think.md`);
+			return 1;
+		}
+	}
+
+	try {
+		const think = validateThinkContent(await readFile(targetThink, "utf-8"), targetThink, { stage: opts.stage });
+		console.log(`✓ [think.md] Validated: "${think.title}" (blast radius ${think.tier}, ${think.options.length} options, ${opts.stage}) (${targetThink})`);
+		return 0;
+	} catch (err) {
+		console.error(`✗ [think.md] Validation failed: ${err.message}`);
+		return 1;
+	}
+}
+
+const isEntry = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isEntry) {
+	runValidator().then((code) => {
+		if (code !== 0) process.exit(code);
+	}).catch((err) => {
+		console.error(err);
+		process.exit(1);
+	});
+}

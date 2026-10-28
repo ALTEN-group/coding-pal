@@ -16,6 +16,7 @@ export function parseArgs(argv) {
 	const options = {
 		manifest: "package.json",
 		useGit: false,
+		base: "HEAD",
 		allow: new Set(),
 		banned: new Set(DEFAULT_BANNED_PACKAGES),
 		json: false,
@@ -28,6 +29,8 @@ export function parseArgs(argv) {
 			options.manifest = argv[++i];
 		} else if (arg === "--git") {
 			options.useGit = true;
+		} else if (arg === "--base") {
+			options.base = argv[++i];
 		} else if (arg === "--allow") {
 			const raw = argv[++i] || "";
 			raw.split(",").map((s) => s.trim()).filter(Boolean).forEach((pkg) => options.allow.add(pkg));
@@ -167,7 +170,7 @@ Options:
 		let baselineManifest = null;
 
 		if (options.useGit) {
-			const res = spawnSync(`git show HEAD:${options.manifest}`, {
+			const res = spawnSync(`git show "${options.base}:${options.manifest}"`, {
 				shell: true,
 				cwd: options.cwd,
 				encoding: "utf-8",

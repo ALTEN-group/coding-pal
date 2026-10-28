@@ -40,7 +40,7 @@ flowchart TD
         WGT["<b>specs/triage/weights.json</b><br/>Strategic weights"]
     end
 
-    NEXT["<b>Think Planner</b><br/>Starts from decision: todo"]
+    NEXT["<b>Thinker</b><br/>Starts from decision: todo"]
 
     MEET --> AG
     TICK --> AG

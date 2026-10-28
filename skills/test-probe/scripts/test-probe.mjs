@@ -14,6 +14,7 @@ export function parseArgs(argv) {
 	const options = {
 		testCmd: null,
 		sources: [],
+		base: "HEAD",
 		json: false,
 		cwd: process.cwd(),
 	};
@@ -24,6 +25,8 @@ export function parseArgs(argv) {
 			options.testCmd = argv[++i];
 		} else if (arg === "--source") {
 			options.sources.push(argv[++i]);
+		} else if (arg === "--base") {
+			options.base = argv[++i];
 		} else if (arg === "--cwd") {
 			options.cwd = resolve(argv[++i]);
 		} else if (arg === "--json") {
@@ -50,16 +53,16 @@ export function runShell(command, cwd = process.cwd()) {
 	};
 }
 
-export function getHeadContent(filePath, cwd = process.cwd()) {
+export function getHeadContent(filePath, cwd = process.cwd(), base = "HEAD") {
 	const rel = relative(cwd, filePath).replace(/\\/g, "/");
-	const res = runShell(`git show "HEAD:${rel}"`, cwd);
+	const res = runShell(`git show "${base}:${rel}"`, cwd);
 	if (res.exitCode !== 0) {
-		throw new Error(`Unable to fetch HEAD version of "${rel}". Ensure file is tracked in git.`);
+		throw new Error(`Unable to fetch ${base} version of "${rel}". Ensure file is tracked in git.`);
 	}
 	return res.stdout;
 }
 
-export function evaluateProbe({ testCmd, sources, cwd = process.cwd(), getUnpatchedContent = getHeadContent }) {
+export function evaluateProbe({ testCmd, sources, base = "HEAD", cwd = process.cwd(), getUnpatchedContent = (abs, dir) => getHeadContent(abs, dir, base) }) {
 	if (!testCmd) throw new Error("Missing required --test-cmd");
 	if (!sources || sources.length === 0) throw new Error("At least one --source file must be specified");
 
@@ -148,6 +151,7 @@ Options:
 		const result = evaluateProbe({
 			testCmd: options.testCmd,
 			sources: options.sources,
+			base: options.base,
 			cwd: options.cwd,
 		});
 

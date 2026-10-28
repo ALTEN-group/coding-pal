@@ -1,6 +1,6 @@
 ---
 name: dependency-guard
-description: 'Mechanically prevent agents from introducing unvetted, unprompted, or banned dependencies into package.json manifests by comparing working tree changes against git HEAD.'
+description: 'Mechanically prevent agents from introducing unvetted, unprompted, or banned dependencies into package.json manifests by comparing working tree or branch changes against git HEAD or a specified --base ref.'
 license: MIT
 ---
 
@@ -24,8 +24,9 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 2. Run the dependency guard against git changes:
 
 ```bash
-# Check git working tree changes against HEAD
+# Check git working tree changes against HEAD (or pass --base <git-ref>, e.g. origin/main)
 node scripts/dependency-guard.mjs --git
+node scripts/dependency-guard.mjs --git --base origin/main
 
 # Allow specific user-authorized new packages
 node scripts/dependency-guard.mjs --git --allow "zod,dotenv"

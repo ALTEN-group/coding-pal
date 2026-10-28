@@ -24,8 +24,9 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 2. After making code changes, run the deterministic validator:
 
 ```bash
-# Check current git repository against authorized scopes
+# Check current git repository against authorized scopes (defaults to diffing against HEAD; pass --base <git-ref> for branch diffs)
 node scripts/scope-guard.mjs --git --scope "src/auth/**" --scope "tests/auth/**"
+node scripts/scope-guard.mjs --git --base origin/main --scope "src/auth/**" --scope "tests/auth/**"
 
 # Enforce churn thresholds (max lines added / deleted)
 node scripts/scope-guard.mjs --git --scope "src/**" --max-additions 80 --max-deletions 40

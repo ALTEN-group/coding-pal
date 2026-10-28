@@ -81,7 +81,7 @@ flowchart TD
 |---|---|---|---|---|---|
 | **Discover Reusable Assets** | [`/forge-search`](./catalog-prompts.md) | [`Forge Curator`](./catalog-agents.md) (discover mode) | none (the contract of the skill) | [`forge`](./catalog-skills.md) | Candidate assets with fit, gaps, and bindings text for `think.md` |
 | **Certify a Proposed Asset** | [`/forge-certify`](./catalog-prompts.md) | [`Forge Curator`](./catalog-agents.md) (certify mode) | [`forge`](./catalog-instructions.md) (catalog entries) | [`forge`](./catalog-skills.md) | Checklist with evidence and a draft catalog entry for a pull request |
-| **Check Bindings** | `bindings-check.mjs` in CI or by the Think Planner | [`Think Planner`](./catalog-agents.md) | [`think-plan`](./catalog-instructions.md) | [`forge`](./catalog-skills.md) | Pass or fail with warnings for `think.md` and `plan.md` |
+| **Check Bindings** | `bindings-check.mjs` in CI or by the Thinker / Planner | [`Thinker`](./catalog-agents.md), [`Planner`](./catalog-agents.md) | [`think`](./catalog-instructions.md), [`plan`](./catalog-instructions.md) | [`forge`](./catalog-skills.md) | Pass or fail with warnings for `think.md` and `plan.md` |
 | **Forge Health Report** | `forge-health.mjs` (scheduled or on demand) | none (deterministic) | none | [`forge`](./catalog-skills.md) | Markdown report of health signals |
 
 ---

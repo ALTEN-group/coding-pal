@@ -125,7 +125,7 @@ Use a skill when a workflow needs one or more of the following:
 - References that are too detailed for an agent body.
 - Templates that consumers copy and customize.
 
-Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `audit-reporting` accepts `--scope` arguments instead of hard-coding a service layout. A skill that owns a record contract (for example `triage`, `think-plan`, `decision-record`) may state the record's conventional location in its contract, such as `specs/issue-<n>/triage.md` or `docs/decisions/`, but every script must take that location as an argument and never default to it.
+Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `audit-reporting` accepts `--scope` arguments instead of hard-coding a service layout. A skill that owns a record contract (for example `triage`, `think`, `plan`, `decision-record`) may state the record's conventional location in its contract, such as `specs/issue-<n>/triage.md` or `docs/decisions/`, but every script must take that location as an argument and never default to it.
 
 ### Prompts Own Single Operations
 
@@ -203,7 +203,7 @@ Run tests for a single skill during local development:
 
 ```bash
 ./scripts/test.sh <skill-name>
-# example: ./scripts/test.sh think-plan
+# example: ./scripts/test.sh think
 # or natively:
 node --test skills/<name>/scripts/*.test.mjs
 ```

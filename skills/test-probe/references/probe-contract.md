@@ -11,7 +11,7 @@ Run test-cmd on current modified working tree
   ├── Fails? ──> ABORT: Base test does not pass.
   ▼
 [2. Inversion (Unpatch)]
-Temporarily revert source implementation to baseline (HEAD)
+Temporarily revert source implementation to baseline (--base <git-ref>, default HEAD)
 Leave newly created / updated test file intact
   │
   ▼
@@ -34,8 +34,11 @@ Re-run test-cmd to confirm passing state
 ## CLI Usage
 
 ```bash
-# Verify that newly added auth tests fail without the auth fix
+# Verify that newly added auth tests fail without the auth fix (baseline HEAD)
 node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
+
+# Revert source files against a branch base ref (e.g. origin/main in CI)
+node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js" --base origin/main
 
 # Inspect JSON falsifiability report
 node scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js" --json

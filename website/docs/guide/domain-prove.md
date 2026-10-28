@@ -107,6 +107,7 @@ The table follows the [Prove stage](https://alten-group.github.io/agentic-softwa
 | **Control integrity and bug rule** | CI, after every agent fix, or `control-guard.mjs` and `bug-rule.mjs` | none (scripts) | [`prove-controls`](./catalog-instructions.md) | [`control-guard`](./catalog-skills.md) | `RULE file:line message` findings, commit order |
 | **Preview smoke** | CI `preview` job, or `preview-smoke.mjs` | none (script) | [`prove-controls`](./catalog-instructions.md) | [`preview-smoke`](./catalog-skills.md) | Per-route pass or fail |
 | **Delivery pipeline and Platform Rails** | Copy the templates, then `rails-check.mjs` | none (templates and script) | [`prove-controls`](./catalog-instructions.md) | [`verification-pipeline`](./catalog-skills.md) | `verify.yml`, `remediate.yml`, missing rails |
+| **Pull request Prove validation** | [`/prove`](./catalog-prompts.md) or [`Prove Validator`](./catalog-agents.md) in CI, then `validate-prove.mjs` | [`Prove Validator`](./catalog-agents.md) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | Validated `specs/issue-<n>/prove.md` with control table, criteria traceability, semantic review, findings, and `PASS\|FAIL` verdict |
 | **Agent auto-remediation** | [`/fix-gates`](./catalog-prompts.md) or the [`Gate Fixer`](./catalog-agents.md) in CI | [`Gate Fixer`](./catalog-agents.md) | [`prove-controls`](./catalog-instructions.md) | `control-guard`, `code-loop` | A fix commit that passes the failed control, or a hand-over |
 
 ---
@@ -124,7 +125,7 @@ flowchart TD
     subgraph Inputs ["Records and Reports"]
         direction TB
         PLAN["<b>plan.md</b><br/>AC-n criteria + Test Plan"]
-        TEST["<b>Test reports</b><br/>JUnit XML, Jest / Vitest JSON"]
+        TEST["<b>Test reports</b><br/>JUnit XML, Jest / Vitest JSON, TAP / runner log"]
         MUT["<b>Mutation report</b><br/>Stryker JSON or summary"]
         API["<b>Contracts</b><br/>Base and head OpenAPI / JSON Schema"]
     end
@@ -175,7 +176,7 @@ flowchart TD
 - **Why a Gate**: A green test run does not mean the *right* things were tested. The Plan record lists the criteria the Product Owner and Developer agreed. This gate proves each has a passing test.
 - **Workflow Steps**:
   1. **Name**: The agent names each test after the criterion it verifies, for example `it("AC-2 rejects viewers", ...)`. The Test Plan table in `plan.md` already lists the test file per criterion.
-  2. **Report**: The test runner writes JUnit XML or Jest/Vitest JSON.
+  2. **Report**: The test runner writes JUnit XML, Jest/Vitest JSON, or TAP / runner log output.
   3. **Verify**:
      ```bash
      node .agents/skills/criteria-verify/scripts/verify-criteria.mjs \

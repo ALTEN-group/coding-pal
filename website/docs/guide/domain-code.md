@@ -22,7 +22,7 @@ flowchart TD
     subgraph Loop ["1. Autonomous Loop (AI)"]
         direction TB
         AG["<b>Code Agent</b><br/>One plan step per turn"]
-        CTRL["<b>Checks & controls</b><br/>Build, types, lint, tests,<br/>task-gate, scope-guard, secret-guard, dependency-guard"]
+        CTRL["<b>Checks & controls</b><br/>Build, types, lint, tests,<br/>task-gate, scope-guard, secret-guard, dependency-guard, control-guard"]
         PRG["<b>progress.json</b><br/>Step status, attempts, fix-loop counter"]
         AG --> CTRL
         CTRL -->|"all green: pass"| PRG
@@ -78,10 +78,10 @@ flowchart TD
 - **When to Run**: After the Developer approves `plan.md` by recording `Approved By` in its `## Approval` section (issue labelled `specs:ready`). Interactively in the IDE (`/code 42`, or `/code 42 3` for one step) or headlessly in CI.
 - **Why a Loop**: Running the checks costs seconds, not a CI cycle. The agent reads the failure, repairs, and runs again, so humans see only green work. One step per turn keeps each change small enough to verify and to revert.
 - **Workflow Steps**:
-  1. **Ground**: The `Code Agent` reads `think.md`, `plan.md`, the Forge bindings, and the instructions they reference. It stops if the plan fails `validate-specs.mjs --stage approved`, has an open question, or is not approved by a named Developer (`code-loop` refuses to start).
+  1. **Ground**: The `Code Agent` reads `think.md`, `plan.md`, the Forge bindings, and the instructions they reference. It stops if the plan fails `validate-plan.mjs --stage approved`, has an open question, or is not approved by a named Developer (`code-loop` refuses to start).
   2. **Branch**: It creates `feature|fix|chore/issue-<n>-<slug>` from `main` or `develop` and checks it with `branch-guard.mjs`.
   3. **Step**: `code-loop.mjs next` then `start <n>`. It applies the step's `New Code`, adjusted only to fit the repository, and reports any divergence. It writes only the step's `Files`.
-  4. **Check**: It runs the step's `Verification` and `Bootable Check`, the project's build, types, lint, and tests, and the controls: `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, and, when installed and relevant, `criteria-verify` on the test reports, `contract-compat` for a changed API contract, and `mutation-bar` on the changed files.
+  4. **Check**: It runs the step's `Verification` and `Bootable Check`, the project's build, types, lint, and tests, and the controls: `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, and, when installed and relevant, `criteria-verify` on the test reports, `test-probe` on new or updated tests, `preview-smoke` on a running preview, `contract-compat` for a changed API contract, and `mutation-bar` on the changed files.
   5. **Fix or pass**: Failing, it runs `fail <n> --reason "..."`, repairs, and checks again. Green, it runs `pass <n>` and commits.
   6. **Repeat** until every step is `done`.
   ```bash

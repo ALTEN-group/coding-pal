@@ -20,14 +20,14 @@ flowchart TD
 
     subgraph Phase1 ["1. Think Phase (Developer + Architect)"]
         direction TB
-        AG_THINK["<b>Think Planner</b><br/>Options, Forge discovery, context scan, impact analysis"]
+        AG_THINK["<b>Thinker</b><br/>Options, Forge discovery, context scan, impact analysis"]
         THINK_DOC["<b>think.md</b><br/>Options, chosen approach, Forge bindings,<br/>constraints, blast radius, decision record"]
         AG_THINK --> THINK_DOC
     end
 
     subgraph Phase2 ["2. Plan Phase (Developer)"]
         direction TB
-        AG_PLAN["<b>Think Planner</b><br/>Derives the Plan record from think.md"]
+        AG_PLAN["<b>Planner</b><br/>Derives the Plan record from think.md"]
         PLAN_DOC["<b>plan.md</b><br/>File scope, acceptance criteria, steps with New Code,<br/>test plan, blast radius check"]
         AG_PLAN --> PLAN_DOC
     end
@@ -43,8 +43,8 @@ flowchart TD
         direction TB
         FORGE["<b>The Forge</b><br/>Reusable services, libraries, contracts"]
         PC["<b>Persistent Context</b><br/>Instructions, specs, decision records"]
-        INST_SPEC["<b>think-plan.instructions.md</b>"]
-        SKILL_SPEC["<b>skills/think-plan/</b><br/>Contract & validate-specs.mjs"]
+        INST_SPEC["<b>think.instructions.md / plan.instructions.md</b>"]
+        SKILL_SPEC["<b>skills/think/ &amp; skills/plan/</b><br/>Contracts, validate-think.mjs &amp; validate-plan.mjs"]
     end
 
     ARCH["<b>Architect</b><br/>Signs decision records"]
@@ -83,7 +83,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Business Needs to Specifications** | Planning session or [`Think Planner`](./catalog-agents.md#_10-think-planner-think-plan-agent-md) agent (CI) | [`Think Planner`](./catalog-agents.md#_10-think-planner-think-plan-agent-md) | [`think-plan`](./catalog-instructions.md#think-plan-instructions) | [`think-plan`](./catalog-skills.md#_10-think-plan-skills-think-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps with code) |
+| **Business Needs to Specifications** | Planning session or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps with code) |
 
 ---
 
@@ -116,16 +116,17 @@ The Plan reads the Forge bindings, constraints, and blast radius from Think. It 
 - **Workflow Steps**:
   1. **Phase 1: Think**:
      - *Interactive (IDE)*: Open a planning session: *"Think through issue #42 and save the Think record to specs/issue-42/think.md."*
-     - *Headless (GitHub Action)*: Triggered by the Product Owner's `decision:todo` label, invoking the **Think Planner** agent (`think-plan.agent.md`). Where Triage is not used, trigger on `issues: [opened]` with the issue title and body.
+     - *Headless (GitHub Action)*: Triggered by the Product Owner's `decision:todo` label, invoking the **Thinker** agent (`think.agent.md`). Where Triage is not used, trigger on `issues: [opened]` with the issue title and body.
      - The agent validates `triage.md` at the `final` stage and proceeds only on `todo`, reusing the Triage evidence and system mapping.
      - It scans the codebase, the Forge, and Persistent Context, drafts 2 to 4 options, selects one, binds Forge assets, classifies the blast radius, and drafts a decision record when a public API, schema, or boundary changes. The Architect signs the record.
   2. **Phase 2: Plan**:
      - *Interactive (IDE)*: In a clean session: *"From specs/issue-42/think.md, generate specs/issue-42/plan.md."*
-     - *Headless (CI)*: The **Think Planner** agent synthesizes `plan.md` from the validated `think.md`.
+     - *Headless (CI)*: The **Planner** agent (`plan.agent.md`) synthesizes `plan.md` from the validated `think.md`.
      - Emits the file scope, acceptance criteria, steps with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, and `Serves`, the test plan, and the blast radius check.
   3. **Phase 3: Automated Validation**:
      ```bash
-     node .agents/skills/think-plan/scripts/validate-specs.mjs --dir specs/issue-42
+     node .agents/skills/think/scripts/validate-think.mjs --think specs/issue-42/think.md
+     node .agents/skills/plan/scripts/validate-plan.mjs --dir specs/issue-42
      ```
      This checks the drafts (`--stage draft`, the default). After the named approvals are recorded, `--stage approved` checks them.
   4. **Phase 4: Agentic Coding**:
@@ -174,8 +175,8 @@ caption: GitHub Actions Issue-to-Specification Workflow
 ---
 flowchart TD
     ISSUE["<b>1. decision:todo applied</b><br/>Product Owner decision on issue #42"] --> ACT["<b>2. GitHub Action Triggered</b><br/>issues: [labeled]"]
-    ACT --> AG["<b>3. Think Planner Agent</b><br/>Generates think.md, then derives plan.md"]
-    AG --> VAL["<b>4. Deterministic Validator</b><br/>node validate-specs.mjs --dir"]
+    ACT --> AG["<b>3. Thinker / Planner Agent</b><br/>Generates think.md, then derives plan.md"]
+    AG --> VAL["<b>4. Deterministic Validator</b><br/>validate-think.mjs / validate-plan.mjs"]
     VAL --> BR["<b>5. Push to Branch</b><br/>specs/issue-42"]
     BR --> COM["<b>6. Post Issue Comment</b><br/>gh issue comment with collapsible details"]
     COM --> LBL["<b>7. Add Label</b><br/>specs:ready"]
@@ -201,7 +202,7 @@ flowchart TD
 3. **Dedicated Branch Storage**: Files are committed to `specs/issue-<number>/` on branch `specs/issue-<number>`, next to `triage.md`.
 
 - **Falsifiable Done When**:
-  - `think.md` and `plan.md` pass `skills/think-plan/scripts/validate-specs.mjs` with exit code 0, including the cross-check.
+  - `think.md` passes `skills/think/scripts/validate-think.mjs` and `plan.md` passes `skills/plan/scripts/validate-plan.mjs` with exit code 0, including the cross-check.
   - Any decision record is drafted and unsigned until the Architect signs it.
   - Both `Approved By` fields are `Pending` in the agent's output; `--stage approved` passes only after named people approve.
   - Zero production or test files were modified during specification generation.

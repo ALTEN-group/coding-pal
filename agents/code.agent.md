@@ -7,7 +7,7 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
 
 ## Constraints
 
-- Implement only from a validated, Developer-approved `plan.md` with its `think.md`. If either is missing, fails `node .agents/skills/think-plan/scripts/validate-specs.mjs --dir specs/issue-<number> --stage approved`, or the plan has an unanswered question, stop and report. If `code-loop` says `plan is not approved by a Developer`, stop: only a person fills in `## Approval`, and you never do.
+- Implement only from a validated `plan.md` with its `think.md`. Verify with `node .agents/skills/plan/scripts/validate-plan.mjs --dir specs/issue-<number> --stage approved` (or `--stage draft` in automated CI pipelines where `--allow-pending-approval` / `ALLOW_PENDING_APPROVAL=1` is enabled and human approval happens on the Pull Request). If either is missing, fails validation, or the plan has an unanswered question, stop and report. If `code-loop` says `plan is not approved by a Developer`, stop: only a person fills in `## Approval`, and you never do.
 - One plan step per turn. Never start a step before the previous one is `done` in `progress.json`.
 - Apply the step's `New Code`, adjusting it only as needed to fit the real repository, and report any divergence. Do not add behavior the step does not describe.
 - Write only the files in the step's `Files`, and only inside the plan's `In Scope`. Never touch `Out of Scope` paths.
@@ -34,7 +34,10 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
    - `node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --scope "<each In Scope path>"`,
    - `node .agents/skills/secret-guard/scripts/secret-guard.mjs --git`,
    - `node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git`,
-   - `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs --plan specs/issue-<number>/plan.md --report <test report> --require-test-files`, on the reports the test runner wrote,
+   - `node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/main`,
+   - `node .agents/skills/test-probe/scripts/test-probe.mjs --test-cmd "<test command>" --source "<modified source file>"` when a step modifies existing tracked source files alongside tests,
+   - `node .agents/skills/preview-smoke/scripts/preview-smoke.mjs --url <preview url> --routes <routes.json>` when a preview server is started,
+   - `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs --plan specs/issue-<number>/plan.md --report <test report> --require-test-files` when the test runner writes a JUnit XML, Jest/Vitest JSON, or TAP/runner log report,
    - `contract-compat` when the step changes an API contract or schema, and `mutation-bar` when a mutation report exists,
    - every other installed control that applies to the files you changed.
 6. If anything fails, record it with `code-loop.mjs fail <n> --reason "<what failed>"`, read the failure, repair the code, and run step 5 again. After more than 3 attempts, tell the Developer the plan looks too big or too vague. At `fix-loop limit reached: the Developer steps in`, stop and hand over with the failing output.
@@ -47,6 +50,6 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
 ## Done When
 
 - Every plan step is `done` in `progress.json` and fix-loop attempts are within the limit.
-- The build, type check, linter, tests, and controls pass with zero errors, and after the last step `verify-criteria.mjs` exits 0 on the final test reports, so every acceptance criterion has a passing test.
+- The build, type check, linter, tests, and controls pass with zero errors (and when test reports are emitted, `verify-criteria.mjs` exits 0 on the final test reports), so every acceptance criterion has a passing test.
 - `validate-pr.mjs --stage code` exits with code 0 for the pull request body.
 - Only files in the plan's `In Scope` changed, no control was modified, and no Human Validation field was set.

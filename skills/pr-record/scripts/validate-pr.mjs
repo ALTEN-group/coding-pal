@@ -29,6 +29,7 @@ const APPROVAL_MESSAGE = "plan is not approved by a Developer; Code starts only 
 
 const USAGE = `Usage: node validate-pr.mjs --body <pr.md> --dir specs/issue-<n> --stage code|prove
          [--added-deps "pkg-a,pkg-b"] [--root <workspace>] [--pr-date YYYY-MM-DD] [--max-fix-loop 5]
+         [--allow-pending-approval] [--allow-auto-prove]
 `;
 
 function normalizeNewlines(value) {
@@ -250,7 +251,7 @@ function isRealDate(value) {
  * Code starts only from an approved plan: plan.md "## Approval" -> "Approved By" names a person as Developer
  * (`<name> (Developer) on YYYY-MM-DD`, optionally `; <name> (Architect) on YYYY-MM-DD`). Same rule as code-loop.
  */
-function checkPlanApproval(planText) {
+function checkPlanApproval(planText, allowPending = false) {
 	const lines = normalizeNewlines(planText).split("\n");
 	const masked = maskFences(normalizeNewlines(planText), "plan.md").split("\n");
 	const start = masked.findIndex((line) => /^## Approval\s*$/.test(line));
@@ -261,6 +262,7 @@ function checkPlanApproval(planText) {
 	const field = masked.slice(start + 1, end).map((line) => line.match(/^- \*\*Approved By:\*\*\s*(.*)$/)).find(Boolean);
 	if (!field) notApproved('plan.md "## Approval" has no "- **Approved By:**" field');
 	const value = field[1].trim();
+	if (allowPending && /^pending$/i.test(value)) return;
 	const m = value.match(APPROVED_BY);
 	if (!m) notApproved(`"${value}" is not "<name> (Developer) on YYYY-MM-DD"`);
 	const people = [[m[1].trim(), m[2]], ...(m[3] ? [[m[3].trim(), m[4]]] : [])];
@@ -290,8 +292,8 @@ function parseConfirmation(value, label, recordDate, allowedRoles) {
 	return { name: m[1], role: m[2] };
 }
 
-function checkTierValidators(tier, fields, think, recordDate) {
-	if (tier === "Low" && QUESTIONS.every((q) => fields.get(q) === "Auto-merge")) return;
+function checkTierValidators(tier, fields, think, recordDate, allowAutoProve = false) {
+	if ((tier === "Low" || (allowAutoProve && tier === "Medium")) && QUESTIONS.every((q) => fields.get(q) === "Auto-merge")) return;
 	const allowed = { Low: ["Developer"], Medium: ["Developer"], High: ["Developer", "Architect"], Critical: ["Developer", "Architect", "Product Owner"] }[tier];
 	const confirmed = QUESTIONS.map((q) => parseConfirmation(fields.get(q), q, recordDate, allowed));
 
@@ -335,7 +337,7 @@ function checkTierValidators(tier, fields, think, recordDate) {
 	}
 }
 
-function checkHumanValidation(section, stage, tier, think, recordDate) {
+function checkHumanValidation(section, stage, tier, think, recordDate, allowAutoProve = false) {
 	if (/line[\s-]*by[\s-]*line/i.test(section)) {
 		fail("pr Human Validation must not claim line-by-line review: governance bans it as a gate; validate intent, behaviour and safety instead");
 	}
@@ -359,7 +361,7 @@ function checkHumanValidation(section, stage, tier, think, recordDate) {
 		}
 		return;
 	}
-	checkTierValidators(tier, fields, think, recordDate);
+	checkTierValidators(tier, fields, think, recordDate, allowAutoProve);
 }
 
 function checkProgress(progress, planText, maxFixLoop) {
@@ -411,13 +413,13 @@ export function validatePrContent(rawBody, ctx) {
 	let recordDate = ctx.prDate ?? null;
 	if (recordDate && !DATE.test(recordDate)) fail("--pr-date must be formatted YYYY-MM-DD");
 	if (ctx.stage === "code") {
-		checkPlanApproval(ctx.planText);
+		checkPlanApproval(ctx.planText, Boolean(ctx.allowPendingApproval));
 		fixLoop = checkProgress(ctx.progress, ctx.planText, ctx.maxFixLoop ?? DEFAULT_MAX_FIX_LOOP);
 	} else {
 		recordDate ??= latestVerification(ctx.progress);
 		if (!recordDate) fail("cannot determine the pull request record date; pass --pr-date YYYY-MM-DD or keep progress.json in the work item");
 	}
-	checkHumanValidation(sections["Human Validation"], ctx.stage, tier, think, ctx.stage === "prove" ? recordDate : null);
+	checkHumanValidation(sections["Human Validation"], ctx.stage, tier, think, ctx.stage === "prove" ? recordDate : null, Boolean(ctx.allowAutoProve));
 	return { stage: ctx.stage, tier, criteria: traced, dependencies: deps, fixLoop, recordDate };
 }
 
@@ -438,7 +440,7 @@ function readOptional(path) {
 }
 
 export function runValidator(args = process.argv.slice(2)) {
-	const opts = { body: null, dir: null, stage: null, addedDeps: "", root: process.cwd(), prDate: null, maxFixLoop: DEFAULT_MAX_FIX_LOOP, help: false };
+	const opts = { body: null, dir: null, stage: null, addedDeps: "", root: process.cwd(), prDate: null, maxFixLoop: DEFAULT_MAX_FIX_LOOP, allowPendingApproval: false, allowAutoProve: false, help: false };
 	for (let i = 0; i < args.length; i++) {
 		if (args[i] === "--body" && args[i + 1]) opts.body = args[++i];
 		else if (args[i] === "--dir" && args[i + 1]) opts.dir = args[++i];
@@ -447,6 +449,8 @@ export function runValidator(args = process.argv.slice(2)) {
 		else if (args[i] === "--root" && args[i + 1]) opts.root = args[++i];
 		else if (args[i] === "--pr-date" && args[i + 1]) opts.prDate = args[++i];
 		else if (args[i] === "--max-fix-loop" && args[i + 1]) opts.maxFixLoop = Number(args[++i]);
+		else if (args[i] === "--allow-pending-approval") opts.allowPendingApproval = true;
+		else if (args[i] === "--allow-auto-prove") opts.allowAutoProve = true;
 		else if (args[i] === "--help" || args[i] === "-h") opts.help = true;
 		else {
 			console.error(`✗ unknown option or missing value for "${args[i]}"\n${USAGE}`);
@@ -494,6 +498,8 @@ export function runValidator(args = process.argv.slice(2)) {
 			prDate: opts.prDate,
 			issue,
 			maxFixLoop: opts.maxFixLoop,
+			allowPendingApproval: Boolean(opts.allowPendingApproval || process.env.ALLOW_PENDING_APPROVAL === "1"),
+			allowAutoProve: Boolean(opts.allowAutoProve || process.env.ALLOW_AUTO_PROVE === "1"),
 			linkExists: (path) => fileIsReadable(resolve(opts.root, path)),
 			linkIsWorkItemFile: (path, file) => resolve(opts.root, path) === resolve(opts.dir, file),
 		};

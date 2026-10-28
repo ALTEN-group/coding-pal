@@ -190,10 +190,14 @@ test("prove stage: Low accepts Auto-merge or a Developer acknowledgement", () =>
 	rejects(pr({ ...low, human: { ...CONFIRMED, "Safety & Blast Radius": "Confirmed by Grace Hopper (Architect) on 2026-10-14" } }), prove(low), /cannot be confirmed by role Architect/);
 });
 
-test("prove stage: Medium needs a Developer for all three questions", () => {
+test("prove stage: Medium needs a Developer for all three questions unless allowAutoProve is set", () => {
 	assert.doesNotThrow(() => validatePrContent(pr({ human: CONFIRMED }), prove()));
 	rejects(pr({ human: pending("Medium") }), prove(), /is still Pending/);
 	rejects(pr({ human: { ...CONFIRMED, "Client Intent": "Auto-merge" } }), prove(), /must be "Confirmed by <name> \(<role>\) on YYYY-MM-DD"/);
+	const auto = Object.fromEntries(Object.keys(CONFIRMED).map((k) => [k, "Auto-merge"]));
+	rejects(pr({ human: auto }), prove(), /must be "Confirmed by <name> \(<role>\) on YYYY-MM-DD"/);
+	assert.doesNotThrow(() => validatePrContent(pr({ human: auto }), prove({ allowAutoProve: true })));
+	rejects(pr({ tier: "High", rollback: ROLLBACK, human: { ...auto, "Rollback Validated": "Auto-merge" } }), prove({ tier: "High", allowAutoProve: true }), /must be "Confirmed by/);
 	rejects(pr({ human: { ...CONFIRMED, "Client Intent": "Confirmed by Alan Turing (Product Owner) on 2026-10-14" } }), prove(), /cannot be confirmed by role Product Owner at this blast radius; allowed: Developer/);
 	rejects(pr({ human: { ...CONFIRMED, "Client Intent": "Confirmed by Ada Lovelace (Reviewer) on 2026-10-14" } }), prove(), /role "Reviewer" must be one of: Product Owner, Developer, Architect, DevOps, QA and maintainer/);
 });

@@ -144,12 +144,43 @@ export function parseJestJson(text) {
 	return tests;
 }
 
+/** Parses TAP (`ok 1 - name`, `not ok 1 - name # SKIP`) or runner lines (`ok   name`, `FAIL name`). */
+export function parseTap(text, label = "report") {
+	const tests = [];
+	let currentFile = /\.(?:test|spec)\.[A-Za-z0-9]+$/.test(label) ? normalizePath(label) : null;
+	for (const raw of text.split(/\r?\n/)) {
+		const fileComment = raw.match(/^\s*#\s*file:\s*(\S+)\s*$/i);
+		if (fileComment) {
+			currentFile = normalizePath(fileComment[1]);
+			continue;
+		}
+		const tap = raw.match(/^(ok|not ok)\s+\d+\s*(?:-\s*)?(.*?)(?:\s+#\s*(SKIP|TODO)\b.*)?$/i);
+		if (tap && tap[2].trim()) {
+			const directive = tap[3]?.toUpperCase();
+			const status = directive ? "skipped" : tap[1].toLowerCase() === "ok" ? "passed" : "failed";
+			const name = tap[2].trim();
+			tests.push({ name, match: name, status, file: currentFile });
+			continue;
+		}
+		const runner = raw.match(/^(ok|FAIL)\s{2,}(.+)$/) ?? raw.match(/^(FAIL)\s+(.+)$/);
+		if (runner && runner[2].trim()) {
+			const status = runner[1] === "ok" ? "passed" : "failed";
+			const name = runner[2].trim();
+			tests.push({ name, match: name, status, file: currentFile });
+		}
+	}
+	return tests;
+}
+
 export function parseReport(text, label = "report") {
 	const head = text.trimStart();
 	let tests;
 	if (head.startsWith("<")) tests = parseJUnit(text);
 	else if (head.startsWith("{")) tests = parseJestJson(text);
-	else throw new VerifyError(`${label} is neither JUnit XML nor Jest/Vitest JSON`);
+	else {
+		tests = parseTap(text, label);
+		if (!tests.length) throw new VerifyError(`${label} is neither JUnit XML nor Jest/Vitest JSON`);
+	}
 	if (!tests.length) throw new VerifyError(`${label} contains no test results`);
 	return tests.map((t) => ({ ...t, report: label }));
 }
