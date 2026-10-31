@@ -2,7 +2,7 @@
 
 The **Think & Plan** domain provides an agentic specification methodology that turns a prioritized backlog issue into persistent, machine-consumable records: `think.md` (the **Think record**) and `plan.md` (the **Plan record**). It implements stages [2 — Think](https://alten-group.github.io/agentic-software-factory/guide/stage-think) and [3 — Plan](https://alten-group.github.io/agentic-software-factory/guide/stage-plan) of the Agentic Software Factory and follows the [Triage](./domain-triage.md) stage.
 
-Rather than writing narrative PRDs that overwhelm AI agent context and compound errors, Coding Pal enforces a strict two-stage pipeline: **Think** (explore options, compose from the Forge, respect Persistent Context, classify the blast radius, draft decision records) followed by **Plan** (file scope, acceptance criteria, atomic steps with their code, a test plan, and a blast radius check). Downstream build agents consume these records step by step with no invented scope. AI explores and drafts. The Architect and the Developer decide.
+Rather than narrative PRDs, Coding Pal enforces two stages: **Think** chooses and records an approach, Forge bindings, constraints, and blast radius; **Plan** defines file scope, criteria, atomic steps, and tests. AI decides and approves autonomously at every risk tier, including API, schema, High, and Critical changes. Required controls, rollback evidence, and retry limits remain enforced. People intervene on unresolved failures or requested checkpoints.
 
 ---
 
@@ -47,8 +47,8 @@ flowchart TD
         SKILL_SPEC["<b>skills/think/ &amp; skills/plan/</b><br/>Contracts, validate-think.mjs &amp; validate-plan.mjs"]
     end
 
-    ARCH["<b>Architect</b><br/>Signs decision records"]
-    DEV["<b>Developer</b><br/>Approves the plan"]
+    ARCH["<b>Architect</b><br/>Owns decision policy, handles exceptions"]
+    DEV["<b>Developer</b><br/>Handles unresolved control failures"]
 
     TRI --> AG_THINK
     THINK_DOC -->|"Primary input"| AG_PLAN
@@ -96,9 +96,9 @@ flowchart TD
 | **Contains** | Options considered, chosen approach, Forge asset bindings, system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
 | **Code** | None | Only inside each step's `New Code` field |
 | **Reads** | The backlog issue and `triage.md`, the Forge, Persistent Context, the codebase | The validated `think.md` |
-| **Approved by** | The Developer and the Architect, recorded in `## Chosen Approach` | The Developer (the Architect may add a name), recorded in the last section, `## Approval` |
+| **Approved by** | Explicit automation identity and date in `## Chosen Approach` | Explicit automation identity and date in `## Approval` |
 
-The Plan reads the Forge bindings, constraints, and blast radius from Think. It only checks that the tier still holds for its file scope. The agent leaves both `Approved By` fields as `Pending`; the Developer and the Architect record their own name and date.
+The Plan reads Think's bindings, constraints, and tier. After validation, both records use `Approved By: Automated by <identity> on YYYY-MM-DD`, with Plan dated no earlier than Think. Human approval remains supported for requested checkpoints; automation must never forge a human signature.
 
 ---
 
@@ -118,7 +118,7 @@ The Plan reads the Forge bindings, constraints, and blast radius from Think. It 
      - *Interactive (IDE)*: Open a planning session: *"Think through issue #42 and save the Think record to specs/issue-42/think.md."*
      - *Headless (GitHub Action)*: Triggered by the Product Owner's `decision:todo` label, invoking the **Thinker** agent (`think.agent.md`). Where Triage is not used, trigger on `issues: [opened]` with the issue title and body.
      - The agent validates `triage.md` at the `final` stage and proceeds only on `todo`, reusing the Triage evidence and system mapping.
-     - It scans the codebase, the Forge, and Persistent Context, drafts 2 to 4 options, selects one, binds Forge assets, classifies the blast radius, and drafts a decision record when a public API, schema, or boundary changes. The Architect signs the record.
+     - It scans the codebase, Forge, and Persistent Context, weighs 2 to 4 options, selects one, binds assets, and classifies blast radius. Required decisions are accepted with an Automation decider and `Automated by <identity> on YYYY-MM-DD` attribution after validation.
   2. **Phase 2: Plan**:
      - *Interactive (IDE)*: In a clean session: *"From specs/issue-42/think.md, generate specs/issue-42/plan.md."*
      - *Headless (CI)*: The **Planner** agent (`plan.agent.md`) synthesizes `plan.md` from the validated `think.md`.
@@ -130,7 +130,7 @@ The Plan reads the Forge bindings, constraints, and blast radius from Think. It 
      ```
      This checks the drafts (`--stage draft`, the default). After the named approvals are recorded, `--stage approved` checks them.
   4. **Phase 4: Agentic Coding**:
-     - The Developer reviews and approves the plan by recording `Approved By` in `## Approval`. Launch the [`Code Agent`](./domain-code.md) with clean context (`/code 42`); it starts only from an approved plan.
+     - After validation, record automated approval in `## Approval` and launch the [`Code Agent`](./domain-code.md) with clean context (`/code 42`). Human review is an optional requested checkpoint.
      - It implements one step per turn through `code-loop`, applying the step's `New Code`, adjusting only as needed to fit the real repository, and keeps the application bootable.
 
 #### What the Validator Enforces
@@ -140,10 +140,10 @@ The Plan reads the Forge bindings, constraints, and blast radius from Think. It 
 | Exact section order and headings in both records | Predictable structure for reviewers and agents |
 | 2 to 4 sequential options, each with source, trade-offs, cost, and risk | Think records a decision, not a conclusion |
 | Forge bindings are `forge/<id>@<version>` and match the selected option; a custom build needs a recorded reason | Compose before you build |
-| Blast radius tier set; rollback named for High and Critical (also when the Plan raises the tier) | The tier drives human validation in Prove |
+| Blast radius tier set; rollback named for High and Critical (also when Plan raises the tier) | The tier drives automated validation and rollback evidence in Prove |
 | No source code, checklist, or step headings in `think.md` | Code lives in the Plan's `New Code` fields only |
-| Decision record required for Critical, with a valid status; a `Signed` status reads `Signed by <name> (Architect) on YYYY-MM-DD` with a person's name and a valid date | AI drafts, the Architect signs |
-| `Approved By` is exactly `Pending` at `--stage draft`; at `--stage approved` it names `<name> (Developer) on YYYY-MM-DD; <name> (Architect) on YYYY-MM-DD` in `think.md` and `<name> (Developer) on YYYY-MM-DD` in `plan.md` (two different people, valid dates, no AI or placeholder names) | Only a named person approves; an approved plan needs an approved Think, dated no later than the plan |
+| Critical requires a decision record; autonomous records use an Automation decider and valid automation attribution | Human signatures remain reserved for actual humans |
+| `Approved By` accepts `Automated by <identity> on YYYY-MM-DD` at draft and approved stages; actual human approvals remain supported | Automated Plan approval must not precede Think approval; Pending is incomplete, not approval |
 | Prerequisites & Context holds the `think.md` reference plus at least one more line (dependencies, environment variables, services, or `- None.`) | A bare reference leaves Step 1's setup unstated |
 | 3 to 8 sequential `Given ..., then ...` acceptance criteria | Observable, testable statements |
 | Step fields in order, including `New Code` as a fenced block or `_None._`, `Verification` and `Bootable Check` as commands in backticks, and `Serves` | Code is reviewable per step, checked by a command, and traceable to criteria |
@@ -180,7 +180,7 @@ flowchart TD
     VAL --> BR["<b>5. Push to Branch</b><br/>specs/issue-42"]
     BR --> COM["<b>6. Post Issue Comment</b><br/>gh issue comment with collapsible details"]
     COM --> LBL["<b>7. Add Label</b><br/>specs:ready"]
-    LBL --> HUM["<b>8. Human gates</b><br/>Architect signs, Developer approves"]
+    LBL --> HUM["<b>8. Automated approval</b><br/>Validated records, explicit automation identity"]
 
     classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
     classDef runner fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
@@ -203,8 +203,8 @@ flowchart TD
 
 - **Falsifiable Done When**:
   - `think.md` passes `skills/think/scripts/validate-think.mjs` and `plan.md` passes `skills/plan/scripts/validate-plan.mjs` with exit code 0, including the cross-check.
-  - Any decision record is drafted and unsigned until the Architect signs it.
-  - Both `Approved By` fields are `Pending` in the agent's output; `--stage approved` passes only after named people approve.
+  - Required decisions pass validation and record explicit automation attribution without fabricated human signatures.
+  - Both `Approved By` fields record the automation identity and date; `--stage approved` passes before automatic continuation.
   - Zero production or test files were modified during specification generation.
 
 ---

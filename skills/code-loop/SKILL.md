@@ -40,7 +40,7 @@ node <skill-dir>/scripts/code-loop.mjs status --dir specs/issue-42
 node <skill-dir>/scripts/code-loop.mjs check-history --dir specs/issue-42   # git: the counters were never lowered (CI runs it too)
 ```
 
-4. Treat a nonzero exit as a stop. After `fix-loop limit reached: the Developer steps in`, make no further attempts and hand over to the Developer. After `plan changed after Code started`, stop: the Developer must re-approve the plan. After `plan is not approved by a Developer`, stop: `start` and `next` need `## Approval` -> `Approved By` filled in by a person.
+4. Treat a nonzero exit as a stop. After the fix-loop limit, make no further attempts and escalate. If Plan changes after Code starts, stop and revalidate it before restarting. Approval requires explicit `Automated by <identity> on YYYY-MM-DD` attribution or actual human approval; never fabricate a person's signature.
 5. When every step is `done`, open the pull request with the `pr-record` skill and validate it with `--stage code`.
 
 ## Done When

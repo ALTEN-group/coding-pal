@@ -37,7 +37,7 @@ flowchart TD
     end
 
     DEV["<b>Developer</b><br/>Steps in at the fix-loop limit,<br/>corrects Persistent Context"]
-    PROVE["<b>Prove</b><br/>CI controls + human validation"]
+    PROVE["<b>Prove</b><br/>CI controls + independent agent validation"]
 
     PLAN --> AG
     CTX -.-> AG
@@ -75,10 +75,10 @@ flowchart TD
 
 ### 1. Implement a Plan Step by Step
 
-- **When to Run**: After the Developer approves `plan.md` by recording `Approved By` in its `## Approval` section (issue labelled `specs:ready`). Interactively in the IDE (`/code 42`, or `/code 42 3` for one step) or headlessly in CI.
+- **When to Run**: After Plan validation and explicit automated approval (`Automated by <identity> on YYYY-MM-DD`), or an actual human approval when requested. All risk tiers can proceed automatically. Run interactively or headlessly in CI.
 - **Why a Loop**: Running the checks costs seconds, not a CI cycle. The agent reads the failure, repairs, and runs again, so humans see only green work. One step per turn keeps each change small enough to verify and to revert.
 - **Workflow Steps**:
-  1. **Ground**: The `Code Agent` reads `think.md`, `plan.md`, the Forge bindings, and the instructions they reference. It stops if the plan fails `validate-plan.mjs --stage approved`, has an open question, or is not approved by a named Developer (`code-loop` refuses to start).
+  1. **Ground**: Read Think, Plan, Forge bindings, and constraints. Stop on invalid records or unresolved questions; valid automated approval satisfies the approval gate without a human signature.
   2. **Branch**: It creates `feature|fix|chore/issue-<n>-<slug>` from `main` or `develop` and checks it with `branch-guard.mjs`.
   3. **Step**: `code-loop.mjs next` then `start <n>`. It applies the step's `New Code`, adjusted only to fit the repository, and reports any divergence. It writes only the step's `Files`.
   4. **Check**: It runs the step's `Verification` and `Bootable Check`, the project's build, types, lint, and tests, and the controls: `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, and, when installed and relevant, `criteria-verify` on the test reports, `test-probe` on new or updated tests, `preview-smoke` on a running preview, `contract-compat` for a changed API contract, and `mutation-bar` on the changed files.
@@ -104,7 +104,7 @@ flowchart TD
 | No `reset-attempts`; `--limit` is set at creation (1 to 5) and cannot change later | The agent cannot buy itself more attempts |
 | `fixLoop.attempts` must equal the sum of step attempts | Hand edits that hide failures are rejected |
 | `plan.md` sha256 must match `progress.json` once Code started | The approved plan is the one being built |
-| `start` and `next` refuse a plan whose `## Approval` -> `Approved By` is not `<name> (Developer) on YYYY-MM-DD` with a person's name; `status` shows the approval line | Code starts only from an approved plan; the agent never approves |
+| `start` and `next` require valid automated or human approval; explicit legacy pending-approval mode remains supported | Code starts from validated records, without mandatory human sign-off |
 | `check-history --dir specs/issue-<n> [--base origin/main]` compares `progress.json` with the base and every commit that touched it: deleted file, lower attempts, raised limit, or a changed plan hash after Code started fails | Deleting or rewriting `progress.json` cannot reset the fix-loop counter. CI runs it on the controls job |
 | Plan steps are parsed fence-aware | `### Step` text inside `New Code` is not a step |
 | Branch name `feature`, `fix`, or `chore` + `/issue-<n>-<slug>`, never `main`, `develop`, `release/*` | Agents work on short-lived branches |
@@ -112,7 +112,7 @@ flowchart TD
 
 ### 2. Pull Request Record
 
-- **When to Run**: When every plan step is `done`, as the Code exit gate. The same body is validated again in [Prove](./domain-prove.md) once people have validated.
+- **When to Run**: When every plan step is done, as the Code exit gate. The same body is checked after independent automated [Prove](./domain-prove.md) assessment with `--stage prove --allow-auto-prove`.
 - **Why a Contract**: A free-form description hides what was proven and who decided. Five fixed sections show what the pull request closes, which acceptance criteria are proven by which test, which dependencies it adds, how risky it is, and who validated it.
 - **Workflow Steps**:
   1. **Template**: Install `skills/pr-record/references/pull_request_template.md` as `.github/pull_request_template.md`.
@@ -122,7 +122,7 @@ flowchart TD
      node .agents/skills/pr-record/scripts/validate-pr.mjs \
        --body pr.md --dir specs/issue-42 --stage code --added-deps "zod"
      ```
-  4. **Prove**: After the people validate, CI runs `--stage prove` to check the record for the blast radius tier.
+  4. **Prove**: After independent assessment passes, CI runs `--stage prove --allow-auto-prove`. All tiers permit automation; High/Critical require rollback evidence and Critical requires a staged rollout reference.
 
 #### What the Validator Enforces
 
@@ -135,11 +135,10 @@ flowchart TD
 | `Tier` equals the effective tier; `Rollback` matches `think.md` for High and Critical | both | Blast radius is set once, in Think |
 | All plan steps `done`, attempts within the limit (at most 5), plan unchanged | code | Proof the loop ran and stayed bounded |
 | Every Human Validation field is `Pending` | code | AI never carries a human sign-off |
-| Low: `Auto-merge` or a Developer; Medium: a Developer | prove | Governance: minimum human validation |
-| High: Developer and Architect (different people), and `Rollback Validated` | prove | Dual validation |
-| Critical: Architect and Product Owner `Joint Sign-off`, `Staged Rollout`, `Rollback Validated` | prove | Joint sign-off |
-| `Rollback Validated` (High, Critical) reads `<mechanism> by <name> (DevOps) on YYYY-MM-DD; <name> (Product Owner) on YYYY-MM-DD`: two different named people, a mechanism that matches `think.md` (the factory has no project manager role, so the Product Owner stands for the business side) | prove | Rollback is validated by operations and by the business, not by the author |
-| The plan is approved: `## Approval` -> `Approved By` names a Developer | code | Code starts only from a plan a person approved |
+| Three assessment fields are `Auto-merge` with `--allow-auto-prove`, at every tier | prove | Evidence-backed automated assessment, not human sign-off |
+| High/Critical: `Rollback Validated` is `<Think rollback>; Automated verification` | prove | Actual rollback verification evidence must exist in the Prove report |
+| Critical: `Joint Sign-off: Automated verification` and a staged rollout reference | prove | Autonomous decisions retain rollout controls |
+| `Approved By: Automated by <identity> on YYYY-MM-DD`, or actual human approval | code | Validated records, no mandatory human gate |
 | Confirmations are `Confirmed by <name> (<role>) on YYYY-MM-DD` with an exact role, a person's name, and a date not before the PR record date | prove | Accountability resolves to a named person |
 | `line by line` or `line-by-line` in Human Validation | both | Line-by-line review is banned as a gate |
 
@@ -155,8 +154,8 @@ flowchart TD
     BG --> PR["<b>4. Open pull request</b><br/>pr-record body, validation Pending"]
     PR --> V1["<b>5. validate-pr</b><br/>--stage code"]
     V1 --> CI["<b>6. Prove</b><br/>CI re-runs checks and controls"]
-    CI --> HUM["<b>7. People validate</b><br/>By blast radius tier"]
-    HUM --> V2["<b>8. validate-pr</b><br/>--stage prove"]
+    CI --> HUM["<b>7. Independent agent assessment</b><br/>Evidence by blast radius tier"]
+    HUM --> V2["<b>8. validate-pr</b><br/>--stage prove --allow-auto-prove"]
 
     classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
     classDef runner fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
@@ -172,7 +171,7 @@ flowchart TD
 1. **Short-lived branches**: `feature|fix|chore/issue-<n>-<slug>`, fetched with full history so `branch-guard` can read the branch age.
 2. **Pull request body as record**: `gh pr view --json body -q .body > pr.md` feeds both validation stages.
 3. **Fix loop continues in CI**: If Prove fails, the agent repairs and the loop runs again within the same work-item limit.
-4. **Human gate**: Only a person fills Human Validation, by the validators the tier requires.
+4. **Automated validation**: After independent Prove passes, record explicitly automated results in the legacy Human Validation section. High/Critical retain rollback and rollout evidence requirements; human review is optional when requested.
 
 - **Falsifiable Done When**:
   - `code-loop.mjs status` shows every plan step `done` with fix-loop attempts within the limit, and `branch-guard.mjs` exits with code 0.

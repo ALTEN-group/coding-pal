@@ -30,6 +30,14 @@ const UNSIGNED = "Drafted: unsigned";
 const SIGNED = /^Signed by (.+) on (\d{4}-\d{2}-\d{2})$/;
 const ISSUE_REF = /^(#\d+|issue-\d+)$/;
 
+function parseDecider(value, where, filename) {
+	const automated = value.trim().match(/^([^;()\n]+) \(Automation\)$/);
+	if (!automated) return parsePerson(value, where, filename);
+	const name = automated[1].trim();
+	if (name.length < 2 || isPlaceholder(name) || /^x$/i.test(name)) fail(`${filename} ${where} requires an automation identity`);
+	return { name, role: "Automation" };
+}
+
 /** Splits markdown into lines grouped by level-two headings, ignoring headings inside code fences. */
 function splitH2(markdown) {
 	const lines = markdown.split("\n");
@@ -114,9 +122,9 @@ export function validateDecisionContent(rawMarkdown, filename = "decision.md") {
 
 	const deciders = need(header, "Deciders", "header", filename)
 		.split(",")
-		.map((d) => parsePerson(d, "Deciders entry", filename));
+		.map((d) => parseDecider(d, "Deciders entry", filename));
 	if (new Set(deciders.map((d) => d.name.toLowerCase())).size !== deciders.length) fail(`${filename} Deciders lists a person twice`);
-	if (!deciders.some((d) => d.role === "Architect")) fail(`${filename} Deciders must include an Architect; these decisions are the Architect's`);
+	if (!deciders.some((d) => ["Architect", "Automation"].includes(d.role))) fail(`${filename} Deciders must include an Architect or an explicit Automation identity`);
 
 	const sourceRaw = need(header, "Source", "header", filename).replace(/^`|`$/g, "").trim();
 	const source = ISSUE_REF.test(sourceRaw) ? sourceRaw : checkWorkspacePath(sourceRaw, "Source", filename);
@@ -128,13 +136,14 @@ export function validateDecisionContent(rawMarkdown, filename = "decision.md") {
 	const signatureRaw = need(header, "Signature", "header", filename);
 	let signature = { signed: false, by: null, date: null };
 	if (status === "Drafted") {
-		if (signatureRaw !== UNSIGNED) fail(`${filename} a Drafted record must carry "- **Signature:** ${UNSIGNED}"; only the Architect signs`);
+		if (signatureRaw !== UNSIGNED) fail(`${filename} a Drafted record must carry "- **Signature:** ${UNSIGNED}"; incomplete decisions remain unsigned`);
 	} else {
-		const m = signatureRaw.match(SIGNED);
-		if (!m) fail(`${filename} a ${status} record needs "- **Signature:** Signed by <name> (Architect) on YYYY-MM-DD"; AI may only produce Drafted records`);
-		const by = parsePerson(m[1], "Signature", filename);
-		if (by.role !== "Architect") fail(`${filename} Signature must be by an Architect, found "${by.role}"`);
-		if (!deciders.some((d) => d.role === "Architect" && d.name.toLowerCase() === by.name.toLowerCase())) fail(`${filename} Signature by ${by.name} must match an Architect listed in Deciders`);
+		const automated = signatureRaw.match(/^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/);
+		const m = automated || signatureRaw.match(SIGNED);
+		if (!m) fail(`${filename} a ${status} record needs "- **Signature:** Automated by <identity> on YYYY-MM-DD" or a genuine "Signed by <name> (Architect) on YYYY-MM-DD"`);
+		const by = automated ? parseDecider(`${m[1]} (Automation)`, "Signature", filename) : parsePerson(m[1], "Signature", filename);
+		if (!["Architect", "Automation"].includes(by.role)) fail(`${filename} Signature must be by an Architect, found "${by.role}"`);
+		if (!deciders.some((d) => d.role === by.role && d.name.toLowerCase() === by.name.toLowerCase())) fail(`${filename} Signature by ${by.name} must match an ${by.role} listed in Deciders`);
 		if (!validDate(m[2])) fail(`${filename} Signature date must be a valid ISO date, found "${m[2]}"`);
 		if (m[2] < date) fail(`${filename} Signature date ${m[2]} is before the record Date ${date}`);
 		signature = { signed: true, by, date: m[2] };
@@ -208,16 +217,23 @@ export function parseThinkDecision(rawMarkdown, filename = "think.md") {
 	if (!["yes", "no"].includes(required)) fail(`${filename} Decision Record "Required" must be "yes" or "no"`);
 	let record = null;
 	let status = null;
+	let automatedBy = null;
 	if (required === "yes") {
 		record = checkWorkspacePath(need(dr, "Record", "## Decision Record", filename), "Decision Record Record", filename);
-		const s = need(dr, "Status", "## Decision Record", filename).toLowerCase().match(/^(drafted|signed)\b/);
-		if (!s) fail(`${filename} Decision Record "Status" must be "Drafted" (awaiting Architect) or "Signed"`);
+		const s = need(dr, "Status", "## Decision Record", filename).toLowerCase().match(/^(drafted|signed|automated)\b/);
+		if (!s) fail(`${filename} Decision Record "Status" must be Drafted, Signed, or Automated by <identity> on YYYY-MM-DD`);
 		status = s[1];
+		if (status === "automated") {
+			const match = dr.get("status").match(/^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/);
+			if (!match || !validDate(match[2])) fail(`${filename} Automated decision needs an identity and valid date`);
+			const decider = parseDecider(`${match[1]} (Automation)`, "Automated decision", filename);
+			automatedBy = { name: decider.name, date: match[2] };
+		}
 	}
 	const tierRaw = need(section("Blast Radius"), "Tier", "## Blast Radius", filename).replace(/[*`]/g, "").trim();
 	const tier = TIERS.find((t) => t.toLowerCase() === tierRaw.toLowerCase());
 	if (!tier) fail(`${filename} Blast Radius "Tier" must be one of: ${TIERS.join(", ")}`);
-	return { required: required === "yes", record, status, tier };
+	return { required: required === "yes", record, status, tier, ...(automatedBy ? { automatedBy } : {}) };
 }
 
 /**
@@ -231,6 +247,13 @@ export function crossCheckThink(think, record, filename = "think.md") {
 		return;
 	}
 	if (!record) fail(`${filename} points to decision record "${think.record}", which does not exist`);
+	if (think.status === "automated" && !(record.signature.signed && record.signature.by?.role === "Automation" && record.status === "Accepted")) {
+		fail(`${filename} calls the decision record Automated, but the record is not Accepted by Automation`);
+	}
+	if (think.status === "automated" && think.automatedBy && (think.automatedBy.name.toLowerCase() !== record.signature.by.name.toLowerCase() || think.automatedBy.date !== record.signature.date)) {
+		fail(`${filename} automated decision identity and date must match its decision record`);
+	}
+	if (think.status === "signed" && record.signature.by?.role === "Automation") fail(`${filename} must describe an automated decision as Automated, not human Signed`);
 	if (think.status === "signed" && !(record.signature.signed && record.status !== "Drafted")) {
 		fail(`${filename} calls the decision record Signed, but ${think.record} is ${record.status} with signature "${UNSIGNED}"; only the Architect signs, and a signed record is Accepted or Rejected`);
 	}

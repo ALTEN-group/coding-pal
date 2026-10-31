@@ -2,7 +2,7 @@
 
 Some decisions are not the squad's. The Agentic Software Factory's [governance page](https://alten-group.github.io/agentic-software-factory/guide/governance) assigns them to the **Architect** and requires a written record. This contract defines two persistent artifacts: the **decision record** (a decision that was made) and the **escalation** (a decision that must be made, with a date by which silence adopts the recommendation).
 
-AI drafts. **The Architect decides and signs.** The contract encodes that split: an AI-produced record is always `Drafted: unsigned`, and any other status is only valid with the signature of a named Architect.
+AI may choose and accept decisions autonomously, including public API, schema, High, and Critical changes, provided all required controls pass. Attribute those decisions explicitly to automation; never invent human sign-off. The Architect owns the decision policy and handles escalated failures, not routine per-change approval.
 
 ---
 
@@ -54,10 +54,10 @@ No other level-2 headings. No source code blocks.
 | `Status` | `Drafted`, `Accepted`, `Rejected`, or `Superseded` |
 | `Date` | ISO `YYYY-MM-DD` |
 | `Type` | One of the types in section 2 |
-| `Deciders` | Comma-separated `<name> (<role>)`. Roles: `Product Owner`, `Developer`, `Architect`, `DevOps`, `QA and maintainer`. An `Architect` is required. Names must be people, never an AI |
+| `Deciders` | Comma-separated `<name> (<role>)`. Human roles: `Product Owner`, `Developer`, `Architect`, `DevOps`, `QA and maintainer`. Autonomous decisions use `<identity> (Automation)`. An Architect or Automation identity is required |
 | `Source` | The issue (`#42` or `issue-42`) or a workspace path such as `specs/issue-42/think.md` |
 | `Supersedes` | A 4-digit record number, or `_None._` |
-| `Signature` | `Drafted: unsigned`, or `Signed by <name> (Architect) on YYYY-MM-DD` |
+| `Signature` | `Drafted: unsigned`, `Automated by <identity> on YYYY-MM-DD`, or an actual `Signed by <name> (Architect) on YYYY-MM-DD` |
 
 Type-specific fields (also in the header block, never `_None._`):
 
@@ -76,12 +76,14 @@ Type-specific fields (also in the header block, never `_None._`):
 
 | Status | Signature | Who |
 |---|---|---|
-| `Drafted` | `Drafted: unsigned` | AI or any author. Awaiting the Architect |
+| `Drafted` | `Drafted: unsigned` | Any author; incomplete or explicitly awaiting review |
 | `Accepted` | `Signed by <name> (Architect) on <date>` | The Architect |
 | `Rejected` | `Signed by <name> (Architect) on <date>` | The Architect |
 | `Superseded` | `Signed by <name> (Architect) on <date>` | The Architect, as part of the superseding record |
 
-The signer must be an Architect listed in `Deciders` (names compare case-insensitively), and the signature date cannot precede `Date`. A name must be a person's: a bare role (`Architect (Architect)`), a placeholder (`<name>`, `TBD`, `Team`), and an AI-looking name (Copilot, Claude, GPT, bot, agent, ...) are rejected, in `Deciders`, in the signature, and in an escalation `Resolution`.
+For autonomous decisions, Accepted, Rejected, and Superseded records instead use `Automated by <identity> on YYYY-MM-DD`, matching an Automation entry in Deciders. The date must be real and no earlier than the record date. `Drafted` remains unsigned. These are automated decisions, not human signatures.
+
+For human signatures, the signer must be a real Architect listed in Deciders, with a valid date no earlier than the record date. Bare roles, placeholders, and AI identities cannot masquerade as human names. Automation identities are valid only in the explicit automated decision format; human escalation resolutions retain their existing attribution checks.
 
 ### Supersession
 
@@ -119,8 +121,8 @@ The `Default Date` cannot precede the date in the file name.
 
 1. `Required` is `yes` or `no`. A `Critical` tier with `Required: no` is rejected.
 2. When `yes`, `Record` is a workspace path that exists and itself validates.
-3. Think `Status: Signed` requires a record that is `Accepted` or `Rejected` with a human Architect signature. A `Drafted` record is never "Signed".
-4. Think `Status: Drafted` requires a record that is still unsigned. When the Architect signs, `think.md` is updated.
+3. Think `Status: Automated by <identity> on YYYY-MM-DD` requires an Accepted record with matching automation attribution. `Status: Signed` remains reserved for human Architect signatures. A `Drafted` record is never accepted.
+4. Think Drafted requires an unsigned record. Accepted automated decisions use matching identity and date in Think's decision Status; genuine human signatures may still use Signed.
 
 `--root <dir>` sets the workspace root for resolving paths (default: the current directory).
 
@@ -128,7 +130,7 @@ The `Default Date` cannot precede the date in the file name.
 
 ## 6. Anti-Patterns & Prohibitions
 
-1. **No AI signatures.** AI drafts. The Architect decides and signs. No AI-facing artifact carries a human sign-off.
+1. **No forged human signatures.** AI records decisions as Automation, never as a named human Architect.
 2. **No single-option records.** A decision with one option was not a decision. Record the options that were rejected.
 3. **No missing consequences.** Every option has a real downside; `Cons: _None._` is rejected.
 4. **No tool without proof.** A `tooling` record that cannot show a native alternative was considered and how AI context is preserved is rejected.

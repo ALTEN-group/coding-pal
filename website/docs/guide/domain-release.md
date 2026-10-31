@@ -4,7 +4,7 @@ The **Release** domain declares how one change reaches users: an immutable versi
 
 Deploying and releasing are two different things. Deploying puts the code in production, switched off. Releasing is switching it on for users, a few at first, then everyone. The `enable` flag is the release decision.
 
-AI drafts the declaration, and **DevOps approves it**. The rollout itself runs on standard deployment tooling, with **no AI**. Coding Pal enforces both halves mechanically: `validate-release.mjs` gates the declaration, and `evaluate-rollout.mjs` computes every promote, hold, and rollback decision from thresholds declared before deployment.
+AI prepares the declaration and release documentation. Deterministic validation authorizes release without mandatory human sign-off; DevOps remains accountable for the policy and exceptions. Standard deployment tooling executes the rollout, while `evaluate-rollout.mjs` computes promote, hold, and rollback decisions from declared thresholds.
 
 ---
 
@@ -22,12 +22,12 @@ flowchart TD
         TRI["<b>triage.md</b><br/>Hypothesis and outcome metric"]
     end
 
-    subgraph Declare ["1. Declare (AI drafts, DevOps approves)"]
+    subgraph Declare ["1. Declare and validate automatically"]
         direction TB
         AG["<b>Release Planner</b><br/>Stages, thresholds, rollback, handoff"]
         DOC["<b>release.md</b><br/>specs/issue-N/release.md"]
         VAL["<b>validate-release.mjs</b><br/>--think --plan --tag"]
-        DEVOPS["<b>DevOps</b><br/>Approves before the tag"]
+        DEVOPS["<b>Automated authorization</b><br/>Validated before the tag"]
         AG --> DOC --> VAL --> DEVOPS
     end
 
@@ -95,7 +95,7 @@ flowchart TD
        --release specs/issue-42/release.md \
        --think specs/issue-42/think.md --plan specs/issue-42/plan.md
      ```
-  8. **Decide**: DevOps tunes the thresholds against the service's real baseline and approves. Then the tag is pushed.
+  8. **Authorize**: Validate thresholds against the recorded service baseline and record automated authorization before pushing the tag. Escalate unresolved validation failures, not routine approval.
 
 #### The Declaration at a Glance
 
@@ -214,7 +214,7 @@ flowchart TD
   - One issue, an immutable versioned artifact, a threshold with a named rollback for each health metric, and an outcome metric (or a stated reason for none) are declared.
   - Every rollout stage decision came from `evaluate-rollout.mjs`, and a rollback used the mechanism the breached threshold named.
   - The rollout reached 100% with every watch window green, and the change's observability dashboard is live in Learn (the factory's exit gate; the template marks the check `PLACEHOLDER`).
-  - No deployment, flag change, or production credential came from an AI agent, and DevOps approved the declaration before the tag.
+  - Deployment and flag changes run through deterministic tooling, agents hold no direct production credentials, and automated release authorization is recorded before the tag.
 
 ---
 

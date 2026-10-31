@@ -11,6 +11,15 @@ const think = (from, to) => validThink.replace(from, to);
 const matches = (pattern) => (err) => err instanceof ValidationError && pattern.test(err.message);
 const badThink = (md, pattern, options) => assert.throws(() => validateThinkContent(md, "think.md", options), matches(pattern));
 
+test("accepts explicitly automated approvals without impersonating a person", () => {
+	const automated = validThink.replace("Approved By:** Pending", "Approved By:** Automated by Thinker agent on 2026-10-14");
+	for (const stage of ["draft", "approved"]) {
+		assert.equal(validateThinkContent(automated, "think.md", { stage }).approval.approvals[0].role, "Automation");
+	}
+	badThink(automated.replace("2026-10-14", "2026-02-30"), /valid date/);
+	badThink(automated.replace("Thinker agent", "<name>"), /identity/);
+});
+
 test("validates compliant think.md and returns structured data", () => {
 	const result = validateThinkContent(validThink);
 	assert.equal(result.tier, "Medium");

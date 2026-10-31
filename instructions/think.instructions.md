@@ -22,5 +22,5 @@ When authoring or validating the Think record, follow the installed `think` skil
 - **Ground in reality**: Trace requests through actual codebase components and layers. Never hallucinate nonexistent layers or Forge assets.
 - **Respect Persistent Context**: Read instructions, specifications, and decision records, and list the ones that bound the solution.
 - **Blast radius is set here, once**: Classify the tier from the affected APIs, schemas, queues, and consumers. Name the rollback mechanism for High and Critical.
-- **Decision records**: A public API change, schema change, or boundary shift needs a drafted decision record. AI drafts, the Architect signs. Never mark a record as signed.
-- **Approval is recorded by people**: Leave `Approved By` as `Pending`; the Developer and the Architect record their own approval.
+- **Autonomous decisions**: Select the approach and record API, schema, and boundary decisions, including High and Critical changes. Keep constraints, compatibility checks, decision records, and rollback requirements enforced. After validation, record `Approved By: Automated by <agent identity> on YYYY-MM-DD` and use the same explicit automation attribution on an accepted decision record; never invent a human signature.
+- **Human intervention is exceptional**: Continue automatically after successful controls. Pause only for a requested review checkpoint, a failed control that cannot be remediated within the retry limit, or an unresolved requirement that prevents validation.

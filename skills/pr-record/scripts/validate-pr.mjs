@@ -262,6 +262,11 @@ function checkPlanApproval(planText, allowPending = false) {
 	const field = masked.slice(start + 1, end).map((line) => line.match(/^- \*\*Approved By:\*\*\s*(.*)$/)).find(Boolean);
 	if (!field) notApproved('plan.md "## Approval" has no "- **Approved By:**" field');
 	const value = field[1].trim();
+	const automated = value.match(/^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/);
+	if (automated) {
+		if (automated[1].trim().length < 2 || isPlaceholder(automated[1]) || /^x$/i.test(automated[1].trim()) || !isRealDate(automated[2])) notApproved("automated approval needs an identity and a valid date");
+		return;
+	}
 	if (allowPending && /^pending$/i.test(value)) return;
 	const m = value.match(APPROVED_BY);
 	if (!m) notApproved(`"${value}" is not "<name> (Developer) on YYYY-MM-DD"`);
@@ -293,6 +298,18 @@ function parseConfirmation(value, label, recordDate, allowedRoles) {
 }
 
 function checkTierValidators(tier, fields, think, recordDate, allowAutoProve = false) {
+	if (allowAutoProve && QUESTIONS.every((q) => fields.get(q) === "Auto-merge")) {
+		if (tier === "High" || tier === "Critical") {
+			const expected = `${think.rollback}; Automated verification`;
+			if (fields.get("Rollback Validated") !== expected) fail(`pr automated "Rollback Validated" must be "${expected}"`);
+		}
+		if (tier === "Critical") {
+			if (fields.get("Joint Sign-off") !== "Automated verification") fail('pr automated "Joint Sign-off" must be "Automated verification", never a human signature');
+			const rollout = fields.get("Staged Rollout");
+			if (/^(pending\b|none\.?$)/i.test(rollout.replace(/[*_`]/g, "")) || isPlaceholder(rollout)) fail('pr Human Validation "Staged Rollout" needs a reference to the staged rollout plan');
+		}
+		return;
+	}
 	if ((tier === "Low" || (allowAutoProve && tier === "Medium")) && QUESTIONS.every((q) => fields.get(q) === "Auto-merge")) return;
 	const allowed = { Low: ["Developer"], Medium: ["Developer"], High: ["Developer", "Architect"], Critical: ["Developer", "Architect", "Product Owner"] }[tier];
 	const confirmed = QUESTIONS.map((q) => parseConfirmation(fields.get(q), q, recordDate, allowed));

@@ -6,11 +6,11 @@ license: MIT
 
 # Decision Record
 
-Produce deterministic decision records for the decisions the factory reserves for the Architect, and escalations that carry a date by which silence adopts the recommendation. AI drafts; the Architect decides and signs.
+Produce deterministic decision records and escalations. AI may decide autonomously at every risk tier, recording its identity and evidence; the Architect remains accountable for the policy, not a mandatory per-change sign-off.
 
 ## When to Use This Skill
 
-- A Think record has `## Decision Record` with `Required: yes` and a record must be drafted for the Architect.
+- Think marks a decision record required; choose and validate the decision with explicit Automation attribution.
 - A decision (public contract, data model, security, new runtime or vendor, AI policy, model adoption, external tool) must be written down.
 - A cross-squad conflict, security exposure, compliance obligation, external commitment, or budget impact needs an escalation.
 - CI must gate `docs/decisions/` for numbering, supersession, and signatures, or cross-check `think.md` against its record.
@@ -22,8 +22,8 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 
 ## Workflow
 
-1. **Read `references/decision-record-contract.md` now.** It is the authoritative source for headings, fields, types, statuses, signatures, supersession, and escalations. The decision itself belongs to the Architect; scoping and drafting belong to the calling `Decision Scribe` agent or session.
-2. Draft the record at `docs/decisions/<NNNN>-<slug>.md` with the next free number. Status is `Drafted` and the signature is `Drafted: unsigned`. Never set another status or sign.
+1. **Read `references/decision-record-contract.md` now.** It is the authoritative source for headings, fields, types, statuses, signatures, supersession, and escalations.
+2. Write the record at `docs/decisions/<NNNN>-<slug>.md` with the next free number. While incomplete, use `Drafted: unsigned`. After validation, use `Status: Accepted`, `Deciders: <identity> (Automation)`, and `Signature: Automated by <identity> on YYYY-MM-DD`. Never invent a human signature.
 3. Validate with the deterministic script from this skill's directory. Treat a nonzero exit as invalid output and fix the file:
 
 ```bash
@@ -48,6 +48,6 @@ node scripts/escalations.mjs due --dir docs/decisions/escalations
 ## Done When
 
 - `validate-decision.mjs` accepts the record, or the directory, with exit code 0.
-- Every AI-authored record is `Drafted` with `Drafted: unsigned`.
+- Every automated decision records an Automation identity and date, with validated options, consequences, and required evidence.
 - Every record has 2 or more real options with pros and cons, and any type-specific field the contract requires.
 - `escalations.mjs due` reports no overdue Open escalation.

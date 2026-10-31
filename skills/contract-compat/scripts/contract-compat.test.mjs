@@ -349,3 +349,10 @@ test("CLI exits 1 on breaking changes unless an accepted signed decision record 
 		Object.assign(console, { log, error });
 	}
 });
+test("accepts explicitly automated breaking-contract decisions with valid attribution", () => {
+	const record = "# Decision: Replace contract\n- **Status:** Accepted\n- **Deciders:** Thinker agent (Automation)\n- **Signature:** Automated by Thinker agent on 2026-10-14\n";
+	assert.equal(checkDecisionRecord(record).ok, true);
+	assert.equal(checkDecisionRecord(record.replace("2026-10-14", "2026-02-30")).ok, false);
+	assert.equal(checkDecisionRecord(record.replace("Automated by Thinker agent", "Automated by Other agent")).ok, false);
+	assert.equal(checkDecisionRecord(record.replace("Status:** Accepted", "Status:** Drafted")).ok, false);
+});

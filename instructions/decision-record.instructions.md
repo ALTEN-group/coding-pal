@@ -9,9 +9,9 @@ When authoring or validating a decision record or escalation, follow the install
 
 ## Roles
 
-- **AI drafts.** **The Architect decides and signs.** An AI-authored record is `Status: Drafted` with `Signature: Drafted: unsigned`.
-- Never set `Accepted`, `Rejected`, or `Superseded`, and never write a signature. Never list an AI under `Deciders`.
-- The squad decides everything the governance decision table does not assign to a named role. Do not write a decision record for a squad decision.
+- **AI decides autonomously.** After validation, an automated decision may be `Accepted`, `Rejected`, or `Superseded` with `Deciders: <identity> (Automation)` and `Signature: Automated by <identity> on YYYY-MM-DD`. Use `Drafted: unsigned` while incomplete.
+- Never fabricate human sign-off or put an AI identity in a human Architect signature. Human review is an explicitly requested checkpoint, not a mandatory gate at any risk tier.
+- Record public API, schema, and boundary decisions and every Critical change. Keep required evidence, rollback, migration, and staged rollout controls; escalate unresolved failures or exhausted retries rather than waiving them.
 
 ## Content
 

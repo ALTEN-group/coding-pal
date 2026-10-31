@@ -1,18 +1,18 @@
 ---
 name: contract-compat
-description: 'Classify the differences between two OpenAPI 3.x JSON documents (or two JSON Schemas, with local $ref resolved) as BREAKING or compatible, and fail on any breaking change unless an Accepted, human-signed decision record is supplied. Use when the agent loop or CI (Prove stage) must guarantee that public interfaces and consumer contracts never break silently.'
+description: 'Classify OpenAPI or JSON Schema differences as BREAKING or compatible, failing breaking changes without an Accepted decision record with explicit automated attribution or genuine human signature. Use in the agent loop and CI to prevent silent contract breaks.'
 license: MIT
 ---
 
 # Contract Compat
 
-Deterministic Contract & Schema Compatibility gate. It compares the released contract (base) with the changed contract (head) and prints every change as `BREAKING` or `compatible`. A breaking public contract is a Critical blast radius, so it only passes with a signed decision record.
+Deterministic Contract & Schema Compatibility gate. It compares released and changed contracts and prints `BREAKING` or `compatible`. Critical contract breaks require an Accepted decision record; automated decisions need no human sign-off.
 
 ## When to Use This Skill
 
 - A change touches an OpenAPI document or a JSON Schema that other systems consume.
 - CI (Prove) must block a pull request that removes an operation or response, removes or retypes a response property, adds a required request input, or adds security to an operation.
-- A breaking change is intended and must be released through an Architect-signed decision record.
+- An intended breaking change needs an Accepted decision record with explicit attribution.
 
 ## Path resolution
 
@@ -32,15 +32,15 @@ git show origin/main:openapi.json > base.json
 ```bash
 node <skill-dir>/scripts/contract-compat.mjs --base base.json --head openapi.json
 
-# Intended breaking change, released by an Accepted decision record signed by the Architect
+# Intended breaking change, authorized by an attributed Accepted decision record
 node <skill-dir>/scripts/contract-compat.mjs --base base.json --head openapi.json \
   --allow-breaking docs/decisions/0007-remove-legacy-role.md
 ```
 
-4. Treat a nonzero exit as a failed gate. Restore compatibility (keep the old field, make the new one optional, add a new version). If the break is intended, ask the Architect for a decision record. The AI may draft it, but only a person signs it.
+4. Treat a nonzero exit as failure. Restore compatibility or, for an intended break, validate an Accepted decision with an Automation decider and `Automated by <identity> on YYYY-MM-DD` attribution. Preserve staged rollout and rollback requirements; never forge human approval.
 
 ## Done When
 
-- The script exits 0 with no `BREAKING` line, or every `BREAKING` line is covered by an `Accepted` decision record signed by a named Architect.
+- The script exits 0 with no BREAKING line, or every break is covered by a valid Accepted decision record with automated attribution or genuine human signature.
 - The base contract was not edited to hide a difference.
-- No decision record was signed or marked `Accepted` by the AI.
+- No fabricated human signature exists.

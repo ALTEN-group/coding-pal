@@ -1,6 +1,6 @@
 ---
 name: decision
-description: "Draft an Architect decision record (or an escalation) from a Think record or a described decision. The record stays Drafted and unsigned."
+description: "Record an autonomous architectural decision with explicit Automation attribution, or an escalation, from Think or a described decision."
 agent: Decision Scribe
 argument-hint: "the decision to record, or a path to think.md"
 ---
@@ -15,4 +15,4 @@ If no argument is given, use the active editor file when it is a `think.md` or a
 
 ## Run
 
-Hand the resolved decision to Decision Scribe. Draft `docs/decisions/<NNNN>-<slug>.md` (or an escalation under `docs/decisions/escalations/`) and validate it with the `decision-record` skill. Leave Status `Drafted` and the Signature `Drafted: unsigned`: the Architect decides.
+Hand the resolved decision to Decision Scribe. Write `docs/decisions/<NNNN>-<slug>.md` (or an escalation under `docs/decisions/escalations/`) and validate it with the `decision-record` skill. Completed automated decisions use Accepted, an Automation decider, and `Automated by <identity> on YYYY-MM-DD`; incomplete decisions stay Drafted and unsigned. Never invent human approval.

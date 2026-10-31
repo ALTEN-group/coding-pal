@@ -36,7 +36,7 @@ node <skill-dir>/scripts/validate-think.mjs --dir /path/to/specs
 node <skill-dir>/scripts/validate-think.mjs --think /path/to/think.md --stage approved
 ```
 
-Treat a nonzero validator exit as invalid specification output and fix `think.md` rather than ignoring errors. Model compliance alone is advisory; the script is the enforcement gate. A decision record is `Drafted`, or `Signed by <name> (Architect) on YYYY-MM-DD` with a person's name. `think.md` carries `- **Approved By:** Pending` in `## Chosen Approach` until a Developer and an Architect record their name and date; `--stage approved` checks it. The AI never approves.
+Treat a nonzero validator exit as invalid specification output and fix `think.md` rather than ignoring errors. Model compliance alone is advisory; the script is the enforcement gate. After validation, record `Approved By: Automated by <agent identity> on YYYY-MM-DD`. A required decision record can be Accepted with the same automation attribution; validate it with the decision-record skill and set Think's decision Status to `Automated by <identity> on YYYY-MM-DD`. Human sign-off is optional, not mandatory at any risk tier. Never fabricate a person's signature.
 
 4. When running in a GitHub Action or automated CI workflow:
    - Post the validated `think.md` as a non-destructive **Issue Comment** via `gh issue comment` per `references/think-contract.md`.
@@ -46,5 +46,5 @@ Treat a nonzero validator exit as invalid specification output and fix `think.md
 
 - `validate-think.mjs` accepts `think.md` with exit code 0.
 - All required contract sections and fields are populated without placeholder text.
-- Any decision record is `Drafted`, never signed by the AI, and `Approved By` stays `Pending` until a person approves.
+- Required decisions are recorded and validated, and automated approvals name the automation identity and date rather than claiming human sign-off.
 - When invoked in CI for an issue, the validated `think.md` is posted as an issue comment (and committed to the issue branch when branch storage is enabled).

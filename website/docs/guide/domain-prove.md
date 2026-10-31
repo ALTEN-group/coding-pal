@@ -1,8 +1,8 @@
 # Prove
 
-The **Prove** domain is the fifth stage of the [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/stage-prove). It combines **dense deterministic controls** with **minimum human validation**, so that generated software is proven correct and safe without anyone reading diffs line by line.
+The **Prove** domain is stage 5 of the [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/stage-prove). It combines deterministic controls and independent agent assessment of intent, behaviour, and safety, without mandatory human sign-off.
 
-Controls decide. Agents write the tests and repair failures. Humans validate client intent, behavior, and safety at the level the blast radius requires (see [Code](./domain-code.md)). Coding Pal ships each control as a skill, so the same script runs in the agent's loop and again in CI.
+Controls decide. Agents write tests, repair failures, and independently assess the implementation. All risk tiers can proceed automatically; High/Critical retain rollback evidence and Critical retains staged rollout requirements (see [Code](./domain-code.md)). People intervene on unresolved failures or exhausted retries. The same control scripts run locally and in CI.
 
 Verification gates (criteria, mutation, contract) read the report files that tools already produced. Safety, preview probes, the pipeline, the remediation loop, and the Platform Rails complete the domain. All of it is on this page.
 
@@ -11,7 +11,7 @@ Verification gates (criteria, mutation, contract) read the report files that too
 
 ```mermaid
 ---
-caption: Prove Controls, Auto-Remediation and Human Validation
+caption: Prove Controls, Auto-Remediation and Independent Assessment
 ---
 flowchart TD
     PR["<b>Pull request</b><br/>Green in the Code loop"]
@@ -42,7 +42,7 @@ flowchart TD
         LIM["<b>Fix-loop limit 5</b><br/>code-loop fail, fix-loop label"]
     end
 
-    HUMAN["<b>Minimum Human Validation</b><br/>Client intent, behavior, safety<br/>Recorded in the pull request"]
+    HUMAN["<b>Independent Prove assessment</b><br/>Client intent, behavior, safety<br/>Automated evidence recorded"]
     REL["<b>Release</b>"]
 
     PR --> CLEAN
@@ -139,7 +139,7 @@ flowchart TD
 
     subgraph Human ["Human Decision"]
         direction TB
-        DR["<b>Decision record</b><br/>Status: Accepted, signed by the Architect"]
+        DR["<b>Decision record</b><br/>Accepted with explicit automation attribution"]
     end
 
     FIX["<b>Auto-remediation</b><br/>Agent fixes code and tests within the fix-loop limit"]
@@ -227,7 +227,7 @@ Score = `(killed + timeout) / (killed + timeout + survived + noCoverage) * 100`.
 ### 3. Contract & Schema Compatibility
 
 - **When to Run**: Before committing a change to an API contract or schema, and in CI with the base taken from the target branch.
-- **Why a Gate**: A removed field or a new required parameter breaks a consumer you cannot see. The factory treats a breaking public contract as **Critical**: it needs a decision record that the Architect signs and a staged rollout.
+- **Why a Gate**: A breaking public contract is Critical: it needs an accepted decision record with explicit automated or actual human attribution, and a staged rollout.
 - **Workflow Steps**:
   1. **Export both sides as JSON**:
      ```bash
@@ -237,7 +237,7 @@ Score = `(killed + timeout) / (killed + timeout + survived + noCoverage) * 100`.
      ```bash
      node .agents/skills/contract-compat/scripts/contract-compat.mjs --base base.json --head openapi.json
      ```
-  3. **Fix or escalate**: The agent restores compatibility (keeps the old field, makes the new one optional, adds a new version). For an intended break, the Architect signs a decision record and the check is rerun with `--allow-breaking docs/decisions/0007-remove-legacy-role.md`.
+  3. **Fix or escalate**: Restore compatibility or, for an intended break, validate an accepted, explicitly attributed decision record and rerun with `--allow-breaking docs/decisions/0007-remove-legacy-role.md`. Human approval is optional; the record and rollout evidence remain required.
 
 ```
 BREAKING GET:/users/{id} response 200 application/json address.zip: property removed
@@ -253,7 +253,7 @@ compatible GET:/users new optional parameter query:q
 | Response schema | A property is removed or retyped, an enum value is added (clients never saw it), a property stops being guaranteed, a schema is dropped from a media type | New response properties, removed enum values |
 | Request | A new required parameter or body property, a parameter made required or moved, a retyped property, a removed enum value, tightened bounds, `additionalProperties: false` on an open schema | New optional parameters and properties, added enum values, relaxed bounds |
 | Security | A security requirement is added to an operation, or a used alternative is dropped | Another alternative, or security removed |
-| `--allow-breaking` | Accepted only when the record exists, its `Status` is `Accepted`, and its `Signature` is `Signed by <name> (Architect) on YYYY-MM-DD` with a person's name and a real date | `Drafted` and unsigned records, and records signed by any other role or by an AI name, release nothing |
+| `--allow-breaking` | Existing Accepted record with `Automated by <identity> on YYYY-MM-DD` matching an Automation decider, or a genuine Architect signature | Drafted, unsigned, invalidly dated, or falsely attributed decisions release nothing |
 
 Local `$ref` is resolved, `allOf` is merged, and cyclic references are handled. YAML, Swagger 2.0, and external `$ref` are not supported: convert to JSON and bundle first. Pact consumer contracts are out of scope today and are a candidate for a future adapter.
 
@@ -272,7 +272,7 @@ flowchart TD
     CV --> RES{"<b>All exit 0?</b>"}
     MB --> RES
     CC --> RES
-    RES -->|"Yes"| HUM["<b>5. Minimum human validation</b><br/>Risk-weighted"]
+    RES -->|"Yes"| HUM["<b>5. Independent assessment</b><br/>Risk-weighted automated evidence"]
     RES -->|"No"| FIX["<b>Auto-remediation</b><br/>Agent reads the gate output"]
     FIX --> RERUN
 
@@ -311,7 +311,7 @@ flowchart TD
 - **Falsifiable Done When**:
   - `verify-criteria.mjs` exits 0: every `AC-<n>` has a passing mapped test and no mapped test failed.
   - `mutation-bar.mjs` exits 0: the score meets the minimum (80 or the configured value) and no survivor was excluded.
-  - `contract-compat.mjs` exits 0 with no `BREAKING` line, or every `BREAKING` line is covered by an `Accepted` decision record signed by a named Architect.
+  - `contract-compat.mjs` exits 0 with no BREAKING line, or each breaking change is covered by a valid Accepted decision record with automated attribution or an actual Architect signature.
   - No control, report, or contract file was edited to obtain the verdict.
 
 ### 5. Security & Policy-as-Code Gate
@@ -454,9 +454,9 @@ node .agents/skills/verification-pipeline/scripts/rails-check.mjs --root . [--co
 | `apm.yml` | Lists the `code.agent.md` and `gate-fix.agent.md` agents and the skills `code-loop`, `pr-record`, `criteria-verify`, `mutation-bar`, `contract-compat`, `security-gate`, `control-guard`, `preview-smoke`, `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard` |
 | Installed skills | Each skill has `.agents/skills/<name>/SKILL.md` |
 
-### 10. Minimum Human Validation
+### 10. Independent Automated Assessment
 
-When every control is green, a person validates client intent, behavior, and safety at the level the blast radius requires. That is recorded in the pull request and is described in [Code](./domain-code.md). Prove does not replace that decision, it makes it small.
+When controls pass, an independent Prove agent assesses intent, behaviour, and safety, recording evidence and a verdict as described in [Code](./domain-code.md). Every tier permits automatic continuation; rollback and rollout evidence remain mandatory where required. Human review is an explicitly requested checkpoint or escalation, not routine sign-off.
 
 - **Falsifiable Done When**:
   - `security-gate.mjs`, `control-guard.mjs`, and `preview-smoke.mjs` exit with code 0 on the pull request.

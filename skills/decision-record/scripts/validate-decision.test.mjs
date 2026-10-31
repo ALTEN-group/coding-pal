@@ -27,6 +27,34 @@ const matches = (pattern) => (err) => err instanceof ValidationError && pattern.
 const bad = (md, pattern) => assert.throws(() => validateDecisionContent(md), matches(pattern));
 const signed = (over = {}) => makeDecision({ status: "Accepted", signature: SIGNED, ...over });
 
+test("accepts attributed automated architecture decisions and cross-checks their status", () => {
+	const md = makeDecision({ status: "Accepted", deciders: "Thinker agent (Automation)", signature: "Automated by Thinker agent on 2026-10-14" });
+	const record = validateDecisionContent(md);
+	assert.equal(record.signature.by.role, "Automation");
+	const think = { required: true, record: "docs/decisions/0001-test.md", status: "automated", tier: "Critical" };
+	assert.doesNotThrow(() => crossCheckThink(think, record));
+	assert.throws(() => crossCheckThink({ ...think, status: "signed" }, record), /not human Signed/);
+	assert.throws(() => crossCheckThink(think, validateDecisionContent(signed())), /not Accepted by Automation/);
+	bad(md.replace("2026-10-14", "2026-02-30"), /valid ISO date/);
+	bad(md.replace("Automated by Thinker agent", "Automated by Other agent"), /must match/);
+	bad(md.replace("Thinker agent (Automation)", "<name> (Automation)"), /identity/);
+});
+
+test("parses automated Think attribution and rejects mismatched identities and dates", () => {
+	const record = validateDecisionContent(makeDecision({
+		status: "Accepted", deciders: "Thinker agent (Automation)", signature: "Automated by Thinker agent on 2026-10-14",
+	}));
+	const raw = THINK_SIGNED.replace(/- \*\*Status:\*\* Signed[^\n]*/, "- **Status:** Automated by Thinker agent on 2026-10-14");
+	const think = parseThinkDecision(raw);
+	assert.deepEqual(think.automatedBy, { name: "Thinker agent", date: "2026-10-14" });
+	assert.doesNotThrow(() => crossCheckThink(think, record));
+	assert.throws(() => crossCheckThink(parseThinkDecision(raw.replace("by Thinker agent", "by Other agent")), record), /identity and date must match/);
+	assert.throws(() => crossCheckThink(parseThinkDecision(raw.replace("2026-10-14", "2026-10-15")), record), /identity and date must match/);
+	assert.throws(() => parseThinkDecision(raw.replace("2026-10-14", "2026-02-30")), /valid date/);
+	assert.throws(() => parseThinkDecision(raw.replace("Automated by Thinker agent on 2026-10-14", "Automated")), /identity and valid date/);
+	assert.throws(() => parseThinkDecision(raw.replace("by Thinker agent", "by <name>")), /automation identity/);
+});
+
 test("accepts a valid drafted record and returns structured data", () => {
 	const r = validateDecisionContent(makeDecision());
 	assert.equal(r.status, "Drafted");
@@ -77,7 +105,7 @@ test("deciders must be named people with a role and include the Architect", () =
 	bad(makeDecision({ deciders: "Dana Roy (Architect), Dana Roy (Developer)" }), /twice/);
 });
 
-test("only a human Architect signs, and AI may only draft", () => {
+test("human signatures require a real Architect and incomplete records stay unsigned", () => {
 	bad(makeDecision({ signature: SIGNED }), /Drafted record must carry/);
 	bad(signed({ signature: "Drafted: unsigned" }), /Accepted record needs/);
 	bad(signed({ signature: "Signed by Sam Lee (Developer) on 2026-10-14" }), /must be by an Architect/);

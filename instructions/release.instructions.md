@@ -9,7 +9,7 @@ When authoring or validating a release declaration, follow the installed `releas
 
 ## Roles
 
-- **AI drafts. DevOps approves.** The `Owner` is `DevOps`. The agent never states that a release is approved.
+- **Autonomous release.** The `Owner` remains `DevOps` for accountability, not as a mandatory sign-off gate. The pipeline authorizes release after deterministic validation and records the automated decision and evidence. Never claim a human approved it. Keep rollout thresholds, rollback requirements, and retry limits enforced at every risk tier; escalate failed controls that cannot be resolved automatically.
 - **The rollout is deterministic.** Promotion, hold, and rollback come from `evaluate-rollout.mjs` against thresholds declared before deployment. No AI judges a rollout.
 
 ## Deploy Versus Release

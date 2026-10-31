@@ -25,6 +25,25 @@ const rejects = (body, ctx, pattern) =>
 const prove = (overrides = {}) => context({ stage: "prove", ...overrides });
 const withHuman = (human, opts = {}) => pr({ human, ...opts });
 
+test("automated validation supports every tier without dropping rollback or rollout gates", () => {
+	const automatedPlan = plan({ approval: "Automated by Planner agent on 2026-10-14" });
+	assert.doesNotThrow(() => validatePrContent(pr(), context({ planText: automatedPlan })));
+	for (const tier of ["Low", "Medium", "High", "Critical"]) {
+		const human = Object.fromEntries(["Client Intent", "Behavioral Experience", "Safety & Blast Radius"].map((q) => [q, "Auto-merge"]));
+		if (["High", "Critical"].includes(tier)) human["Rollback Validated"] = `${ROLLBACK}; Automated verification`;
+		if (tier === "Critical") Object.assign(human, { "Joint Sign-off": "Automated verification", "Staged Rollout": "`docs/rollouts/roles.md`: 5%, 25%, 50%, 100%" });
+		const body = pr({ tier, rollback: ROLLBACK, human });
+		assert.doesNotThrow(() => validatePrContent(body, prove({ tier, allowAutoProve: true })));
+		if (tier !== "Low") rejects(body, prove({ tier }), /must be "Confirmed/);
+		if (["High", "Critical"].includes(tier)) rejects(body.replace(`${ROLLBACK}; Automated verification`, "Pending"), prove({ tier, allowAutoProve: true }), /Rollback Validated/);
+		if (tier === "Critical") {
+			for (const missing of ["Pending", "_None._", "None", "<rollout plan>"]) {
+				rejects(body.replace(human["Staged Rollout"], missing), prove({ tier, allowAutoProve: true }), /Staged Rollout/);
+			}
+		}
+	}
+});
+
 test("accepts a valid pull request at the code stage and returns a summary", () => {
 	const result = validatePrContent(pr(), context());
 	assert.deepEqual(result, { stage: "code", tier: "Medium", criteria: 3, dependencies: 0, fixLoop: { attempts: 0, limit: 5 }, recordDate: null });
@@ -197,7 +216,7 @@ test("prove stage: Medium needs a Developer for all three questions unless allow
 	const auto = Object.fromEntries(Object.keys(CONFIRMED).map((k) => [k, "Auto-merge"]));
 	rejects(pr({ human: auto }), prove(), /must be "Confirmed by <name> \(<role>\) on YYYY-MM-DD"/);
 	assert.doesNotThrow(() => validatePrContent(pr({ human: auto }), prove({ allowAutoProve: true })));
-	rejects(pr({ tier: "High", rollback: ROLLBACK, human: { ...auto, "Rollback Validated": "Auto-merge" } }), prove({ tier: "High", allowAutoProve: true }), /must be "Confirmed by/);
+	rejects(pr({ tier: "High", rollback: ROLLBACK, human: { ...auto, "Rollback Validated": "Auto-merge" } }), prove({ tier: "High", allowAutoProve: true }), /Rollback Validated/);
 	rejects(pr({ human: { ...CONFIRMED, "Client Intent": "Confirmed by Alan Turing (Product Owner) on 2026-10-14" } }), prove(), /cannot be confirmed by role Product Owner at this blast radius; allowed: Developer/);
 	rejects(pr({ human: { ...CONFIRMED, "Client Intent": "Confirmed by Ada Lovelace (Reviewer) on 2026-10-14" } }), prove(), /role "Reviewer" must be one of: Product Owner, Developer, Architect, DevOps, QA and maintainer/);
 });

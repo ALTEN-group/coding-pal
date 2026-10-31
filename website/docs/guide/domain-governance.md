@@ -2,7 +2,7 @@
 
 The **Governance** domain makes decision rights explicit and mechanical. The [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/governance) says the squad decides unless a decision is on a short list reserved for a named role. Coding Pal gives each reserved decision a record type and a validator, so that a record cannot claim a decision a person did not make.
 
-AI drafts. **The Architect decides and signs.** An AI-produced decision record is always `Drafted: unsigned`, and any other status is only valid with the signature of a named person with the Architect role.
+AI may choose and accept decisions autonomously at every risk tier. Record `Deciders: <identity> (Automation)` and `Signature: Automated by <identity> on YYYY-MM-DD`, never a fabricated human signature. Human owners remain accountable for policy; they intervene on unresolved failures or exhausted retries, not routine sign-off.
 
 ---
 
@@ -29,9 +29,9 @@ flowchart TD
         AG --> ESC
     end
 
-    subgraph Decide ["2. Decide (Human)"]
+    subgraph Decide ["2. Decide and record"]
         direction TB
-        ARCH["<b>Architect</b><br/>Accepts, rejects, signs"]
+        ARCH["<b>Decision agent</b><br/>Accepts or rejects with automation attribution"]
         OWN["<b>Named decider</b><br/>Resolves an escalation"]
     end
 
@@ -47,7 +47,7 @@ flowchart TD
     PROP --> AG
     REC --> ARCH
     ESC --> OWN
-    ARCH ===|"Signed by (Architect)"| VAL
+    ARCH ===|"Automated by identity on date"| VAL
     OWN --> DUE
     LIST["<b>docs/governance/sanctioned-tools.md</b>"] -.-> SANC
 
@@ -70,7 +70,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Decision Record** | [`/decision`](./catalog-prompts.md) | [`Decision Scribe`](./catalog-agents.md) | [`decision-record`](./catalog-instructions.md) | [`decision-record`](./catalog-skills.md) | `docs/decisions/<NNNN>-<slug>.md` (always `Drafted` from AI) |
+| **Decision Record** | [`/decision`](./catalog-prompts.md) | [`Decision Scribe`](./catalog-agents.md) | [`decision-record`](./catalog-instructions.md) | [`decision-record`](./catalog-skills.md) | `docs/decisions/<NNNN>-<slug>.md` with explicit automated attribution after validation |
 | **Escalation** | [`/decision`](./catalog-prompts.md) and `escalations.mjs due` in CI | [`Decision Scribe`](./catalog-agents.md) | [`decision-record`](./catalog-instructions.md) | [`decision-record`](./catalog-skills.md) | `docs/decisions/escalations/<YYYY-MM-DD>-<slug>.md` |
 | **Sanctioned Tools** | `validate-meeting.mjs --sanctioned` in CI | none (policy file owned by the Architect) | [`meeting-pack`](./catalog-instructions.md) | [`meeting-pack`](./catalog-skills.md) | `docs/governance/sanctioned-tools.md` |
 | **Flow Metrics** | `flow-metrics.mjs` in CI or the retrospective | none | none | [`flow-metrics`](./catalog-skills.md) | `metrics/events.jsonl` and its report: see [Flow Metrics](./domain-metrics.md) |
@@ -79,7 +79,7 @@ flowchart TD
 
 ## Who Decides
 
-**The squad decides**, unless the decision is in this table. Each row maps to the Coding Pal primitive that records it and the validator that checks the record.
+**Delivery agents decide autonomously within recorded constraints.** The named roles below are accountable for policy and exceptions, not mandatory per-change approvers. Each row maps to the record and validator that provide evidence.
 
 | Decision | Decided by | Consulted | Recorded as | Coding Pal primitive | Validator |
 |---|---|---|---|---|---|
@@ -111,7 +111,7 @@ flowchart TD
      node .agents/skills/decision-record/scripts/validate-decision.mjs \
        --file docs/decisions/0007-rbac-via-forge.md --think specs/issue-42/think.md
      ```
-  3. **Decide**: The Architect reviews, sets `Status` to `Accepted` or `Rejected`, and writes `Signed by <name> (Architect) on <date>`. `think.md` is updated from `Drafted` to `Signed`.
+  3. **Decide**: After validation, the agent sets Accepted or Rejected with explicit Automation attribution. For an accepted decision, Think's decision Status becomes `Automated by <identity> on YYYY-MM-DD`. Human signatures remain supported only for actual human decisions.
   4. **Gate**: CI validates the whole directory on every pull request that touches `docs/decisions/`:
      ```bash
      node .agents/skills/decision-record/scripts/validate-decision.mjs --dir docs/decisions
@@ -125,8 +125,8 @@ flowchart TD
 | `docs/decisions/<NNNN>-<slug>.md`, 4-digit numbers unique and gap-free | A stable history that can be cited by number |
 | Exact header fields, `Type` from the table, exact sections `Context`, `Options`, `Decision`, `Consequences` | Predictable for the Architect and downstream agents |
 | 2 or more `### Option <N>` blocks, each with real `Pros` and `Cons` | A decision with one option was not a decision |
-| `Deciders` are `<name> (<role>)` with a known role and an Architect; a bare role, placeholder, or AI-looking name is rejected | Accountability always resolves to a named person |
-| `Drafted` requires `Drafted: unsigned`; any other status requires `Signed by <name> (Architect) on <date>` from a listed Architect, not before the record date | AI proposes, the Architect decides |
+| Deciders include an Automation identity or an actual human Architect | Explicit attribution, never impersonation |
+| Drafted is unsigned; accepted decisions carry dated automation attribution or a real Architect signature matching Deciders | Automated approval is auditable, not a human sign-off |
 | `tooling`: `Native Alternatives Considered` and `Context Preservation` | The factory's proof that a tool outside the core platform cannot be met natively and keeps AI context |
 | `data-model`: `Migration Plan`. `model-adoption`: an `Evaluation Report` path that exists | The record names the evidence the governance table requires |
 | `Supersedes` targets exist, are older, are superseded once, and carry the matching status | One consistent history |
@@ -169,7 +169,7 @@ A tool that is not listed fails with `meeting tool is not on the sanctioned list
 
 ### 4. Policy Kept in the Factory
 
-Blast radius and required human validation, auditability and retention, cost, and violations are policy, not Coding Pal primitives. They are defined in the [Agentic Software Factory governance guide](https://alten-group.github.io/agentic-software-factory/guide/governance). Coding Pal only adds the mechanical parts: the blast radius tier is set in [Think & Plan](./domain-think-plan.md) and checked in [Code](./domain-code.md), `ai.cost` events feed [Flow Metrics](./domain-metrics.md), and a violation is recorded with `incident-record`, whose postmortem action is a new guard, not a reminder ([Deterministic Controls](./deterministic-controls.md)).
+Blast radius evidence, autonomous decision policy, auditability, retention, cost, and violations are defined in the [Factory governance guide](https://alten-group.github.io/agentic-software-factory/guide/governance). Coding Pal supplies mechanical checks: tier validation in [Think & Plan](./domain-think-plan.md) and [Code](./domain-code.md), cost events in [Flow Metrics](./domain-metrics.md), and incident records whose postmortem action becomes a guard, not a reminder ([Deterministic Controls](./deterministic-controls.md)).
 
 ### 5. Anti-Patterns and the Control That Guards Them
 
@@ -186,7 +186,7 @@ Where a mechanical guard exists it is named. **Policy** means no script can enfo
 | Skipping Plan | `plan` (a validated `plan.md` with testable acceptance criteria that every step serves), `code-loop` (Code runs step by step from `plan.md`; a plan edited after Code started stops the loop) |
 | Weak deterministic controls ("Trust the model") | `control-guard` (weakened or skipped tests, lowered thresholds, suppressions), `security-gate`; the full set is in [Prove](./domain-prove.md) |
 | Hand-fixing generated bugs | `control-guard` (the bug rule: the new check is committed before the fix), `flow-metrics` Human rework rate (`pr.human_edit`), `context-health` (corrections become Persistent Context) |
-| Uniform review effort | `think` & `plan` (one blast radius tier), `pr-record` (tier must match; High needs dual validation) |
+| Uniform review effort | `think` & `plan` (one blast radius tier), `pr-record` (tier-matched automated evidence; High/Critical retain rollback checks) |
 | Batching releases | `release-plan` (exactly one issue per release) |
 | Prompting instead of context | `context-health` (a topic corrected or re-explained twice needs an artifact) |
 | The everything instruction | `context-health` (instruction length limit, broad `applyTo`, near-duplicates) |
@@ -199,7 +199,7 @@ Where a mechanical guard exists it is named. **Policy** means no script can enfo
 
 - **Falsifiable Done When**:
   - `validate-decision.mjs --dir docs/decisions` exits 0: numbering has no gaps, every non-`Drafted` record carries an Architect signature, and every `Superseded` record is named by its successor.
-  - Every AI-authored record is `Drafted` with `Drafted: unsigned`, and no AI name appears under `Deciders` or `Signature`.
+  - Every AI decision carries explicit Automation attribution, valid evidence and date, never a forged human signature.
   - `escalations.mjs due` reports no overdue Open escalation.
   - `validate-meeting.mjs --sanctioned` accepts every transcript.
 

@@ -10,7 +10,7 @@ AI implements. **The Developer supervises and steps in only when the fix-loop li
 
 | Item | Location | Owner |
 |---|---|---|
-| Validated plan | `specs/issue-<n>/plan.md` | The Developer approves it in `## Approval` (`Approved By`); never edited after approval |
+| Validated plan | `specs/issue-<n>/plan.md` | Explicit automated or actual human approval in `## Approval` (`Approved By`); never edited after Code starts |
 | Think record | `specs/issue-<n>/think.md` | Architect and Developer |
 | Loop state | `specs/issue-<n>/progress.json` | Written only by `code-loop.mjs` |
 | Pull request | opened with the `pr-record` body | Code agent |
@@ -21,7 +21,7 @@ AI implements. **The Developer supervises and steps in only when the fix-loop li
 
 For each step, in order:
 
-0. Code starts only from an approved plan. `plan.md` `## Approval` -> `Approved By` must read `<name> (Developer) on YYYY-MM-DD` (optionally followed by `; <name> (Architect) on YYYY-MM-DD`) with a person's name, never `Pending`, an AI, or a placeholder (the full rule is in the `think-plan` contract). `start` and `next` otherwise exit 1 with `plan is not approved by a Developer; Code starts only from an approved plan`. `status` still works and shows the approval line, as does `next`.
+0. Code starts from a validated, approved plan. `Approved By: Automated by <identity> on YYYY-MM-DD` permits autonomous execution at every risk tier. Actual Developer approval remains supported; AI must never impersonate a person. Pending approval is accepted only with the explicit legacy `--allow-pending-approval` / `ALLOW_PENDING_APPROVAL=1` option. Missing or invalid approval still blocks `start` and `next`; the historical error text is retained for compatibility.
 1. `code-loop.mjs next`, then `start <n>`.
 2. Apply the step's `New Code`, adjusted only to fit the repository. Report any divergence.
 3. Write only the files listed in the step's `Files`.
@@ -121,4 +121,4 @@ The `verification-pipeline` `verify.yml` runs it for every work item whose `prog
 
 ## 8. Exit Gate
 
-A work item leaves Code when `pr-record`'s `validate-pr.mjs --stage code` exits 0: the plan approved by a Developer, every step done, attempts within the limit, every acceptance criterion traced in the pull request, links resolving, and Human Validation still `Pending`. The trace is the agent's claim: `criteria-verify` proves from the test reports that each criterion has a passing test, and runs in the loop and again in Prove.
+A work item leaves Code when `pr-record`'s `validate-pr.mjs --stage code` exits 0: valid automated or human plan approval, every step done, attempts within the limit, every acceptance criterion traced, links resolving, and legacy Human Validation fields still `Pending`. Independent Prove validation fills those fields later; human sign-off is not mandatory. `criteria-verify` proves from test reports that each criterion has a passing test, in the loop and again in Prove.

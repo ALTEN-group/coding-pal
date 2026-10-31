@@ -12,6 +12,15 @@ const plan = (from, to) => validPlan.replace(from, to);
 const matches = (pattern) => (err) => err instanceof ValidationError && pattern.test(err.message);
 const badPlan = (md, pattern, options) => assert.throws(() => validatePlanContent(md, "plan.md", options), matches(pattern));
 
+test("automated Plan approval preserves Think chronology and structural checks", () => {
+	const think = validateThinkContent(validThink.replace("Approved By:** Pending", "Approved By:** Automated by Thinker agent on 2026-10-14"));
+	const plan = validPlan.replace("Approved By:** Pending", "Approved By:** Automated by Planner agent on 2026-10-15");
+	assert.equal(validatePlanContent(plan, "plan.md", { think, stage: "approved" }).approval.approvals[0].role, "Automation");
+	badPlan(plan.replace("2026-10-15", "2026-10-13"), /before/, { think, stage: "approved" });
+	badPlan(plan.replace("2026-10-15", "2026-02-30"), /valid date/);
+	badPlan(plan.replace("Planner agent", "<name>"), /identity/);
+});
+
 test("validates compliant plan.md and returns structured data", () => {
 	const result = validatePlanContent(validPlan);
 	assert.equal(result.steps.length, 4);

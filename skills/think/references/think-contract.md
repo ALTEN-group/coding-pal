@@ -56,7 +56,7 @@ Include credible reuse from the Forge (or existing dependencies) versus custom b
 #### `## Chosen Approach`
 - `Selected`: `Option <N>`, naming an existing option.
 - `Reasoning`: one short paragraph.
-- `Approved By`: who approved the chosen approach. The agent leaves exactly `Pending`. After review, the Developer and the Architect, who make the call together, replace it with `<name> (Developer) on YYYY-MM-DD; <name> (Architect) on YYYY-MM-DD` (see Approval Stages).
+- `Approved By`: after validation, `Automated by <agent identity> on YYYY-MM-DD`. Use `Pending` while incomplete. Human approval remains supported when explicitly requested, but is not mandatory (see Approval Stages).
 - `Custom Build Reason`: required when the selected option is a `Custom build`. Record why no Forge asset covers it, and what was searched.
 
 #### `## Forge Asset Bindings`
@@ -77,7 +77,7 @@ Grounded in the real codebase, Forge assets, and Persistent Context. Never inven
 - `Side-Effect Constraints`: services, routes, or tables that must remain untouched, or `_None._`.
 
 #### `## Blast Radius`
-Classified once, here, as defined in the Factory's governance page. The tier sets the human validation the change needs in Prove.
+Classified once, here, as defined in the Factory's governance page. The tier sets the automated validation, rollback, and rollout evidence required in Prove, not a mandatory human sign-off.
 - `Tier`: `Low`, `Medium`, `High`, or `Critical`.
 - `Affected`: the APIs, schemas, queues, and consumers touched.
 - `Rationale`: why this tier.
@@ -91,9 +91,9 @@ Classified once, here, as defined in the Factory's governance page. The tier set
 | Critical | Irreversible data migration, breaking public contract, infrastructure change |
 
 #### `## Decision Record`
-Required when the approach alters a public API, changes a database schema, or shifts service boundaries. AI drafts it from repository conventions. The Architect reviews and signs it.
+Required when the approach alters a public API, changes a database schema, or shifts service boundaries. AI selects and records the decision from repository evidence, with explicit automation attribution. Validate the record with the `decision-record` skill; never fabricate human sign-off.
 - `Required`: `yes` or `no`.
-- If `yes`: `Record` (workspace path) and `Status`. `Status` is `Drafted` while awaiting the Architect (free text after it, for example `Drafted, awaiting Architect`), or `Signed by <name> (Architect) on YYYY-MM-DD` with a valid date. The name must be a person: names containing an AI or automation word (copilot, claude, gpt, gemini, chatgpt, openai, anthropic, bot, agent, dependabot, renovate, github-actions, ai, llm) or a placeholder (`TBD`, `x`, `<name>`) are rejected.
+- If `yes`: `Record` (workspace path) and `Status`: `Drafted` while incomplete, or `Automated by <identity> on YYYY-MM-DD` matching an Accepted Automation decision. Genuine human decisions may use `Signed by <name> (Architect) on YYYY-MM-DD`; placeholders and AI identities cannot masquerade as human signers.
 - If `no`: `Reason`.
 - A `Critical` tier always requires a decision record.
 
@@ -107,14 +107,14 @@ Unresolved questions that need human clarification, or `_None._`.
 
 ## 3. Approval Stages (`--stage draft|approved`, default `draft`)
 
-`validate-think.mjs` checks `--stage`. The AI never approves.
+`validate-think.mjs` checks `--stage`. Explicit automated approval is accepted at both stages, with a non-placeholder identity and a real date; it never represents human review.
 
 | Stage | `think.md` `Approved By` |
 |---|---|
-| `draft` | exactly `Pending` |
-| `approved` | `<name> (Developer) on YYYY-MM-DD; <name> (Architect) on YYYY-MM-DD` |
+| `draft` | `Pending`, or `Automated by <identity> on YYYY-MM-DD` after validation |
+| `approved` | `Automated by <identity> on YYYY-MM-DD`, or recorded Developer and Architect approvals |
 
-At `approved`: role strings are exact, dates are valid `YYYY-MM-DD`, two approvers are two different people, and names that are placeholders (`TBD`, `x`, `<name>`) or an AI or automation (Copilot, Claude, GPT, bot, agent, and so on) are rejected, with the same check as the signed decision record.
+For human approvals, role strings are exact, dates real, and the two approvers distinct actual people. Placeholder and AI names cannot impersonate human approvers. Automated approval instead uses the explicit identity/date format above.
 
 ---
 
@@ -125,8 +125,8 @@ At `approved`: role strings are exact, dates are valid `YYYY-MM-DD`, two approve
 3. **No task checklists or `### Step` headings in `think.md`.** Sequencing belongs to the Plan stage.
 4. **No re-deriving Triage.** When `triage.md` exists, reuse its evidence and system mapping.
 5. **No unrecorded custom build.** A custom implementation needs a recorded `Custom Build Reason`.
-6. **No AI-signed decision records.** AI drafts. The Architect signs.
-7. **No AI approval.** The agent leaves `Approved By: Pending`; only named people approve.
+6. **No forged human signatures.** Use `Automated by <identity> on YYYY-MM-DD` for AI decisions, including the decision-record Status in Think; reserve `Signed by <name> (Architect)` for actual human signatures.
+7. **No unvalidated approval.** Record automated approval only after the record and required decision records pass their controls.
 
 ---
 

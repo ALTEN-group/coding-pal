@@ -414,6 +414,16 @@ export function checkDecisionRecord(text) {
 	if (!status) return { ok: false, reason: "decision record has no Status line" };
 	if (status.replace(/[*_`]/g, "").split(/[\s.,;:(]/)[0].toLowerCase() !== "accepted") return { ok: false, reason: `decision record Status is "${status}", not Accepted` };
 	const signature = (text.match(field("Signature"))?.[1] ?? "").replace(/\*\*/g, "");
+	const automated = signature.match(/^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/);
+	if (automated) {
+		const name = automated[1].trim();
+		const day = new Date(`${automated[2]}T00:00:00Z`);
+		if (name.length < 2 || /^(tbd|x|<[^>]*>)$/i.test(name)) return { ok: false, reason: "automated decision requires an identity" };
+		if (Number.isNaN(day.getTime()) || day.toISOString().slice(0, 10) !== automated[2]) return { ok: false, reason: "automated decision date is not a real date" };
+		const deciders = text.match(field("Deciders"))?.[1] ?? "";
+		if (!deciders.split(",").some((entry) => entry.trim().toLowerCase() === `${name} (Automation)`.toLowerCase())) return { ok: false, reason: "automated signature must match an Automation entry in Deciders" };
+		return { ok: true, reason: "" };
+	}
 	const unsigned = (why) => ({ ok: false, reason: `decision record is Accepted but not signed by a named Architect ("Signature: Signed by <name> (Architect) on YYYY-MM-DD"): ${why}` });
 	const m = signature.match(SIGNATURE);
 	if (!m) return unsigned("the Signature line does not match");

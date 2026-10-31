@@ -27,7 +27,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/learn-signals/` | Protocol & Emitter | `Learn Analyst`, `triage` skill | Turns incidents, invalidated hypotheses, and findings into Triage issue bodies. |
 | `skills/context-health/` | Guard & Audit | `Learn Analyst` | Persistent Context lint and a corrections log that proposes new artifacts after two corrections. |
 | `skills/forge/` | Catalog & Validator | `forge` instruction, `Forge Curator`, `Thinker` | The Forge catalog (Gatelin, Foxnox), certification rules, deterministic discovery, binding checks, and health signals. |
-| `skills/decision-record/` | Protocol & Validator | `decision-record` instruction, `Decision Scribe` | Decision records and escalations: AI drafts, a named Architect signs. |
+| `skills/decision-record/` | Protocol & Validator | `decision-record` instruction, `Decision Scribe` | Attributed autonomous decisions and escalations, with genuine human signatures supported when requested. |
 | `skills/flow-metrics/` | Metrics | `Learn Analyst`, retrospectives | The factory's metrics computed from a JSONL event log. |
 | `skills/meeting-pack/` | Protocol & Validator | `meeting-pack` instruction, `Meeting Analyst` agent | Meeting Pack contract, plain-text transcript normalizer, deterministic validator (verbatim quotes, glossary, confirmations), and Triage emission. |
 | `skills/triage/` | Protocol & Validator | `triage` instruction, `Triage Analyst` agent | Triage contract, deterministic validator (evidence, scorecard, decision rules, ledger), and backlog ranking for `triage.md` artifacts. |
@@ -268,7 +268,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ### 21. PR Record (`skills/pr-record/`)
 - **Category**: Protocol & Validator
-- **Contents**: `references/pr-record-contract.md`, `references/pull_request_template.md`, and `scripts/validate-pr.mjs` with the `code` stage (steps done, links, criteria traced, dependencies declared) and the `prove` stage (human validation by blast radius tier: Low auto-merge or Developer, Medium Developer, High Developer + Architect with rollback validated, Critical joint sign-off).
+- **Contents**: PR contract, template, and validator. Code checks scope, traceability, dependencies, and completed steps. Prove supports all-tier autonomous assessment with `--allow-auto-prove`, retaining High/Critical rollback evidence and Critical rollout references. Genuine human formats remain supported.
 - **Workflow**: `node .agents/skills/pr-record/scripts/validate-pr.mjs --body pr.md --dir specs/issue-42 --stage prove`
 
 ### 22. Criteria Verify (`skills/criteria-verify/`)

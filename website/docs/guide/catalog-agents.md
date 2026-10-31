@@ -12,9 +12,9 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | **Prove Validator** | `prove.agent.md` | Executes the full Prove verification suite and performs semantic review of the PR diff against `think.md` and `plan.md`, producing `specs/issue-<n>/prove.md`. | [Prove](./domain-prove.md) | Never edits application or test code; never weakens a control; never claims line-by-line review; validates `prove.md` with `validate-prove.mjs`. | `prove` skill, `prove` instruction |
 | **Gate Fixer** | `gate-fix.agent.md` | Diagnoses and fixes a failing deterministic gate within the step and file scope (agent auto-remediation). | [Prove](./domain-prove.md) | Never weakens, skips, edits, or waives a control; never touches protected paths; stops at the fix-loop limit. | `control-guard`, `code-loop`, `security-gate` skills, `prove-controls` instruction |
 | **Learn Analyst** | `learn.agent.md` | Watches what a release does in production: detects and explains anomalies, proposes hypothesis verdicts, drafts incident records, runs the context review, and emits Triage issues. | [Learn](./domain-learn.md) | Never decides, mitigates in production, holds production credentials, or writes a verdict. | `telemetry-scan`, `hypothesis-ledger`, `incident-record`, `learn-signals`, `context-health` skills |
-| **Release Planner** | `release.agent.md` | Drafts the per-change release declaration (`release.md`) for DevOps to approve. | [Release](./domain-release.md) | Never deploys, never holds production credentials, never disables a threshold. | `release-plan` skill |
+| **Release Planner** | `release.agent.md` | Prepares and validates `release.md` for automated authorization. | [Release](./domain-release.md) | Never deploys, holds production credentials, loosens thresholds, or fabricates human approval. | `release-plan` skill |
 | **Forge Curator** | `forge-curator.agent.md` | Searches the Forge for reuse (discover mode) and evaluates proposed assets for certification (certify mode). | [Forge](./domain-forge.md) | Never invents assets; never edits the catalog without a pull request; never certifies by itself. | `forge` skill |
-| **Decision Scribe** | `decision-scribe.agent.md` | Drafts decision records and escalations from a Think record or a described decision. | [Governance & Decisions](./domain-governance.md) | Drafts only: never signs and never marks a record Accepted. | `decision-record` skill |
+| **Decision Scribe** | `decision-scribe.agent.md` | Chooses and records attributed autonomous decisions, or escalations. | [Governance & Decisions](./domain-governance.md) | No source changes, fabricated human signatures, or waived controls. | `decision-record` skill |
 | **Meeting Analyst** | `meeting-pack.agent.md` | Turns a client meeting transcript into an immutable Meeting Pack with candidate business needs. | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | Zero code changes; verbatim client quotes only; transcript never edited; never confirms. | `meeting-pack` skill |
 | **Triage Analyst** | `triage.agent.md` | Turns a candidate business need into an evidence-linked `triage.md` with a scorecard and a proposed decision. | [Triage](./domain-triage.md#_1-candidate-need-to-backlog-issue) | Zero code changes; verbatim evidence only; never sets the final decision or a blast radius tier. | `triage` skill |
 | **Code Auditor** | `code-audit.agent.md` | Complete, evidence-based code audit of a repo, service, or schema. | [Audit & Remediation](./domain-audit.md#_1-codebase-audit) | Audit agreed scope only; read every file before reporting; no speculative findings. | `audit-reporting` skill |
@@ -89,7 +89,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 ### 10. Thinker (`think.agent.md`) & Planner (`plan.agent.md`)
 - **Thinker Role**: Explores 2 to 4 options from a prioritized backlog issue, binds Forge assets, classifies blast radius, and writes the `think.md` record without code.
 - **Planner Role**: Takes a validated `think.md` and breaks it down into explicit file scopes, observable acceptance criteria, ordered atomic steps with `New Code`, and test plan in `plan.md`.
-- **Hard Boundaries**: **No production or test code changes**; codebase is read-only; Thinker writes no code; Planner writes code only in `New Code` fields; decision records stay drafted and unsigned; Developer and Architect record approval.
+- **Hard Boundaries**: No production or test code changes; Planner writes code only in Plan fields. Completed decisions and approvals use explicit automation identity and date, never fabricated human signatures.
 - **Completion Gate**: `think.md` passes `skills/think/scripts/validate-think.mjs` and `plan.md` passes `skills/plan/scripts/validate-plan.mjs` validation with exit code 0.
 - **Full Workflow**: See [Business Needs to Specifications](./domain-think-plan.md).
 
@@ -131,7 +131,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 
 ### 17. Decision Scribe (`decision-scribe.agent.md`)
 - **Role**: Drafts decision records and escalations from a Think record or a described decision.
-- **Hard Boundaries**: Status is always `Drafted` and the signature `Drafted: unsigned`; never signs and never marks a record Accepted; the Architect decides.
+- **Hard Boundaries**: Completed decisions may be Accepted with explicit Automation attribution. Incomplete decisions stay Drafted and unsigned; never fabricate human sign-off or weaken controls.
 - **Completion Gate**: The record passes `validate-decision.mjs`.
 - **Full Workflow**: See [Governance & Decisions](./domain-governance.md).
 

@@ -46,6 +46,16 @@ async function run(args, options) {
 
 const progress = async (dir) => JSON.parse(await readFile(join(dir, "progress.json"), "utf-8"));
 
+test("automated Plan approval allows Code without a forged Developer signature", async () => {
+	const automated = validPlan.replace(APPROVAL, "Automated by Planner agent on 2026-10-14");
+	assert.equal(parsePlanApproval(automated).approved, true);
+	assert.equal(parsePlanApproval(automated.replace("2026-10-14", "2026-02-30")).approved, false);
+	assert.equal(parsePlanApproval(automated.replace("Planner agent", "<name>")).approved, false);
+	const dir = await workItem(automated);
+	assert.equal((await run(["next", "--dir", dir])).code, 0);
+	assert.equal((await run(["start", "1", "--dir", dir])).code, 0);
+});
+
 test("parses plan steps and ignores step-like text inside code fences", () => {
 	const steps = parsePlanSteps(validPlan);
 	assert.deepEqual(steps.map((s) => [s.number, s.name]), [

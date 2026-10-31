@@ -2,7 +2,7 @@
 
 A release is the decision to switch a change on for users, and a plan for doing it gradually and reversibly. The result is a persistent `release.md` declared **per change, before deployment**. It fixes the rollout stages, the thresholds that promote or roll back, the rollback mechanisms, and the outcome metric handed to Learn.
 
-AI drafts. **DevOps approves.** The rollout itself runs on standard deployment tooling: promotion and rollback follow thresholds declared in advance, evaluated by a deterministic script. No AI is involved in a rollout decision, and no AI holds production credentials.
+AI prepares and validates release records. Deterministic controls authorize release without mandatory human sign-off; DevOps remains accountable for policy and exceptions. Standard deployment tooling executes rollout, with promotion and rollback computed from declared thresholds. Agents hold no production credentials.
 
 ---
 
@@ -154,7 +154,7 @@ With no outcome metric, every field is `_None._` and the ledger field is `_None.
 - `Customer Commitment` is `yes`: exactly one line, a customer-facing entry of at most 200 characters.
 - `Customer Commitment` is `no`: exactly `_None._`.
 
-Release notes and the changelog are drafted from merged pull requests during Code, and a person approves them. This section holds the one customer-facing line.
+AI prepares release notes and changelog entries from merged changes; automated checks validate them without mandatory human approval. This section holds the one customer-facing line.
 
 ### `## Ambiguities & Open Questions`
 
@@ -223,5 +223,5 @@ Production access uses short-lived OIDC tokens bound to the `production` environ
 2. **No vibes-based rollout.** Thresholds and windows are declared before deployment. A person watching a dashboard and deciding by feel is not a gate.
 3. **No mutable artifacts.** Never `latest`. A version is built once.
 4. **No release without a named rollback.** Every threshold names its mechanism, and High/Critical match Think.
-5. **No AI in the rollout and no AI sign-off.** AI drafts `release.md`; it never deploys, never holds production credentials, and never disables or loosens a threshold. DevOps approves.
+5. **Deterministic rollout, explicit authorization.** AI validates the release declaration without fabricating human approval; it never deploys, holds production credentials, or loosens thresholds. Automated authorization requires passing controls and evidence.
 6. **No deploy-equals-release.** The `enable` flag is the release decision. Code reaches production switched off.

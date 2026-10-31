@@ -79,13 +79,13 @@ Format: `BREAKING|compatible <path> <what>`. The path is `<METHOD>:<path>` for a
 
 ---
 
-## 4. Breaking Changes Need a Signed Decision Record
+## 4. Breaking Changes Need an Accepted Decision Record
 
-A breaking public contract is a **Critical** blast radius. It needs a decision record that the Architect signs, and a staged rollout. `--allow-breaking` accepts a record only when all of these hold:
+A breaking public contract is a **Critical** blast radius. It needs an accepted decision record and a staged rollout. Automated decisions are valid without human sign-off. `--allow-breaking` accepts a record only when all of these hold:
 
 - The file exists.
 - Its `Status` line is `Accepted`. In the header block (`- **Status:** Accepted` or `Status: Accepted`) or under a `## Status` heading. `Drafted`, `Proposed`, `Rejected`, and `Superseded` do not release anything.
-- Its `Signature` line is `Signed by <name> (Architect) on YYYY-MM-DD`: the role is exactly `Architect` (governance assigns a public contract change to the Architect), the name is a person (an AI name such as `Copilot` or a placeholder such as `<name>` is rejected), and the date is a real date. AI drafts the record. The Architect signs it.
+- Its `Signature` is `Automated by <identity> on YYYY-MM-DD` with a real date and a matching `<identity> (Automation)` in Deciders, or an actual human `Signed by <name> (Architect) on YYYY-MM-DD` signature. Placeholders and AI identities masquerading as human signers are rejected.
 
 Breaking lines are still printed when a record releases them, so the pull request shows exactly what was approved. The script does not check that the record covers *these* changes: reviewers do, through the decision record link in the pull request.
 
@@ -101,6 +101,6 @@ Breaking lines are still printed when a record releases them, so the pull reques
 ## 6. Anti-Patterns & Prohibitions
 
 1. **No silent breaking changes.** Add a new version or an optional field instead of changing meaning.
-2. **No AI-signed decision records.** The agent may draft one. The Architect signs.
+2. **No fabricated human signatures.** Automated decisions use explicit Automation attribution; genuine human signatures remain supported.
 3. **No editing the base file** to make the diff disappear.
 4. **No loosening a contract to pass tests** (for example removing `required` from a response).

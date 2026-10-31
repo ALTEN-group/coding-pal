@@ -6,7 +6,7 @@ license: MIT
 
 # Release Plan
 
-Produce deterministic `release.md` declarations that DevOps can approve quickly and the rollout pipeline can execute without judgement calls. AI drafts and proposes thresholds; DevOps decides. Promotion and rollback are computed by a script against thresholds declared before deployment.
+Produce validated `release.md` declarations for automated authorization and deterministic rollout. AI prepares records and thresholds from evidence; DevOps owns the policy, not mandatory per-release sign-off. Scripts compute promotion and rollback against declared thresholds.
 
 ## When to Use This Skill
 
@@ -43,7 +43,7 @@ node scripts/evaluate-rollout.mjs --release specs/issue-42/release.md --stage ca
 Exit code 0 means promote, 2 means hold, 1 means rollback or error. On rollback the JSON names the mechanism from the breached threshold.
 
 5. Copy `references/release.yml` to `.github/workflows/release.yml` and replace every `PLACEHOLDER`. It validates the declaration on the tag, builds the immutable artifact, deploys to staging, loops `evaluate-rollout.mjs` through the production stages, then enables the flag.
-6. DevOps approves `release.md` before the tag is pushed. The agent never deploys, never holds production credentials, and never disables or loosens a threshold.
+6. Require deterministic validation and recorded automated authorization before tagging; no human sign-off is mandatory. The agent never deploys, holds production credentials, or loosens a threshold. Escalate unresolved failures and honour requested checkpoints.
 
 ## Done When
 

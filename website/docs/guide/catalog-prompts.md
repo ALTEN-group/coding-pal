@@ -25,7 +25,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 | `/operating-retro` | `operating-retro.prompt.md` | **Learn Analyst** | `events file or metrics report` | [Learn](./domain-learn.md) | Prepares the monthly Operating-Model Retrospective pack. |
 | `/forge-search` | `forge-search.prompt.md` | **Forge Curator** | `the need in a sentence` | [Forge](./domain-forge.md) | Searches the Forge for reusable assets and produces the Think bindings evidence. |
 | `/forge-certify` | `forge-certify.prompt.md` | **Forge Curator** | `repository URL or path of the proposed asset` | [Forge](./domain-forge.md) | Evaluates a proposed asset against the certification checklist and drafts its catalog entry. |
-| `/decision` | `decision.prompt.md` | **Decision Scribe** | `the decision to record, or a path to think.md` | [Governance & Decisions](./domain-governance.md) | Drafts a decision record or an escalation. |
+| `/decision` | `decision.prompt.md` | **Decision Scribe** | `the decision to record, or a path to think.md` | [Governance & Decisions](./domain-governance.md) | Records an attributed autonomous decision or escalation. |
 | `/meet` | `meet.prompt.md` | **Meeting Analyst** | `transcript export or meeting directory` | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | Turns a client meeting transcript into `transcript.md` and a validated Meeting Pack. |
 | `/meet-readback` | `meet-readback.prompt.md` | **Meeting Analyst** | `transcript file` | [Meet](./domain-meet.md#_2-read-back-list) | Prepares the Product Owner's read-back list before the meeting ends. |
 | `/triage` | `triage.prompt.md` | **Triage Analyst** | `issue number or source path, e.g. #42` | [Triage](./domain-triage.md#_1-candidate-need-to-backlog-issue) | Turns a candidate need or ticket batch into evidence-linked `triage.md` files with a proposed decision. |
@@ -120,7 +120,7 @@ Each prompt enforces a deterministic parameter resolution pipeline (argument $\r
 
 ### 18. `/decision`
 - **Invocation**: `/decision [decision-or-think-path]`
-- **Delegation**: **Decision Scribe** drafts a decision record or an escalation. See [Governance & Decisions](./domain-governance.md).
+- **Delegation**: **Decision Scribe** chooses and validates an explicitly attributed automated decision, or records an escalation. See [Governance & Decisions](./domain-governance.md).
 
 ### 19. `/outcome-review`, `/context-review`, `/incident`, `/pre-read`, `/operating-retro`
 - **Delegation**: All five hand off to **Learn Analyst**. `/outcome-review` lists hypotheses due with proposed verdicts and the maths; `/context-review` runs the context lint and proposes artifacts from repeated corrections; `/incident` drafts and validates an incident record; `/pre-read <meeting>` drafts the AI pre-read for `triage-review`, `outcome-review`, `context-review`, or `operating-retro` and writes nothing; `/operating-retro` prepares the monthly retrospective from the flow-metrics report. None of them decides. See [Learn](./domain-learn.md).

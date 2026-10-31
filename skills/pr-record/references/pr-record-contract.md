@@ -1,8 +1,16 @@
 # Pull Request Record Contract
 
-The pull request is the record of a work item. It is the exit gate of Code and the human validation record of Prove. The same body is validated twice: at the `code` stage when the agent opens it, and at the `prove` stage after the people have validated.
+The pull request is the work item record and Code exit gate. Its body is validated at Code and again after independent Prove assessment. The historical `Human Validation` heading is retained for compatibility; it does not mandate human sign-off.
 
-AI proposes, humans decide. **The agent never carries a human sign-off.** At the `code` stage every Human Validation field is `Pending`. At the `prove` stage each field names a person with a role, as the Factory's governance page requires.
+AI decides and validates autonomously at every risk tier. **Automation never claims a human sign-off.** At `code`, the legacy `Human Validation` fields remain `Pending`. At `prove`, `--allow-auto-prove` / `ALLOW_AUTO_PROVE=1` enables explicitly automated results after the independent Prove report and deterministic controls pass. Existing human validation formats remain supported for requested review checkpoints.
+
+### Autonomous Prove at every tier
+
+- Set `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius` to `Auto-merge` only after a validated passing Prove report provides their evidence.
+- High and Critical also require `Rollback Validated: <exact rollback mechanism from Think>; Automated verification`, backed by actual rollback verification evidence in the Prove report.
+- Critical also requires `Joint Sign-off: Automated verification` (not a human signature) and a non-placeholder `Staged Rollout` reference.
+- Missing rollback/rollout evidence still blocks merge; autonomy is not a waiver.
+- An automated plan uses `Approved By: Automated by <identity> on YYYY-MM-DD`; no mandatory Developer sign-off is required.
 
 ---
 
@@ -82,10 +90,10 @@ The three questions: **Client Intent** (does it do what the client asked), **Beh
 `validate-pr.mjs --stage code` checks the five sections above plus:
 
 - `progress.json` exists, its `planSha256` matches `plan.md`, every plan step is `done` with `verifiedAt`, step attempts add up to `fixLoop.attempts`, attempts do not exceed the limit, and the limit is at most 5 (`--max-fix-loop` defaults to 5 and can only lower it). Step attempts are non-negative integers and the steps are numbered 1 to the plan's step count.
-- The plan is approved: `plan.md` `## Approval` -> `Approved By` reads `<name> (Developer) on YYYY-MM-DD` (optionally followed by `; <name> (Architect) on YYYY-MM-DD`) with a person's name, the rule `code-loop` applies before it starts. Otherwise the error is `plan is not approved by a Developer; Code starts only from an approved plan`.
+- Plan carries valid `Automated by <identity> on YYYY-MM-DD` approval, or an actual human Developer approval. Explicit legacy pending-approval mode remains supported; it is not an approval.
 - Every Human Validation field is exactly `Pending`.
 
-### `prove` stage (human validation record)
+### `prove` stage (optional human validation mode)
 
 `validate-pr.mjs --stage prove` checks the five sections plus the validation record. A confirmation is:
 
@@ -118,7 +126,7 @@ Rollback Validated: <mechanism> by <name> (DevOps) on YYYY-MM-DD; <name> (Produc
 
 ### Line-by-line review is not a gate
 
-The phrase `line by line` or `line-by-line` anywhere in Human Validation is an error at both stages. Governance bans line-by-line code review as a gate: anything that can be checked automatically is a control, and the human validates intent, behaviour, and safety.
+The phrase `line by line` or `line-by-line` anywhere in Human Validation is an error at both stages. Deterministic controls and independent assessment validate intent, behaviour, and safety; routine human diff review is not a gate.
 
 ---
 

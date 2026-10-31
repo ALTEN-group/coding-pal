@@ -107,8 +107,18 @@ function isValidDate(value) {
 	return !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
 }
 
-/** A signed decision record carries a named human Architect and a real date; AI drafts, the Architect signs. */
+const AUTOMATED_BY = /^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/;
+
+function automatedApproval(value, filename) {
+	const match = value.match(AUTOMATED_BY);
+	if (!match) return null;
+	const name = match[1].trim();
+	if (name.length < 2 || SIGNER_PLACEHOLDER.test(name) || !isValidDate(match[2])) fail(`${filename} automated approval needs an identity and a valid date`);
+	return { status: "approved", approvals: [{ name, role: "Automation", date: match[2] }] };
+}
+
 function checkSignature(status, filename) {
+	if (automatedApproval(status, filename)) return;
 	const m = status.match(SIGNED_BY);
 	if (!m) fail(`${filename} Decision Record "Status" "${status}" must read "Signed by <name> (Architect) on YYYY-MM-DD"`);
 	const name = m[1].trim();
@@ -120,8 +130,10 @@ function checkSignature(status, filename) {
 const APPROVER = /^(.+?) \((Developer|Architect)\) on (\d{4}-\d{2}-\d{2})$/;
 
 function checkApproval(value, stage, allowedRoles, where, filename) {
+	const automated = automatedApproval(value, filename);
+	if (automated) return automated;
 	if (stage === "draft") {
-		if (value !== PENDING) fail(`${filename} ${where} "Approved By" must be exactly "${PENDING}" at the draft stage; only a person approves, after review (found "${value}")`);
+		if (value !== PENDING) fail(`${filename} ${where} "Approved By" must be exactly "${PENDING}" at the draft stage unless explicit automated approval is recorded (found "${value}")`);
 		return { status: "pending", approvals: [] };
 	}
 	const approvals = value.split(";").map((part) => {
@@ -277,8 +289,8 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	if (decisionRequired) {
 		need(decision, "Record", "## Decision Record", filename, { allowNone: false });
 		const status = need(decision, "Status", "## Decision Record", filename, { allowNone: false });
-		if (!/^(drafted|signed)\b/i.test(status)) fail(`${filename} Decision Record "Status" must be "Drafted" (awaiting Architect) or "Signed by <name> (Architect) on YYYY-MM-DD"`);
-		if (/^signed\b/i.test(status)) checkSignature(status, filename);
+		if (!/^(drafted|signed|automated)\b/i.test(status)) fail(`${filename} Decision Record "Status" must be Drafted, Signed by <name> (Architect) on YYYY-MM-DD, or Automated by <identity> on YYYY-MM-DD`);
+		if (/^(signed|automated)\b/i.test(status)) checkSignature(status, filename);
 	} else {
 		need(decision, "Reason", "## Decision Record", filename, { allowNone: false });
 		if (tier === "Critical") fail(`${filename} a Critical blast radius requires a decision record`);
@@ -350,8 +362,8 @@ export async function runValidator(args = process.argv.slice(2)) {
   node validate-think.mjs --think <path/to/think.md> [--stage draft|approved]
   node validate-think.mjs --dir <specs-directory> [--stage draft|approved]
 
-Stages: "draft" (default) requires "Approved By: Pending"; "approved" requires the named Developer
-and Architect approvals. The agent only ever validates drafts; people approve.
+Stages: "draft" (default) accepts Pending or explicit automated approval; "approved" requires
+"Automated by <identity> on YYYY-MM-DD" or genuine named Developer and Architect approvals.
 `);
 		return opts.help ? 0 : 1;
 	}

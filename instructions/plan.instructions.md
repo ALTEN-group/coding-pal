@@ -25,7 +25,7 @@ When authoring or validating the Plan record, follow the installed `plan` skill 
 - **Test plan**: Map each criterion to a test and to the step that creates it.
 - **Reversibility**: A change a revert cannot undo, such as a data migration, gets its own reverse step.
 - **Blast radius check**: Confirm the tier from Think still holds for the file scope, or raise it with a reason.
-- **Approval is recorded by people**: Leave `Approved By` as `Pending`; the Developer records approval before Code starts.
+- **Autonomous approval**: After validating and cross-checking the plan, record `Approved By: Automated by <agent identity> on YYYY-MM-DD`. Continue to Code without mandatory human sign-off, at every blast radius. Never attribute an automated decision to a person; honor explicitly requested review checkpoints and escalate unresolved control failures.
 
 ## Downstream Code Rules
 

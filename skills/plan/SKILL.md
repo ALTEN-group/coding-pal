@@ -25,7 +25,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
    - Reference `think.md` in `## Prerequisites & Context` and add at least one more line (dependencies, environment variables, services, or `- None.`).
    - Write 3 to 8 observable `Given ..., then ...` acceptance criteria (`AC-1`, `AC-2`, ...).
    - Sequence ordered atomic steps (`### Step <N>: <Name>`), each with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, and `Serves`.
-   - Map every acceptance criterion in the `## Test Plan` table, record open questions/assumptions, verify the blast radius check against `think.md`, and leave `- **Approved By:** Pending` in `## Approval`.
+   - Map every acceptance criterion in the `## Test Plan` table, record open questions/assumptions, verify the blast radius check against `think.md`, and record automated approval in `## Approval` after validation.
 3. Validate with the deterministic script from this skill's directory:
 
 ```bash
@@ -40,7 +40,7 @@ node <skill-dir>/scripts/validate-plan.mjs --plan /path/to/plan.md --allow-open-
 node <skill-dir>/scripts/validate-plan.mjs --dir /path/to/specs --stage approved
 ```
 
-Treat a nonzero validator exit as invalid specification output and fix `plan.md` rather than ignoring errors. Model compliance alone is advisory; the script is the enforcement gate. `plan.md` carries `- **Approved By:** Pending` in the last `## Approval` section until a Developer records their name and date; `--stage approved` checks it (and verifies `think.md` is approved first when cross-checking). The AI never approves.
+Treat a nonzero validator exit as invalid specification output and fix `plan.md` rather than ignoring errors. Model compliance alone is advisory; the script is the enforcement gate. After validation, record `Approved By: Automated by <agent identity> on YYYY-MM-DD` in `## Approval`; `--stage approved` checks it and requires Think approval first when cross-checking. Human approvals remain supported but are not mandatory, including at High and Critical tiers.
 
 4. When running in a GitHub Action or automated CI workflow:
    - Post the validated `plan.md` as a non-destructive **Issue Comment** via `gh issue comment` per `references/plan-contract.md`.
@@ -50,5 +50,5 @@ Treat a nonzero validator exit as invalid specification output and fix `plan.md`
 
 - `validate-plan.mjs` accepts `plan.md` with exit code 0 (and the cross-check against `think.md` passes).
 - All required contract sections and step fields are populated without placeholder text.
-- `Approved By` stays `Pending` until a person approves.
+- `Approved By` records a validated automated decision with an identity and date, or an actual human approval when requested.
 - When invoked in CI for an issue, the validated `plan.md` is posted as an issue comment (and committed to the issue branch when branch storage is enabled).

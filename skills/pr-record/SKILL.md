@@ -6,13 +6,13 @@ license: MIT
 
 # Pull Request Record
 
-Make the pull request a deterministic record: what it closes, which criteria it proves, which dependencies it adds, how risky it is, and who validated it. AI opens it with Human Validation `Pending`; people validate it in Prove.
+Make the pull request a deterministic record: what it closes, which criteria it proves, which dependencies it adds, how risky it is, and how it was validated. Code opens it with legacy Human Validation fields Pending; independent Prove records automated validation after its controls pass.
 
 ## When to Use This Skill
 
 - A Code agent finished all plan steps and must open the pull request.
 - CI must gate the pull request before Prove (`--stage code`).
-- CI or a maintainer must check the human validation record before merge (`--stage prove`).
+- CI checks the validation record before merge (`--stage prove --allow-auto-prove` for autonomous delivery).
 
 ## Path resolution
 
@@ -33,10 +33,10 @@ node <skill-dir>/scripts/validate-pr.mjs --body pr.md --dir specs/issue-42 --sta
 node <skill-dir>/scripts/validate-pr.mjs --body pr.md --dir specs/issue-42 --stage prove --pr-date 2026-10-13
 ```
 
-Treat a nonzero exit as an invalid pull request and fix the body. `--stage code` also needs a plan approved by a named Developer; the agent never fills in that approval. Never fill Human Validation as an agent, and never claim a line-by-line review.
+Treat a nonzero exit as an invalid pull request and fix the body. Code accepts explicitly automated Plan approval (`Automated by <identity> on YYYY-MM-DD`) as well as actual human approval. At Code, leave legacy Human Validation fields Pending. After independent Prove passes, use `--stage prove --allow-auto-prove` for autonomous validation at every tier; follow the contract's rollback and staged-rollout requirements. Never impersonate a human or claim line-by-line review.
 
 ## Done When
 
 - `validate-pr.mjs --stage code` exits with code 0 for the agent's pull request.
-- Every Human Validation field is `Pending` until a named person with a role confirms it.
+- Legacy Human Validation fields stay Pending during Code, then record evidence-backed automated results during Prove (or actual human confirmations when requested).
 - At `--stage prove`, the validators required by the blast radius tier are recorded and the validator exits with code 0.

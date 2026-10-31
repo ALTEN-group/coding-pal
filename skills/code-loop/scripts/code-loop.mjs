@@ -110,6 +110,14 @@ export function parsePlanApproval(rawPlan, filename = "plan.md") {
 	const field = masked.slice(start + 1, end).map((line) => line.match(/^- \*\*Approved By:\*\*\s*(.*)$/)).find(Boolean);
 	if (!field) return { approved: false, value: "missing", reason: `${filename} "## Approval" has no "- **Approved By:**" field` };
 	const value = field[1].trim();
+	const automated = value.match(/^Automated by ([^;()\n]+) on (\d{4}-\d{2}-\d{2})$/);
+	if (automated) {
+		const name = automated[1].trim();
+		if (name.length < 2 || NAME_PLACEHOLDER.test(name) || !isValidDate(automated[2])) {
+			return { approved: false, value, reason: "automated approval needs an identity and a valid date" };
+		}
+		return { approved: true, value, reason: null };
+	}
 	const m = value.match(APPROVED_BY);
 	if (!m) return { approved: false, value, reason: `"${value}" is not "<name> (Developer) on YYYY-MM-DD"` };
 	const people = [[m[1].trim(), m[2]], ...(m[3] ? [[m[3].trim(), m[4]]] : [])];
