@@ -96,8 +96,12 @@ export function evaluateScope({
 	]);
 
 	for (const file of allFiles) {
-		// Check forbidden paths first (highest precedence)
+		const exactAllowed = allowedPaths.some(
+			(p) => !p.includes("*") && !p.includes("?") && !p.endsWith("/") && p.replace(/^\.\//, "").replace(/\\/g, "/") === file,
+		);
+		// Check forbidden paths first (highest precedence unless an exact lockfile path is explicitly allowed)
 		for (const pattern of forbiddenPaths) {
+			if (exactAllowed && !pattern.includes(".env")) continue;
 			if (matchPath(file, pattern)) {
 				violations.push({
 					type: "FORBIDDEN_PATH",

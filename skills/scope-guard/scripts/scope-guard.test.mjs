@@ -101,6 +101,25 @@ test("evaluateScope rejects modifications to forbidden files even if inside allo
 	assert.equal(result.violations[0].file, "src/config/.env.local");
 });
 
+test("evaluateScope permits lockfile when its exact path is in allowedPaths but still forbids .env*", () => {
+	const lockAllowed = evaluateScope({
+		files: ["package.json", "package-lock.json"],
+		allowedPaths: ["package.json", "package-lock.json"],
+		forbiddenPaths: ["*-lock.json", ".env*", "**/.env*"],
+	});
+	assert.equal(lockAllowed.ok, true);
+	assert.equal(lockAllowed.violations.length, 0);
+
+	const envStillBlocked = evaluateScope({
+		files: [".env.local"],
+		allowedPaths: [".env.local"],
+		forbiddenPaths: ["*-lock.json", ".env*", "**/.env*"],
+	});
+	assert.equal(envStillBlocked.ok, false);
+	assert.equal(envStillBlocked.violations.length, 1);
+	assert.equal(envStillBlocked.violations[0].type, "FORBIDDEN_PATH");
+});
+
 test("evaluateScope enforces churn limits on additions and deletions", () => {
 	const result = evaluateScope({
 		files: ["src/index.js"],
