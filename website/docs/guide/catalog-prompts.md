@@ -12,6 +12,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 | `/angular-e2e-tests` | `angular-e2e-tests.prompt.md` | **E2E Tester** | `optional flow name, e.g. auth-login` | [Testing & Verification](./domain-testing.md#_4-angular-playwright-end-to-end-tests) | Generates Playwright end-to-end tests under `e2e/`. |
 | `/postgres-liquibase-tests` | `postgres-liquibase-tests.prompt.md` | **Unit Tester** | `optional db area, e.g. db/changelog` | [Testing & Verification](./domain-testing.md#_5-postgresql-liquibase-migration-assertions) | Generates SQL assertion tests validating migrations against PostgreSQL. |
 | `/vitepress-docs` | `vitepress-docs.prompt.md` | **VitePress Docs** | `docs root, e.g. website` | [Specs & Docs](./domain-docs.md#_2-product-documentation-website-vitepress-docs) | Scaffolds or updates a complete VitePress product documentation website. |
+| `/demo-videos` | `demo-videos.prompt.md` | **Demo Videos** | `journeys and output folder, e.g. login, edit policy -> website/docs/public/videos` | [Specs & Docs](./domain-docs.md#_3-product-demo-videos-demo-videos) | Records Playwright demo videos of user journeys as MP4 for a website. |
 | `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | [Testing & Verification](./domain-testing.md#_6-k6-performance-load-benchmarking) | Scaffolds or updates a k6 performance test suite. |
 | `/fuzz-tests` | `fuzz-tests.prompt.md` | **Fuzz Tester** | `OpenAPI path or service name` | [Testing & Verification](./domain-testing.md#_7-restler-api-grammar-fuzzing) | Scaffolds or runs RESTler grammar-based fuzzing tests. |
 | `/code` | `code.prompt.md` | **Code Agent** | `issue number or specs directory, optional step number` | [Code](./domain-code.md) | Implements a validated plan one step at a time until green, then opens the pull request with its record. |
@@ -129,3 +130,8 @@ Each prompt enforces a deterministic parameter resolution pipeline (argument $\r
 - **Invocation**: `/migration-docs [source to target] [docs-dir]`
 - **Target Resolution**: Takes the source, the target, and an optional output directory (default `docs/migration/<name>/`). Asks when the source or the target is unclear and continues with the next missing record instead of overwriting a validated one.
 - **Delegation**: **Migration Documenter** writes and validates the records. See [Migration](./domain-migration.md).
+
+### 21. `/demo-videos`
+- **Invocation**: `/demo-videos [journeys] [output-dir]`
+- **Target Resolution**: Takes the journeys to film and the output folder (usually `<docs-root>/docs/public/videos`); asks for any that is missing.
+- **Delegation**: **Demo Videos** scaffolds `demos/`, films each journey, and encodes MP4 + poster. See [Product Demo Videos](./domain-docs.md#_3-product-demo-videos-demo-videos).

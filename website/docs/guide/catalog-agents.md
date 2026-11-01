@@ -24,6 +24,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | **API Tester** | `api-test.agent.md` | Authors or updates Supertest HTTP API route integration tests. | [Testing & Verification](./domain-testing.md#_2-node-js-http-api-route-tests) | **Route scope only; Supertest assertions; edit test files only; zero production code altered.** | `node-api-tests` instruction |
 | **E2E Tester** | `e2e-test.agent.md` | Writes or updates Playwright browser end-to-end tests for user journeys. | [Testing & Verification](./domain-testing.md#_4-angular-playwright-end-to-end-tests) | **`e2e/` scope only; POM pattern; edit test files only; zero production code altered.** | `angular-e2e-tests` instruction |
 | **VitePress Docs** | `vitepress-docs.agent.md` | Scaffolds or updates a VitePress documentation site in a user-named folder. | [Specs & Docs](./domain-docs.md#_2-product-documentation-website-vitepress-docs) | Confine all files to docs root; follow `vitepress-docs` instruction; default theme only. | `vitepress-docs-examples` |
+| **Demo Videos** | `demo-videos.agent.md` | Films user journeys with Playwright and encodes them as MP4 + poster for a website. | [Specs & Docs](./domain-docs.md#_3-product-demo-videos-demo-videos) | Edits `demos/**` and the output folder only; local dev stack only; repeatable runs; UI defects reported, not fixed. | `playwright-demo-videos` instruction, `playwright-demo-videos-examples` |
 | **Performance Tester** | `performance-tests.agent.md` | Designs, scaffolds, or extends k6 load, stress, and spike test suites. | [Testing & Verification](./domain-testing.md#_6-k6-performance-load-benchmarking) | Follow k6 Docker execution pattern; assert realistic thresholds; isolate scenarios. | `k6-performance-examples` |
 | **Fuzz Tester** | `fuzz-tests.agent.md` | Configures and runs RESTler API fuzzing pipelines. | [Testing & Verification](./domain-testing.md#_7-restler-api-grammar-fuzzing) | OpenAPI-driven grammar compilation; handle auth refresh; fail on 500 status. | `restler-fuzzing-examples` |
 | **Migration Documenter** | `migration-docs.agent.md` | Documents an infrastructure migration (for example on-premise to cloud): assessment, migration plan, and cutover runbook. | [Migration](./domain-migration.md) | Documents only; infrastructure absorbs differences before any application change; every change is registered; no secret values. | `migration-docs` skill and instruction |
@@ -152,3 +153,9 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Hard Boundaries**: Writes only `specs/issue-<n>/prove.md`; never edits application or test code; never weakens or skips a control; never claims line-by-line review.
 - **Completion Gate**: `specs/issue-<n>/prove.md` passes `skills/prove/scripts/validate-prove.mjs --dir specs/issue-<n>` with exit code 0.
 - **Full Workflow**: See [Prove](./domain-prove.md).
+
+### 21. Demo Videos (`demo-videos.agent.md`)
+- **Role**: Films named user journeys as short demo videos for a product website.
+- **Hard Boundaries**: Edits only `demos/**`, the app `demos` script and gitignore, and the encoded files in the user-named output folder; production code is read-only; runs against the local dev stack only.
+- **Completion Gate**: Each scenario passes twice in a row on the same database, and its MP4 + JPG poster are reviewed in the output folder.
+- **Full Workflow**: See [Product Demo Videos](./domain-docs.md#_3-product-demo-videos-demo-videos).
