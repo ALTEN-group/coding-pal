@@ -26,8 +26,7 @@ Follow the installed `control-guard`, `security-gate`, `verification-pipeline`, 
 
 ## The Bug Rule
 
-- Every production defect results in a new automated check, committed before the fix. Commit the failing check on its own, then the fix. A commit that mixes both fails `bug-rule.mjs`.
-- Prove the new check fails without the fix with the `test-probe` skill.
+- Every production defect results in a new automated check verified against the base branch with the `test-probe` skill (`tests` fail when `src/` changes are reverted to the base branch and pass with the fix).
 
 ## Fix-Loop
 

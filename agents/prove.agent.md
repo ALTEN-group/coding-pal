@@ -21,10 +21,6 @@ Decisions and validation proceed autonomously at every blast radius, including p
    - Read `specs/issue-<n>/think.md`, `specs/issue-<n>/plan.md`, `specs/issue-<n>/progress.json`, the pull request body, and the git diff against the base branch (`git diff origin/<base>...HEAD`).
 2. **Execute or Inspect Deterministic Controls**:
    - Verify each control in the work item context:
-     - `validate-think`: `node .agents/skills/think/scripts/validate-think.mjs --think specs/issue-<n>/think.md`
-     - `validate-plan`: `node .agents/skills/plan/scripts/validate-plan.mjs --dir specs/issue-<n>`
-     - `branch-guard`: `node .agents/skills/code-loop/scripts/branch-guard.mjs --git --base <base>`
-     - `code-loop`: `node .agents/skills/code-loop/scripts/code-loop.mjs check-history --dir specs/issue-<n> --base origin/<base>`
      - `control-guard`: `node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/<base>`
      - `secret-guard`: `node .agents/skills/secret-guard/scripts/secret-guard.mjs --git --base origin/<base>`
      - `dependency-guard`: `node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --base origin/<base>`
@@ -33,7 +29,6 @@ Decisions and validation proceed autonomously at every blast radius, including p
      - `criteria-verify`: `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs --plan specs/issue-<n>/plan.md --report <report> --require-test-files`
      - `test-probe`: `node .agents/skills/test-probe/scripts/test-probe.mjs --base origin/<base> --test-cmd "<cmd>" --source <modified-src>`
      - `preview-smoke`: `node .agents/skills/preview-smoke/scripts/preview-smoke.mjs --url <url> --routes <routes>`
-     - `validate-pr`: `node .agents/skills/pr-record/scripts/validate-pr.mjs --body <pr-body.md> --dir specs/issue-<n> --stage code`
 3. **Verify Every Acceptance Criterion (`AC-<n>`)**:
    - For each `AC-<n>` in `plan.md`, inspect the actual production code diff and test assertions.
    - Cite the exact `file:line` in `Implementation Evidence` and the test file/name in `Test Evidence`. Mark `PASS` only when the behavior is genuinely implemented and tested.

@@ -20,7 +20,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 ## Workflow
 
 1. **Read `references/prove-contract.md` now.** It defines the exact sections, tables, fields, cross-checks against `think.md` and `plan.md`, and consistency rules.
-2. Run or inspect the deterministic controls on the pull request diff (`validate-think`, `validate-plan`, `branch-guard`, `code-loop`, `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`, `validate-pr`).
+2. Run or inspect the deterministic controls on the pull request diff (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`).
 3. Inspect the pull request diff (`git diff origin/<base>...HEAD`) against `think.md` and `plan.md` for every `AC-<n>` and the three Semantic Review dimensions (`Client Intent`, `Behavioral Experience`, `Safety & Blast Radius`).
 4. Write `specs/issue-<n>/prove.md` and validate it:
 

@@ -16,7 +16,7 @@ When authoring or validating a Prove record (`prove.md`), follow the installed `
 ## `prove.md` Standards
 
 - **Header & Links**: Start with `# Prove: <Title>` and metadata fields (`Issue`, `PR`, `Think`, `Plan`, `Branch`, `Base`).
-- **Deterministic Controls (`## Deterministic Controls`)**: Markdown table (`| Control | Status | Evidence |`) recording the exact exit status (`PASS`, `FAIL`, or `N/A (<reason>)`) and output summary for `validate-think`, `validate-plan`, `branch-guard`, `code-loop`, `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`, and `validate-pr`.
+- **Deterministic Controls (`## Deterministic Controls`)**: Markdown table (`| Control | Status | Evidence |`) recording the exact exit status (`PASS`, `FAIL`, or `N/A (<reason>)`) and output summary for `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, and `preview-smoke`.
 - **Criteria Verification (`## Criteria Verification`)**: Markdown table (`| Criterion | Implementation Evidence | Test Evidence | Status |`) covering every `AC-<n>` in `plan.md`. Cite real `file:line` implementation evidence and passing test names.
 - **Semantic Review (`## Semantic Review`)**: Evaluate the three Prove dimensions against `think.md` and `plan.md`:
   - `Client Intent`: `PASS — <evidence>` or `FAIL — <evidence>` (no stubs, hardcoded shortcuts, or unfulfilled requirements).

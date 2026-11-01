@@ -50,7 +50,7 @@ export function prove({
 	},
 	findings = "_None._",
 	verdictStatus = "PASS",
-	verdictSummary = "All 13 deterministic controls, 3 acceptance criteria, and all semantic review dimensions passed.",
+	verdictSummary = "All 8 deterministic controls, 3 acceptance criteria, and all semantic review dimensions passed.",
 } = {}) {
 	const controlRows = REQUIRED_CONTROLS.filter((c) => !omitControls.includes(c)).map((c) => {
 		const override = controlOverrides[c];

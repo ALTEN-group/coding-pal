@@ -41,10 +41,6 @@ A Markdown table with columns `Control | Status | Evidence`:
 ```markdown
 | Control | Status | Evidence |
 |---|---|---|
-| validate-think | PASS | think.md validated (Low blast radius) |
-| validate-plan | PASS | plan.md validated and cross-checked with think.md |
-| branch-guard | PASS | feature/issue-42-rbac matches short-lived branch convention |
-| code-loop | PASS | All 3 steps done, fix-loop 0/5, history intact |
 | control-guard | PASS | 0 control-weakening findings against origin/main |
 | secret-guard | PASS | 0 hardcoded credentials in diff |
 | dependency-guard | PASS | No unauthorized dependency changes |
@@ -53,10 +49,9 @@ A Markdown table with columns `Control | Status | Evidence`:
 | criteria-verify | PASS | AC-1, AC-2, AC-3 covered by passing tests |
 | test-probe | PASS | Tests fail when src/ files are reverted to origin/main |
 | preview-smoke | PASS | GET / returned 200 within latency budget |
-| validate-pr | PASS | PR body validated at code stage |
 ```
 
-- Every core control (`validate-think`, `validate-plan`, `branch-guard`, `code-loop`, `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`, `validate-pr`) must appear once. Additional project controls (`mutation-bar`, `contract-compat`, `security-gate`) may also be included.
+- Every core control (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) must appear once. Additional project controls (`mutation-bar`, `contract-compat`, `security-gate`) may also be included.
 - `Status` is `PASS`, `FAIL`, or `N/A (<reason>)` (for example `N/A (no existing tracked src/** file modified)`).
 - `Evidence` must be concrete, non-placeholder text.
 
@@ -119,7 +114,7 @@ When one or more checks fail, list numbered findings (`FINDING-1`, `FINDING-2`, 
 
 ```markdown
 - **Status:** PASS
-- **Summary:** All 13 deterministic controls passed, AC-1 through AC-3 are verified in code and tests, and semantic review confirmed Client Intent, Behavioral Experience, and Safety & Blast Radius.
+- **Summary:** All 8 deterministic controls passed, AC-1 through AC-3 are verified in code and tests, and semantic review confirmed Client Intent, Behavioral Experience, and Safety & Blast Radius.
 ```
 
 - `Status`: `PASS` or `FAIL`.

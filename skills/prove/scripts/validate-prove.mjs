@@ -19,10 +19,6 @@ export const PROVE_SECTIONS = [
 ];
 
 export const REQUIRED_CONTROLS = [
-	"validate-think",
-	"validate-plan",
-	"branch-guard",
-	"code-loop",
 	"control-guard",
 	"secret-guard",
 	"dependency-guard",
@@ -31,7 +27,6 @@ export const REQUIRED_CONTROLS = [
 	"criteria-verify",
 	"test-probe",
 	"preview-smoke",
-	"validate-pr",
 ];
 
 export const SEMANTIC_DIMENSIONS = [

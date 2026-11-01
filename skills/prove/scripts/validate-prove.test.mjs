@@ -15,10 +15,10 @@ const rejects = (body, ctx, pattern) =>
 
 test("accepts a valid PASS prove.md in both draft and pass stages", () => {
 	const draftRes = validateProveContent(prove(), context({ stage: "draft" }));
-	assert.deepEqual(draftRes, { status: "PASS", controls: 13, criteria: 3, findings: 0 });
+	assert.deepEqual(draftRes, { status: "PASS", controls: 8, criteria: 3, findings: 0 });
 
 	const passRes = validateProveContent(prove(), context({ stage: "pass" }));
-	assert.deepEqual(passRes, { status: "PASS", controls: 13, criteria: 3, findings: 0 });
+	assert.deepEqual(passRes, { status: "PASS", controls: 8, criteria: 3, findings: 0 });
 });
 
 test("accepts N/A (<reason>) in deterministic controls when justified", () => {
@@ -52,7 +52,7 @@ test("accepts a valid FAIL prove.md in draft stage and rejects it in pass stage"
 	});
 
 	const draftRes = validateProveContent(failingDoc, context({ stage: "draft" }));
-	assert.deepEqual(draftRes, { status: "FAIL", controls: 13, criteria: 3, findings: 1 });
+	assert.deepEqual(draftRes, { status: "FAIL", controls: 8, criteria: 3, findings: 1 });
 
 	rejects(failingDoc, context({ stage: "pass" }), /Verdict Status is FAIL .* required PASS for --stage pass/);
 });
@@ -203,5 +203,5 @@ test("CLI validates prove.md from --dir on disk", async () => {
 		Object.assign(console, orig);
 	}
 	assert.equal(code, 0);
-	assert.match(out.log.join("\n"), /Validated \(PASS\): 13 controls, 3 criteria, 0 finding\(s\)/);
+	assert.match(out.log.join("\n"), /Validated \(PASS\): 8 controls, 3 criteria, 0 finding\(s\)/);
 });

@@ -149,7 +149,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Full Workflow**: See [Migration](./domain-migration.md).
 
 ### 20. Prove Validator (`prove.agent.md`)
-- **Role**: Executes the 13 deterministic controls on a pull request branch (`validate-think`, `validate-plan`, `branch-guard`, `code-loop`, `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`, `validate-pr`) and performs semantic review of the PR diff against `think.md` and `plan.md` across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, writing `specs/issue-<n>/prove.md`.
+- **Role**: Executes the 8 deterministic controls on a pull request branch (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) and performs semantic review of the PR diff against `think.md` and `plan.md` across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, writing `specs/issue-<n>/prove.md`.
 - **Hard Boundaries**: Writes only `specs/issue-<n>/prove.md`; never edits application or test code; never weakens or skips a control; never claims line-by-line review.
 - **Completion Gate**: `specs/issue-<n>/prove.md` passes `skills/prove/scripts/validate-prove.mjs --dir specs/issue-<n>` with exit code 0.
 - **Full Workflow**: See [Prove](./domain-prove.md).
