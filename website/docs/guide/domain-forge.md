@@ -123,7 +123,7 @@ flowchart TD
 | Alpha or beta maturity: warning until the `Reasoning` acknowledges it | The risk is a recorded decision |
 | `Forge reuse` or `Hybrid` needs real bindings. `None` needs a reason and excludes real bindings | The binding matches the chosen approach |
 | `Custom build` needs a `Custom Build Reason`, and the Forge matches for the Problem Statement and Approach are printed | The reason can be challenged against what the Forge offers |
-| `--plan`: every bound asset appears in an `Action` or `New Code` | The Plan composes the bindings. A missing mention is a warning |
+| `--plan`: every bound asset appears in an `Action` | The Plan composes the bindings. A missing mention is a warning |
 
 ### 2. Compose in Plan and Code
 

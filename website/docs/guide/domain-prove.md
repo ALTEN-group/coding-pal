@@ -89,7 +89,7 @@ The table follows the [Prove stage](https://alten-group.github.io/agentic-softwa
 | **Unit Tests** | Gate | `unit-test` agent | Generated code behaves as specified (run by the clean re-run) |
 | **Security & Policy-as-Code** | Guard | `security-gate` (**new**), `secret-guard`, `dependency-guard` | No known vulnerabilities, secrets, policy violations, or unapproved licenses |
 | **Control integrity** | Guard | `control-guard` (**new**) | No control was weakened to get a pass |
-| **The bug rule** | Guard | `control-guard` (`bug-rule.mjs`, **new**) and `test-probe` | The failing check was committed before the fix, and it fails without it |
+| **The bug rule** | Guard | `test-probe` | The new check fails without the fix and passes with it |
 | **Preview Smoke Tests** | Probe | `preview-smoke` (**new**) | The application starts, routes traffic, and answers health checks |
 | **File scope** | Guard | `scope-guard` | The change stays inside the Plan's file scope |
 | **Platform Rails** | Rails | `verification-pipeline` (**new**, `rails-check.mjs`) | The repository has the pipeline, the remediation loop, and the controls installed |
@@ -104,7 +104,7 @@ The table follows the [Prove stage](https://alten-group.github.io/agentic-softwa
 | **Mutation testing bar** | `node .agents/skills/mutation-bar/scripts/mutation-bar.mjs` in the agent loop and CI | none (script) | [`prove-controls`](./catalog-instructions.md) | [`mutation-bar`](./catalog-skills.md) | Score, per-file table, survivors as `file:line mutator`. Exit 1 below the bar |
 | **Contract & schema compatibility** | `node .agents/skills/contract-compat/scripts/contract-compat.mjs` in the agent loop and CI | none (script) | [`prove-controls`](./catalog-instructions.md) | [`contract-compat`](./catalog-skills.md) | One `BREAKING` or `compatible` line per change. Exit 1 on any breaking change without an Accepted, signed record |
 | **Security & license gate** | CI, or `node .agents/skills/security-gate/scripts/security-gate.mjs` | none (script) | [`prove-controls`](./catalog-instructions.md) | [`security-gate`](./catalog-skills.md) | Pass or fail, with waived findings listed |
-| **Control integrity and bug rule** | CI, after every agent fix, or `control-guard.mjs` and `bug-rule.mjs` | none (scripts) | [`prove-controls`](./catalog-instructions.md) | [`control-guard`](./catalog-skills.md) | `RULE file:line message` findings, commit order |
+| **Control integrity and bug rule** | CI, after every agent fix, or `control-guard.mjs` and `test-probe.mjs` | none (scripts) | [`prove-controls`](./catalog-instructions.md) | [`control-guard`](./catalog-skills.md), [`test-probe`](./catalog-skills.md) | `RULE file:line message` findings, test falsifiability |
 | **Preview smoke** | CI `preview` job, or `preview-smoke.mjs` | none (script) | [`prove-controls`](./catalog-instructions.md) | [`preview-smoke`](./catalog-skills.md) | Per-route pass or fail |
 | **Delivery pipeline and Platform Rails** | Copy the templates, then `rails-check.mjs` | none (templates and script) | [`prove-controls`](./catalog-instructions.md) | [`verification-pipeline`](./catalog-skills.md) | `verify.yml`, `remediate.yml`, missing rails |
 | **Pull request Prove validation** | [`/prove`](./catalog-prompts.md) or [`Prove Validator`](./catalog-agents.md) in CI, then `validate-prove.mjs` | [`Prove Validator`](./catalog-agents.md) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | Validated `specs/issue-<n>/prove.md` with control table, criteria traceability, semantic review, findings, and `PASS\|FAIL` verdict |
@@ -347,9 +347,8 @@ flowchart TD
 - **Workflow Steps**:
   ```bash
   node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/main
-  node .agents/skills/control-guard/scripts/bug-rule.mjs --git origin/main..HEAD --defect "#123"
   ```
-  Then prove the new check fails without the fix with the [`test-probe`](./catalog-skills.md) skill.
+  Then prove the new check fails without the fix with the [`test-probe`](./catalog-skills.md) skill (`test-probe.mjs`).
 
 #### What the Guard Enforces
 
@@ -363,19 +362,11 @@ flowchart TD
 | R6 | A suppression is added (`eslint-disable`, `@ts-ignore`, `# noqa`, `biome-ignore`, `NOSONAR`) |
 | R7 | An agent or remediation workflow exposes production credentials |
 | R8 | A modified test file loses assertions |
-| Bug rule | The first commit that changes non-test files is not preceded by a tests-only commit |
+| Bug rule | The new check does not fail when the modified production source is reverted (`test-probe`) |
 
 #### The Bug Rule
 
-Every production defect results in a new automated check, committed before the fix. The history shows it:
-
-```text
-1 3f9a1c2 tests test: total ignores cancelled orders
-2 b81e07d code  fix: skip cancelled orders in total
-PASS: the failing check is committed first (3f9a1c2) and the fix follows (b81e07d)
-```
-
-A single commit that mixes the check and the fix fails. `bug-rule.mjs` proves the **order**. `test-probe` proves the check **fails without the fix**.
+Every production defect results in a new automated check that fails without the fix and passes with it. `test-probe` proves the check **fails without the fix** by temporarily reverting modified source files to the base branch and running the test command.
 
 ### 7. Preview Smoke Tests
 
@@ -460,7 +451,7 @@ When controls pass, an independent Prove agent assesses intent, behaviour, and s
 
 - **Falsifiable Done When**:
   - `security-gate.mjs`, `control-guard.mjs`, and `preview-smoke.mjs` exit with code 0 on the pull request.
-  - For a defect fix, `bug-rule.mjs` exits with code 0 and `test-probe` shows the new check fails without the fix.
+  - For a defect fix, `test-probe` shows the new check fails without the fix.
   - `rails-check.mjs` exits with code 0 on the repository.
   - No control, waiver, workflow, or installed skill was changed by an agent, and no fix-loop exceeded 5 attempts (`code-loop check-history` passes, so no counter was lowered in the branch history).
 

@@ -44,7 +44,7 @@ const PLAN_REQUIRED_H2 = [
 export const STAGES = ["draft", "approved"];
 const PENDING = "Pending";
 
-const STEP_REQUIRED_FIELDS = ["Files", "Action", "New Code", "Verification", "Bootable Check", "Serves"];
+const STEP_REQUIRED_FIELDS = ["Files", "Action", "Verification", "Bootable Check", "Serves"];
 const OPTION_SOURCES = ["Forge reuse", "Custom build", "Hybrid"];
 const NONE = "_None._";
 const PLACEHOLDER = /^(tbd|n\/a|\.\.\.|<[^>]*>)$/i;
@@ -52,7 +52,6 @@ const MIGRATION_PATH = /(migration|changelog|liquibase|\.sql$|(^|\/)db\/)/i;
 const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
 const BINDING_LABEL = /^forge\/[a-z0-9]+(?:-[a-z0-9]+)*@\S+$/;
 const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid"]);
-const FENCE_BLOCK = /^[ \t]*(`{3,}|~{3,})[^\n]*\n([\s\S]*?)\n[ \t]*\1[`~]*[ \t]*$/gm;
 
 function isPlaceholder(value) {
 	return !value || PLACEHOLDER.test(value.trim());
@@ -210,10 +209,14 @@ function parseTable(body, columns, where, filename) {
 	});
 }
 
-function checkThinkHasNoCode(markdown, filename) {
+function checkNoSourceCodeFences(markdown, filename) {
 	for (const m of markdown.matchAll(/^[ \t]*(?:`{3,}|~{3,})[ \t]*([^\s`~]*)/gm)) {
-		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code belongs in the Plan's "New Code" fields)`);
+		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code is written in the Code stage, not in Think or Plan)`);
 	}
+}
+
+function checkThinkHasNoCode(markdown, filename) {
+	checkNoSourceCodeFences(markdown, filename);
 	const masked = maskFences(markdown, filename);
 	if (/^\s*[-*] \[[ xX]\]/m.test(masked)) fail(`${filename} must not contain a task checklist; steps belong in the Plan`);
 	if (/^#{3,4} Step \d+/m.test(masked)) fail(`${filename} must not contain implementation steps; they belong in the Plan`);
@@ -381,22 +384,13 @@ function parseStepBlock(block, expectedNumber, filename) {
 		}
 	}
 
-	const newCode = fields.get("new code");
-	if (newCode !== NONE) {
-		const blocks = [...newCode.matchAll(FENCE_BLOCK)];
-		if (!blocks.length || blocks.every((b) => !b[2].trim())) {
-			fail(`${filename} in Step ${number}: "New Code" must be a fenced code block with the code for this step, or "${NONE}" when the step writes no code`);
-		}
-		if (newCode.replace(FENCE_BLOCK, "").trim()) fail(`${filename} in Step ${number}: "New Code" must contain only fenced code blocks`);
-	}
-
 	const files = extractPaths(fields.get("files"));
 	if (!files.length) fail(`${filename} in Step ${number}: "Files" must list explicit workspace-relative paths in backticks`);
 	files.forEach((f) => checkPath(f, `Step ${number} file`, filename));
 	const serves = [...fields.get("serves").matchAll(/\bAC-\d+\b/g)].map((s) => s[0]);
 	if (!serves.length) fail(`${filename} in Step ${number}: "Serves" must reference at least one acceptance criterion such as AC-1`);
 
-	return { step: number, name: m[2].trim(), files, serves, hasCode: newCode !== NONE };
+	return { step: number, name: m[2].trim(), files, serves };
 }
 
 function pathInScope(path, scope) {
@@ -417,6 +411,7 @@ export function validatePlanContent(rawMarkdown, filename = "plan.md", options =
 	if (!h1 || !h1[1].trim()) fail(`${filename} must start with a level-one heading: "# Plan: <Feature or Task Name>"`);
 
 	const sections = splitSections(markdown, PLAN_REQUIRED_H2, filename);
+	checkNoSourceCodeFences(markdown, filename);
 
 	if (!/think\.md/i.test(sections["Prerequisites & Context"])) {
 		fail(`${filename} "## Prerequisites & Context" must reference the think.md specification it is derived from`);

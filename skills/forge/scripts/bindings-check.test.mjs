@@ -111,7 +111,7 @@ test("a Custom build needs a reason and prints the Forge matches to challenge it
 	rejects(emptyReason, /Custom Build Reason/);
 });
 
-test("parses plan steps fence-aware and reads only Action and New Code", () => {
+test("parses plan steps fence-aware and reads only Action", () => {
 	const steps = parsePlanSteps(validPlan);
 	assert.deepEqual(steps.map((s) => s.n), [1, 2]);
 	assert.match(steps[0].text, /RBAC Service client/);

@@ -124,10 +124,8 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 
 ### Step 1: Create the role route
 - **Files:** \`src/routes/role.js\`
-- **Action:** Add a POST handler that validates the body and delegates to the RBAC Service client.
-- **New Code:**
-  ${F}js
-  import { createRole } from "@example/rbac-client";
+- **Action:** Add a POST handler that validates the body and delegates to the RBAC Service client (\`@example/rbac-client\`).
+  ${F}text
   ### Step 99: this text sits in a fence and is not a step
   ${F}
 - **Verification:** \`npm test\`
@@ -137,10 +135,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 2: Mount the router
 - **Files:** \`src/app.js\`
 - **Action:** Mount the role router at /roles.
-- **New Code:**
-  ${F}js
-  app.use("/roles", roleRouter);
-  ${F}
 - **Verification:** \`npm test\`
 - **Bootable Check:** \`curl -f http://localhost:3000/health\`
 - **Serves:** AC-1

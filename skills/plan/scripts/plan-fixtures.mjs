@@ -1,5 +1,3 @@
-const F = "```";
-
 export const validThink = `# Think: Add POST /roles endpoint
 
 ## Business Need & Outcome
@@ -81,19 +79,7 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 
 ### Step 1: Create the role route
 - **Files:** \`src/routes/role.js\`
-- **Action:** Add a POST handler that validates the body and calls the Forge RBAC client.
-- **New Code:**
-  ${F}js
-  import { Router } from "express";
-  import { createRole } from "@forge/rbac-client";
-
-  export const roleRouter = Router();
-
-  roleRouter.post("/", async (req, res) => {
-    const role = await createRole(req.body);
-    res.status(201).json({ data: role });
-  });
-  ${F}
+- **Action:** Add a POST handler that validates the body and calls the Forge RBAC client (\`@forge/rbac-client\`).
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`node -e 'import("./src/routes/role.js")'\`
 - **Serves:** AC-3
@@ -101,10 +87,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 2: Mount the router behind authentication
 - **Files:** \`src/app.js\`
 - **Action:** Mount the role router at /roles after the authentication and admin-only middleware.
-- **New Code:**
-  ${F}js
-  app.use("/roles", authenticate, requireRole("admin"), roleRouter);
-  ${F}
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`docker compose up -d && curl -f http://localhost:3000/health\`
 - **Serves:** AC-1, AC-2
@@ -112,12 +94,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 3: Add route tests
 - **Files:** \`tests/routes/role.test.js\`
 - **Action:** Add Supertest cases for 401, 403, and 201.
-- **New Code:**
-  ${F}js
-  it("returns 401 without a token", async () => {
-    await request(app).post("/roles").expect(401);
-  });
-  ${F}
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`docker compose up -d && curl -f http://localhost:3000/health\`
 - **Serves:** AC-1, AC-2, AC-3
@@ -125,7 +101,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 4: Document the endpoint
 - **Files:** \`docs/specs/roles.md\`
 - **Action:** Document POST /roles, its roles, and its error responses.
-- **New Code:** _None._
 - **Verification:** \`npx markdownlint docs/specs/roles.md\`
 - **Bootable Check:** \`docker compose up -d && curl -f http://localhost:3000/health\`
 - **Serves:** AC-3

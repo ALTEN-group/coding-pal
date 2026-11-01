@@ -17,7 +17,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/mutation-bar/` | Gate & Verifier | `Gate Fixer`, CI | Mutation Testing Bar from Stryker or summary JSON, raise-only thresholds. |
 | `skills/contract-compat/` | Contract | `Gate Fixer`, CI | Breaking-change detection between two OpenAPI or JSON Schema documents, with a signed decision record as the only override. |
 | `skills/security-gate/` | Guard & Security | `Gate Fixer`, CI | SARIF, Conftest/OPA and CycloneDX license gate with approved, expiring waivers. |
-| `skills/control-guard/` | Guard & Integrity | `prove-controls` instruction, `Gate Fixer` | Refuses diffs that weaken controls (R1-R8) and enforces the bug rule on a commit range. |
+| `skills/control-guard/` | Guard & Integrity | `prove-controls` instruction, `Gate Fixer` | Refuses diffs that weaken controls (R1-R8). |
 | `skills/preview-smoke/` | Behavioral Probe | CI preview | Probes a running preview's routes for status, JSON values, and latency. |
 | `skills/verification-pipeline/` | Scaffolding Pack | `Code Agent`, `Gate Fixer`, CI | Platform Rails delivery skeleton: `verify.yml` and `remediate.yml` templates and `rails-check`. |
 | `skills/release-plan/` | Protocol & Validator | `release` instruction, `Release Planner` | Per-change `release.md` contract and validator, plus the deterministic rollout decision (promote, hold, rollback). |
@@ -122,7 +122,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**:
   - `skills/think/SKILL.md` & `references/think-contract.md`: Authoritative schema for `think.md` (options, chosen approach, Forge bindings, system flow, constraints, blast radius, decision record, Persistent Context updates).
   - `skills/think/scripts/validate-think.mjs`: Standalone deterministic Node.js validator for `think.md` (`--think` or `--dir`, with `--stage draft|approved`).
-  - `skills/plan/SKILL.md` & `references/plan-contract.md`: Authoritative schema for `plan.md` (file scope, acceptance criteria, steps with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, `Serves`, test plan, blast radius check).
+  - `skills/plan/SKILL.md` & `references/plan-contract.md`: Authoritative schema for `plan.md` (file scope, acceptance criteria, steps with `Files`, `Action`, `Verification`, `Bootable Check`, `Serves`, test plan, blast radius check).
   - `skills/plan/scripts/validate-plan.mjs`: Standalone deterministic Node.js validator for `plan.md` (`--plan` or `--dir`, with `--think` cross-check and `--stage draft|approved`).
   - `scripts/*.test.mjs` and `scripts/*-fixtures.mjs`: Test suites and valid fixtures for each skill.
 - **Workflow**:
@@ -294,7 +294,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ### 26. Control Guard (`skills/control-guard/`)
 - **Category**: Guard & Integrity
-- **Contents**: `scripts/control-guard.mjs` (rules R1-R8: deleted tests, skip markers, lowered thresholds, weakened workflows, protected paths, suppressions, production credentials in agent workflows, removed assertions) and `scripts/bug-rule.mjs` (a test-only commit must precede the fix commit).
+- **Contents**: `scripts/control-guard.mjs` (rules R1-R8: deleted tests, skip markers, lowered thresholds, weakened workflows, protected paths, suppressions, production credentials in agent workflows, removed assertions).
 - **Workflow**: `node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/main`
 
 ### 27. Preview Smoke (`skills/preview-smoke/`)
@@ -359,7 +359,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ### 39. Prove (`skills/prove/`)
 - **Category**: Protocol & Validator
-- **Contents**: `SKILL.md`, `references/prove-contract.md` (schema for `specs/issue-<n>/prove.md`: header links, 13 required deterministic controls, criteria verification table cross-checked against `plan.md`, semantic review across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, numbered findings, and `PASS|FAIL` verdict), and `scripts/validate-prove.mjs` (`--stage draft|pass`).
+- **Contents**: `SKILL.md`, `references/prove-contract.md` (schema for `specs/issue-<n>/prove.md`: header links, 8 required deterministic controls, criteria verification table cross-checked against `plan.md`, semantic review across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, numbered findings, and `PASS|FAIL` verdict), and `scripts/validate-prove.mjs` (`--stage draft|pass`).
 - **Workflow**: `node .agents/skills/prove/scripts/validate-prove.mjs --dir specs/issue-42 --stage pass`
 
 ### 40. Playwright Demo Videos Examples (`skills/playwright-demo-videos-examples/`)

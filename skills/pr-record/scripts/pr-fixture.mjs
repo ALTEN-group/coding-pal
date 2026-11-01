@@ -46,7 +46,6 @@ ${extra}
 ### Step 1: Create the role route
 - **Files:** \`src/routes/role.js\`
 - **Action:** Add a POST handler.
-- **New Code:**
   ${F}md
   ### Step 7: fence content is not a step
   ${F}
@@ -57,7 +56,6 @@ ${extra}
 ### Step 2: Add route tests
 - **Files:** \`tests/routes/role.test.js\`
 - **Action:** Add Supertest cases.
-- **New Code:** _None._
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`curl -f http://localhost:3000/health\`
 - **Serves:** AC-1, AC-2, AC-3

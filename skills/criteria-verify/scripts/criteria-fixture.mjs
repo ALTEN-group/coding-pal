@@ -17,9 +17,8 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 1: Add route tests
 - **Files:** \`tests/routes/role.test.js\`
 - **Action:** Add Supertest cases.
-- **New Code:**
-  ${F}js
-  it("AC-1 rejects unauthenticated requests", () => {});
+  ${F}text
+  AC-1 rejects unauthenticated requests
   ## Test Plan
   ${F}
 - **Verification:** \`npm test\`

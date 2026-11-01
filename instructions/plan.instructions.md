@@ -18,10 +18,10 @@ When authoring or validating the Plan record, follow the installed `plan` skill 
 - **Derived from `think.md`**: Reference the source `think.md` in `## Prerequisites & Context`.
 - **Explicit file scope**: Declare In Scope, Out of Scope, and Irreversible Changes. Every in-scope file is covered by a step. No step touches a file outside scope.
 - **Observable acceptance criteria**: Statements a test can check without judgement. Format and count are in the contract.
-- **Numbered, atomic steps**: `### Step 1: ...`, ordered strictly by dependency. Each step does one thing and depends only on earlier steps. Explicitly sequence test steps (testing acceptance criteria), core implementation steps, and documentation/contract steps as separate atomic steps rather than bundling them into a single step.
+- **Numbered, atomic steps**: `### Step 1: ...`, ordered strictly by dependency. Each step does one thing and depends only on earlier steps. Explicitly sequence core implementation steps, test steps (testing acceptance criteria), and documentation/contract steps as separate atomic steps rather than bundling them into a single step.
 - **Preserve bootability**: Every step leaves the application bootable.
-- **Step fields**: Every step carries the fields, in the order, that the contract requires (`Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, `Serves`).
-- **New Code**: The code for that step only, in a fenced block, composing the bound Forge assets and following repository conventions. Use `_None._` when the step writes no code. Split a step instead of pasting a large file.
+- **Step fields**: Every step carries the fields, in the order, that the contract requires (`Files`, `Action`, `Verification`, `Bootable Check`, `Serves`).
+- **No source code in `plan.md`**: Describe the step's responsibility, signatures, and bound Forge assets in `Action`. Never write implementation or test code blocks in `plan.md`—code is written once, in the Code stage.
 - **Test plan**: Map each criterion to a test and to the step that creates it.
 - **Reversibility**: A change a revert cannot undo, such as a data migration, gets its own reverse step.
 - **Blast radius check**: Confirm the tier from Think still holds for the file scope, or raise it with a reason.
@@ -31,8 +31,8 @@ When authoring or validating the Plan record, follow the installed `plan` skill 
 
 When an AI agent implements functionality from `plan.md`:
 
-- **One step at a time**: Execute exactly one step per prompt/turn. Never attempt multiple steps in a single turn.
-- **Apply the step's `New Code`**: Adjust it only as needed to fit the real repository, and report any divergence. Do not add behavior the step does not describe.
-- **Verify before advancing**: Run the step's `Verification` and `Bootable Check` commands. If either fails, fix the failure immediately before moving forward.
+- **Ordered execution**: Execute the steps in plan order. In interactive `code-loop` sessions, advance step by step; in headless CI runs, implement the planned steps in order and run full verification and controls before committing.
+- **Apply the step's specification**: Implement the step's `Action` in its `Files`, adjusted only as needed to fit the real repository, and report any divergence. Do not add behavior the step does not describe.
+- **Verify before completing**: Run the `Verification` and `Bootable Check` commands. If either fails, fix the failure immediately before moving forward.
 - **Strict boundary adherence**: Edit only the files declared in that step's `Files:` list. Do not modify unlisted files or perform unrequested cleanup.
-- **Mark completion**: Record completion with `code-loop` in `progress.json` (never edit `plan.md` after approval).
+- **Mark completion**: Record completion in `progress.json` when using `code-loop` (never edit `plan.md` after approval).

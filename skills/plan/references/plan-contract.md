@@ -2,7 +2,7 @@
 
 In agentic software development, narrative specifications and unbounded task lists fail AI coding agents: they bloat the context window, leave sequencing undefined, and cause errors to compound across steps. This contract follows the Agentic Software Factory's [Plan](https://alten-group.github.io/agentic-software-factory/guide/stage-plan) stage.
 
-- `plan.md` is the **Plan record**: the file scope, acceptance criteria, an ordered implementation checklist (with the code to implement), a test plan, and a blast radius check. It is derived strictly from a validated `think.md`.
+- `plan.md` is the **Plan record**: the file scope, acceptance criteria, an ordered implementation checklist, a test plan, and a blast radius check. It is derived strictly from a validated `think.md` and contains no source code (code is written once, in the Code stage).
 
 This contract defines the authoritative structure, headings, fields, cross-checks, and validation rules for `plan.md`. `scripts/validate-plan.mjs` enforces it.
 
@@ -21,7 +21,7 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 
 ## 2. `plan.md` Contract
 
-`plan.md` is authored strictly as the downstream result of a validated `think.md`. It reads the Forge bindings, constraints, and blast radius from Think. Unlike `think.md`, it **contains the code to implement**, step by step.
+`plan.md` is authored strictly as the downstream result of a validated `think.md`. It reads the Forge bindings, constraints, and blast radius from Think. Like `think.md`, it **contains no source code** so code is never written twice.
 
 ### Required Document Structure (In Exact Order)
 
@@ -58,24 +58,19 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 IDs are sequential from `AC-1`. Each begins with `Given` and contains `then`.
 
 #### `## Implementation Checklist`
-Ordered, atomic, independently verifiable steps, each a level-3 heading `### Step <N>: <Short Action Name>` (sequential from 1). Every step has these six fields, in this order:
+Ordered, atomic, independently verifiable steps, each a level-3 heading `### Step <N>: <Short Action Name>` (sequential from 1). Every step has these five fields, in this order:
 
-````markdown
+```markdown
 ### Step 1: <Name>
 - **Files:** `<workspace-relative paths>`
 - **Action:** <what the step does, in one line>
-- **New Code:**
-  ```js
-  // the code to implement for this step
-  ```
 - **Verification:** <narrowest deterministic test, lint, or curl command>
 - **Bootable Check:** <command proving the whole application still starts and works>
 - **Serves:** AC-1, AC-2
-````
+```
 
 - `Files`: explicit paths in backticks. Every file must lie within `In Scope` and none within `Out of Scope`.
-- `Action`: one line.
-- `New Code`: the code for this step, drafted by AI, in one or more fenced code blocks. Use the literal `_None._` when the step writes no code (for example documentation or configuration removal). Keep it small enough for the step to stay atomic; split the step rather than pasting a large file.
+- `Action`: what the step does (functions, exports, routes, or bindings to add or modify). Never embed source code blocks in `plan.md`.
 - `Verification`: a runnable, narrow command in backticks (for example one test file). A step is checked by a command, not by opinion.
 - `Bootable Check`: a command in backticks asserting the whole application still starts (for example `docker compose up -d && curl -f http://localhost:3000/health`).
 - `Serves`: the acceptance criteria this step helps satisfy.
@@ -146,6 +141,7 @@ When `--dir <specs-dir>` or `--think <path/to/think.md>` is provided, `validate-
 4. **No scope deviation.** No step touches a file outside `In Scope`.
 5. **No opinion-based verification.** Every step's `Verification` and `Bootable Check` must be runnable commands in backticks.
 6. **No forged human approval.** Record automated approval explicitly after validation; never put an agent identity in a human Developer or Architect signature.
+7. **No source code in `plan.md`.** Code is written once, in the Code stage; `plan.md` defines only `Files`, `Action`, `Verification`, `Bootable Check`, and `Serves` for each step.
 
 ---
 

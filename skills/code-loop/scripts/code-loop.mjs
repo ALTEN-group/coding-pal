@@ -57,7 +57,7 @@ function maskFences(lines, filename) {
 }
 
 /**
- * Parses the ordered steps of plan.md. Fence-aware: step-like text inside `New Code` is ignored.
+ * Parses the ordered steps of plan.md. Fence-aware: step-like text inside a code fence is ignored.
  * @returns {{number: number, name: string, fields: Record<string, string>}[]}
  */
 export function parsePlanSteps(rawPlan, filename = "plan.md") {
@@ -273,7 +273,6 @@ function renderNext(step) {
 	for (const label of ["Files", "Action", "Verification", "Bootable Check", "Serves"]) {
 		if (step.fields[label]) out.push(`  ${label}: ${step.fields[label]}`);
 	}
-	out.push(`  New Code: see "### Step ${step.number}" in plan.md`);
 	return out.join("\n");
 }
 

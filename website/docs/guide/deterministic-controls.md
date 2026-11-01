@@ -218,7 +218,7 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 | **Mutation Testing Bar** | `skills/mutation-bar/scripts/mutation-bar.mjs` scores mutation reports with raise-only thresholds | Gate (Skill) |
 | **Contract & Schema Compatibility** | `skills/contract-compat/scripts/contract-compat.mjs` detects breaking OpenAPI and JSON Schema changes | Contract (Skill) |
 | **Security & Policy-as-Code, licenses** | `skills/security-gate/scripts/security-gate.mjs` reads SARIF, Conftest, and CycloneDX with expiring waivers | Guard (Skill) |
-| **Control integrity and the bug rule** | `skills/control-guard/scripts/control-guard.mjs` and `bug-rule.mjs` refuse weakened controls and a fix before its test | Guard (Skill) |
+| **Control integrity and the bug rule** | `skills/control-guard/scripts/control-guard.mjs` refuses weakened controls and `skills/test-probe/scripts/test-probe.mjs` proves a defect test fails without the fix | Guard (Skill) |
 | **Preview Smoke Tests** | `skills/preview-smoke/scripts/preview-smoke.mjs` probes a running preview | Probe (Skill) |
 | **Fix-loop limit and branch guard** | `skills/code-loop/scripts/code-loop.mjs` and `branch-guard.mjs` | Gate (Skill) |
 | **Human validation by blast radius** | `skills/pr-record/scripts/validate-pr.mjs --stage prove` | Gate (Skill) |

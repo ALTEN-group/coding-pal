@@ -2,7 +2,7 @@ const F = "```";
 
 export const APPROVAL = "Ada Lovelace (Developer) on 2026-10-03";
 
-/** A plan approved by a Developer, whose Step 1 New Code holds step-like text, to prove step parsing is fence-aware. */
+/** A plan approved by a Developer, whose Step 1 Action holds step-like text inside a fence, to prove step parsing is fence-aware. */
 export const validPlan = `# Plan: Add POST /roles endpoint
 
 ## File Scope & Boundaries
@@ -23,9 +23,8 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 1: Create the role route
 - **Files:** \`src/routes/role.js\`
 - **Action:** Add a POST handler that validates the body and calls the Forge RBAC client.
-- **New Code:**
   ${F}md
-  ### Step 9: this heading is code, not a step
+  ### Step 9: this heading is fenced text, not a step
   ## Test Plan
   ${F}
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
@@ -35,7 +34,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 2: Mount the router behind authentication
 - **Files:** \`src/app.js\`
 - **Action:** Mount the role router at /roles after the authentication middleware.
-- **New Code:** _None._
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`docker compose up -d && curl -f http://localhost:3000/health\`
 - **Serves:** AC-1, AC-2
@@ -43,7 +41,6 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 ### Step 3: Add route tests
 - **Files:** \`tests/routes/role.test.js\`
 - **Action:** Add Supertest cases for 401, 403, and 201.
-- **New Code:** _None._
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`docker compose up -d && curl -f http://localhost:3000/health\`
 - **Serves:** AC-1, AC-2, AC-3

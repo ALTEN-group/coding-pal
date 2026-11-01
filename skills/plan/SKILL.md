@@ -1,16 +1,16 @@
 ---
 name: plan
-description: 'Structure, author, and validate persistent Plan records (plan.md) derived from a validated think.md before agents write code, following the Agentic Software Factory. Use when a Planner agent or planning session defines file scope, acceptance criteria, and ordered atomic implementation steps with their code, or when CI validates plan readiness on an issue.'
+description: 'Structure, author, and validate persistent Plan records (plan.md) derived from a validated think.md before agents write code, following the Agentic Software Factory. Use when a Planner agent or planning session defines file scope, acceptance criteria, and ordered atomic implementation steps, or when CI validates plan readiness on an issue.'
 license: MIT
 ---
 
 # Plan
 
-Produce a deterministic `plan.md` (the Plan record) grounded strictly in a validated `think.md`, defining the file scope, observable acceptance criteria, ordered atomic implementation steps with their code, a test plan, and a blast radius check that AI build agents can execute without ambiguity or error compounding.
+Produce a deterministic `plan.md` (the Plan record) grounded strictly in a validated `think.md`, defining the file scope, observable acceptance criteria, ordered atomic implementation steps (without writing source code), a test plan, and a blast radius check that AI build agents can execute without ambiguity or error compounding.
 
 ## When to Use This Skill
 
-- A validated `think.md` must become a file scope, acceptance criteria, and an atomic implementation checklist with the code for each step (`plan.md`).
+- A validated `think.md` must become a file scope, acceptance criteria, and an atomic implementation checklist (`plan.md`).
 - A GitHub Action, CI workflow, or Coding Agent must validate `plan.md` (and cross-check it against `think.md`) before triggering build steps.
 
 ## Path Resolution
@@ -24,7 +24,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
    - Define `In Scope`, `Out of Scope`, and `Irreversible Changes` (`Step <N> reverses Step <M>` when a migration is touched).
    - Reference `think.md` in `## Prerequisites & Context` and add at least one more line (dependencies, environment variables, services, or `- None.`).
    - Write 3 to 8 observable `Given ..., then ...` acceptance criteria (`AC-1`, `AC-2`, ...).
-   - Sequence ordered atomic steps (`### Step <N>: <Name>`), each with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, and `Serves`.
+   - Sequence ordered atomic steps (`### Step <N>: <Name>`), each with `Files`, `Action`, `Verification`, `Bootable Check`, and `Serves`. Never write source code or test code in `plan.md`—code is written once, in the Code stage.
    - Map every acceptance criterion in the `## Test Plan` table, record open questions/assumptions, verify the blast radius check against `think.md`, and record automated approval in `## Approval` after validation.
 3. Validate with the deterministic script from this skill's directory:
 

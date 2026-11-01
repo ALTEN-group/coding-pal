@@ -121,7 +121,7 @@ For human approvals, role strings are exact, dates real, and the two approvers d
 ## 4. Anti-Patterns & Prohibitions
 
 1. **No monolithic narrative PRDs.** Requirements are fields, not essays.
-2. **No code in `think.md`.** Code lives in the Plan's `New Code` fields and is written for real in Code.
+2. **No code in `think.md`.** Code is written once in the Code stage, not in Think or Plan.
 3. **No task checklists or `### Step` headings in `think.md`.** Sequencing belongs to the Plan stage.
 4. **No re-deriving Triage.** When `triage.md` exists, reuse its evidence and system mapping.
 5. **No unrecorded custom build.** A custom implementation needs a recorded `Custom Build Reason`.

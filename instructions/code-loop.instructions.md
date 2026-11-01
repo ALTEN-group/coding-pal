@@ -15,9 +15,9 @@ When driving Code or writing a pull request, follow the installed `code-loop` sk
 
 ## The Loop
 
-- Work one plan step per turn, in plan order, through `code-loop` (`next`, `start`, `pass`, `fail`). Record completion in `progress.json`, never in `plan.md`. Never attempt to implement multiple steps (e.g. logic, tests, and documentation simultaneously) in a single turn.
-- Apply the step's `New Code`, adjusted only to fit the repository, and report any divergence. Write only the step's `Files`.
-- Run the checks and controls after every step: build, type check, linter, tests, `scope-guard`, `secret-guard`, `dependency-guard`, and any installed control. Never weaken, skip, or edit a control to get green.
+- Follow the steps in `plan.md` in order (`next`, `start`, `pass`, `fail` when using `code-loop`). Record completion in `progress.json`, never in `plan.md`. In headless CI runs, the agent may apply the planned steps cohesively and run the full build, test suite, and controls once before committing.
+- Apply each step's `Action`, adjusted only to fit the repository, and report any divergence. Write only the step's `Files`.
+- Run the checks and controls before completing: build, type check, linter, tests, `scope-guard`, `secret-guard`, `dependency-guard`, and any installed control. Never weaken, skip, or edit a control to get green.
 - Do not edit `plan.md` after Code starts. A changed plan stops the loop and requires revalidation and renewed automated approval through a new plan run; never reset progress to bypass this guard.
 - `progress.json` is written only by `code-loop.mjs`. Never edit, delete, or reset it by hand; `check-history` in CI compares it with the base branch and its history.
 - Start from a validated plan with explicit `Automated by <identity> on YYYY-MM-DD` approval, or an actual human approval when requested. No mandatory human gate applies at any risk tier.

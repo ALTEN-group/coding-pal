@@ -183,7 +183,7 @@ function checkPath(path, where, filename) {
 /** think.md carries no source code and no task checklist: only text or diagram fences, no checkbox items, no step headings. */
 function checkThinkHasNoCode(markdown, filename) {
 	for (const m of markdown.matchAll(/^[ \t]*(?:`{3,}|~{3,})[ \t]*([^\s`~]*)/gm)) {
-		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code belongs in the Plan's "New Code" fields)`);
+		if (!THINK_FENCE_INFO.has(m[1].toLowerCase())) fail(`${filename} must not contain source code; found a "${m[1]}" code block (code is written in the Code stage, not in Think or Plan)`);
 	}
 	const masked = maskFences(markdown, filename);
 	if (/^\s*[-*] \[[ xX]\]/m.test(masked)) fail(`${filename} must not contain a task checklist; steps belong in the Plan`);

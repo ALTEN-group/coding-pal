@@ -19,7 +19,7 @@ The gate is deterministic: the same `plan.md` and the same reports always produc
 
 - Criteria are the lines `- **AC-<n>:** Given ..., then ...` under `## Acceptance Criteria`. Ids must be unique.
 - The Test Plan is the table under `## Test Plan` with columns `| Criterion | Test | Step |`. The `Test` cell starts with the test file path (`tests/routes/role.test.js: rejects viewers`), optionally in backticks.
-- Headings inside code fences are ignored (a `New Code` block may contain `## Test Plan`).
+- Headings inside code fences are ignored (a fenced block may contain `## Test Plan`).
 - A Test Plan row naming a criterion that the plan does not define is an error.
 
 ### Test reports

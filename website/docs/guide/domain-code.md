@@ -80,7 +80,7 @@ flowchart TD
 - **Workflow Steps**:
   1. **Ground**: Read Think, Plan, Forge bindings, and constraints. Stop on invalid records or unresolved questions; valid automated approval satisfies the approval gate without a human signature.
   2. **Branch**: It creates `feature|fix|chore/issue-<n>-<slug>` from `main` or `develop` and checks it with `branch-guard.mjs`.
-  3. **Step**: `code-loop.mjs next` then `start <n>`. It applies the step's `New Code`, adjusted only to fit the repository, and reports any divergence. It writes only the step's `Files`.
+  3. **Step**: `code-loop.mjs next` then `start <n>`. It implements the step's `Action`, adjusted only to fit the repository, and reports any divergence. It writes only the step's `Files`.
   4. **Check**: It runs the step's `Verification` and `Bootable Check`, the project's build, types, lint, and tests, and the controls: `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, and, when installed and relevant, `criteria-verify` on the test reports, `test-probe` on new or updated tests, `preview-smoke` on a running preview, `contract-compat` for a changed API contract, and `mutation-bar` on the changed files.
   5. **Fix or pass**: Failing, it runs `fail <n> --reason "..."`, repairs, and checks again. Green, it runs `pass <n>` and commits.
   6. **Repeat** until every step is `done`.
@@ -106,7 +106,7 @@ flowchart TD
 | `plan.md` sha256 must match `progress.json` once Code started | The approved plan is the one being built |
 | `start` and `next` require valid automated or human approval; explicit legacy pending-approval mode remains supported | Code starts from validated records, without mandatory human sign-off |
 | `check-history --dir specs/issue-<n> [--base origin/main]` compares `progress.json` with the base and every commit that touched it: deleted file, lower attempts, raised limit, or a changed plan hash after Code started fails | Deleting or rewriting `progress.json` cannot reset the fix-loop counter. CI runs it on the controls job |
-| Plan steps are parsed fence-aware | `### Step` text inside `New Code` is not a step |
+| Plan steps are parsed fence-aware | `### Step` text inside a code fence is not a step |
 | Branch name `feature`, `fix`, or `chore` + `/issue-<n>-<slug>`, never `main`, `develop`, `release/*` | Agents work on short-lived branches |
 | Branch age from its first commit not on the base, at most 5 days | Long-running branches break agentic context |
 

@@ -8,8 +8,8 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
 ## Constraints
 
 - Implement only from a validated `plan.md` with its `think.md`. Verify with `node .agents/skills/plan/scripts/validate-plan.mjs --dir specs/issue-<number> --stage approved`. Explicit `Automated by <identity> on YYYY-MM-DD` approvals are valid at every risk tier; no human sign-off is mandatory. Legacy CI can use draft validation and `--allow-pending-approval` while the pipeline supplies independent Prove validation. If a record is missing, invalid, or has an unresolved question, stop and report; never forge approval or weaken validation.
-- One plan step per turn. Never start a step before the previous one is `done` in `progress.json`.
-- Apply the step's `New Code`, adjusting it only as needed to fit the real repository, and report any divergence. Do not add behavior the step does not describe.
+- Follow the steps of `plan.md` in order. In interactive `code-loop` sessions, advance one step per turn (`progress.json`); in headless CI workflows, you may implement the planned steps cohesively and run the full build, test suite, and controls once before committing.
+- Apply each step's `Action`, adjusting it only as needed to fit the real repository, and report any divergence. Do not add behavior the step does not describe.
 - Write only the files in the step's `Files`, and only inside the plan's `In Scope`. Never touch `Out of Scope` paths.
 - DO NOT weaken, skip, disable, or edit a control, a test threshold, a lint rule, or a CI workflow to get green. Fix the code.
 - DO NOT hand-edit `plan.md` or `progress.json`. Record every result with `code-loop`. The fix-loop limit is per work item and you cannot reset or raise it; deleting or rewriting `progress.json` is caught by `check-history`.
@@ -27,7 +27,7 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
 1. Ground the run: read `specs/issue-<number>/think.md` and `plan.md`, the instructions and decision records they reference, and import the Forge assets bound in Think. Resolve the target step (the next undone step, or the one the user named, which must be the next undone one).
 2. Prepare the branch from `main` or `develop`: `feature|fix|chore/issue-<number>-<slug>`. Check it with `node .agents/skills/code-loop/scripts/branch-guard.mjs --git --base <main or develop>`, using the branch you created it from.
 3. Read the state: `node .agents/skills/code-loop/scripts/code-loop.mjs status --dir specs/issue-<number>`, then `next` and `start <n>`. Stop on `plan changed after Code started` or `plan is not approved by a Developer`.
-4. Implement the step according to its action: apply the step's `New Code` (whether it is an acceptance criterion test, domain logic implementation, or documentation/contract artifact), and ensure only the files listed in that step's `Files` are modified. Do not combine multiple steps.
+4. Implement the step(s) according to `plan.md`: apply each step's `Action` (whether domain logic implementation, acceptance criterion tests, or documentation/contract artifacts), and ensure only the files listed in `In Scope` / each step's `Files` are modified. In headless CI runs, you may apply all planned steps before running the full verification suite in step 5.
 5. Run the checks and controls:
    - the step's `Verification` and `Bootable Check`,
    - the project's build, type check, linter, and tests (for example with `node .agents/skills/task-gate/scripts/task-gate.mjs --stage "<name>:<command>"`),

@@ -28,7 +28,7 @@ flowchart TD
     subgraph Phase2 ["2. Plan Phase (Developer)"]
         direction TB
         AG_PLAN["<b>Planner</b><br/>Derives the Plan record from think.md"]
-        PLAN_DOC["<b>plan.md</b><br/>File scope, acceptance criteria, steps with New Code,<br/>test plan, blast radius check"]
+        PLAN_DOC["<b>plan.md</b><br/>File scope, acceptance criteria, ordered steps,<br/>test plan, blast radius check"]
         AG_PLAN --> PLAN_DOC
     end
 
@@ -83,7 +83,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Business Needs to Specifications** | Planning session or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps with code) |
+| **Business Needs to Specifications** | Planning session or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps) |
 
 ---
 
@@ -94,7 +94,7 @@ flowchart TD
 | **Owner** | Developer + Architect | Architect + Developer |
 | **Decides** | The approach | The sequence |
 | **Contains** | Options considered, chosen approach, Forge asset bindings, system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
-| **Code** | None | Only inside each step's `New Code` field |
+| **Code** | None | None (code is written once in Code) |
 | **Reads** | The backlog issue and `triage.md`, the Forge, Persistent Context, the codebase | The validated `think.md` |
 | **Approved by** | Explicit automation identity and date in `## Chosen Approach` | Explicit automation identity and date in `## Approval` |
 
@@ -111,7 +111,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
   - Traditional PRDs and narrative design docs are verbose, full of unstated assumptions, and swamp the LLM context window with conversational prose.
   - In an agentic operating model, specifications are actionable data structures for models:
     1. `think.md` records the options weighed, the approach chosen, the reusable assets composed, and the blast radius, so the decision is reviewable before anything is planned.
-    2. `plan.md` sequences the implementation into atomic, dependency-ordered steps. Each step carries its code, a narrow verification, and a bootable check, and traces to the acceptance criteria it serves.
+    2. `plan.md` sequences the implementation into atomic, dependency-ordered steps. Each step carries its files, action, a narrow verification, and a bootable check, and traces to the acceptance criteria it serves.
   - Downstream build agents consume `plan.md` one step at a time in fresh context sessions, preventing error compounding.
 - **Workflow Steps**:
   1. **Phase 1: Think**:
@@ -122,7 +122,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
   2. **Phase 2: Plan**:
      - *Interactive (IDE)*: In a clean session: *"From specs/issue-42/think.md, generate specs/issue-42/plan.md."*
      - *Headless (CI)*: The **Planner** agent (`plan.agent.md`) synthesizes `plan.md` from the validated `think.md`.
-     - Emits the file scope, acceptance criteria, steps with `Files`, `Action`, `New Code`, `Verification`, `Bootable Check`, and `Serves`, the test plan, and the blast radius check.
+     - Emits the file scope, acceptance criteria, steps with `Files`, `Action`, `Verification`, `Bootable Check`, and `Serves`, the test plan, and the blast radius check.
   3. **Phase 3: Automated Validation**:
      ```bash
      node .agents/skills/think/scripts/validate-think.mjs --think specs/issue-42/think.md
@@ -131,7 +131,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
      This checks the drafts (`--stage draft`, the default). After the named approvals are recorded, `--stage approved` checks them.
   4. **Phase 4: Agentic Coding**:
      - After validation, record automated approval in `## Approval` and launch the [`Code Agent`](./domain-code.md) with clean context (`/code 42`). Human review is an optional requested checkpoint.
-     - It implements one step per turn through `code-loop`, applying the step's `New Code`, adjusting only as needed to fit the real repository, and keeps the application bootable.
+     - It implements one step per turn through `code-loop`, implementing the step's `Action`, adjusting only as needed to fit the real repository, and keeps the application bootable.
 
 #### What the Validator Enforces
 
@@ -141,25 +141,25 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
 | 2 to 4 sequential options, each with source, trade-offs, cost, and risk | Think records a decision, not a conclusion |
 | Forge bindings are `forge/<id>@<version>` and match the selected option; a custom build needs a recorded reason | Compose before you build |
 | Blast radius tier set; rollback named for High and Critical (also when Plan raises the tier) | The tier drives automated validation and rollback evidence in Prove |
-| No source code, checklist, or step headings in `think.md` | Code lives in the Plan's `New Code` fields only |
+| No source code in `think.md` or `plan.md`, and no checklist or step headings in `think.md` | Code is written once in Code, never in Think or Plan |
 | Critical requires a decision record; autonomous records use an Automation decider and valid automation attribution | Human signatures remain reserved for actual humans |
 | `Approved By` accepts `Automated by <identity> on YYYY-MM-DD` at draft and approved stages; actual human approvals remain supported | Automated Plan approval must not precede Think approval; Pending is incomplete, not approval |
 | Prerequisites & Context holds the `think.md` reference plus at least one more line (dependencies, environment variables, services, or `- None.`) | A bare reference leaves Step 1's setup unstated |
 | 3 to 8 sequential `Given ..., then ...` acceptance criteria | Observable, testable statements |
-| Step fields in order, including `New Code` as a fenced block or `_None._`, `Verification` and `Bootable Check` as commands in backticks, and `Serves` | Code is reviewable per step, checked by a command, and traceable to criteria |
+| Step fields in order (`Files`, `Action`, `Verification`, `Bootable Check`, `Serves`), with `Verification` and `Bootable Check` as commands in backticks | Every step is scoped, checked by a command, and traceable to criteria |
 | Every in-scope file covered by a step; no step outside scope | File scope is the boundary |
 | Every criterion served by a step and present in the test plan, with a serving step | Criteria are provable |
 | Irreversible changes have a reverse step; migration-looking paths cannot claim none | A revert must be able to undo the change |
 | Questions answered before Code (`--allow-open-questions` for drafts) | No open questions reach Code |
 | Blast radius check matches Think, raised tiers are higher and explained | The tier holds for the file scope |
 | Cross-check: every Think Persistent Context update has a plan step | Context changes are planned like any other work |
-| Code fences are opaque | Code cannot break headings or fields |
+| Code fences are opaque | Fenced text cannot break headings or fields |
 
 #### Downstream Execution Discipline
 
 When an AI build agent implements functionality from `plan.md`:
 1. It reads `plan.md` in a fresh chat session (clean context).
-2. It executes **exactly one step** from the checklist, applying the step's `New Code`.
+2. It executes **exactly one step** from the checklist, implementing the step's `Action`.
 3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
 4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
 

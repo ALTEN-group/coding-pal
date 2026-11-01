@@ -98,7 +98,7 @@ export function parseThink(content) {
 	};
 }
 
-/** The `Action` and `New Code` text of each step of a plan, fence-aware. */
+/** The `Action` text of each step of a plan, fence-aware. */
 export function parsePlanSteps(content) {
 	const steps = [];
 	let step = null;
@@ -120,7 +120,7 @@ export function parsePlanSteps(content) {
 		const fieldMatch = !fenced && FIELD.exec(line);
 		if (fieldMatch) field = fieldMatch[1].trim();
 		if (FENCE.test(line)) fenced = !fenced;
-		if (field === "Action" || field === "New Code") step.text += `${line}\n`;
+		if (field === "Action") step.text += `${line}\n`;
 	}
 	return steps;
 }
@@ -183,7 +183,7 @@ export function checkBindings(think, catalog, { today = todayUtc(), planSteps = 
 			warnings.push(`${label}: ${id} is ${asset.maturity}; acknowledge that maturity in the Chosen Approach Reasoning`);
 		}
 		if (planSteps && !planSteps.some((step) => mentions(step.text, asset))) {
-			warnings.push(`${label}: no plan step composes ${id} (no Action or New Code mentions it)`);
+			warnings.push(`${label}: no plan step composes ${id} (no Action mentions it)`);
 		}
 	}
 

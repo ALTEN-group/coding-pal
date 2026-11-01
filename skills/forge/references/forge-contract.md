@@ -103,7 +103,7 @@ Think records the chosen assets under `## Forge Asset Bindings`, one bullet per 
 - Binding to a `deprecated` asset is an error naming the replacement. A `removed` asset cannot be bound.
 - An `alpha` or `beta` asset is a warning until the `Reasoning` of the Chosen Approach acknowledges that maturity (the word `alpha` or `beta`).
 - A `Custom build` carries a `Custom Build Reason` that names what was searched in the Forge. `bindings-check.mjs` lists the Forge assets that match the Problem Statement and the option's Approach so the reason can be challenged.
-- The Plan composes the bindings: every bound asset appears in the `Action` or `New Code` of at least one step. Code imports, calls, or deploys the bound asset by its documented interface and does not re-implement it.
+- The Plan composes the bindings: every bound asset appears in the `Action` of at least one step. Code imports, calls, or deploys the bound asset by its documented interface and does not re-implement it.
 - Code follows the asset's integration guide. A gap in the asset is raised with its owner, not patched locally.
 - Validate with `bindings-check.mjs --think specs/issue-<n>/think.md`, and add `--plan specs/issue-<n>/plan.md` once the Plan exists. Answer each Forge match it prints in `Reasoning` or `Custom Build Reason`.
 

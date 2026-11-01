@@ -32,7 +32,7 @@ node <skill-dir>/scripts/branch-guard.mjs --git --base main --max-age-days 5
 ```bash
 node <skill-dir>/scripts/code-loop.mjs next   --dir specs/issue-42
 node <skill-dir>/scripts/code-loop.mjs start 1 --dir specs/issue-42
-# apply the step's New Code, run its Verification and Bootable Check, then the controls
+# implement the step's Action, run its Verification and Bootable Check, then the controls
 node <skill-dir>/scripts/code-loop.mjs pass 1  --dir specs/issue-42
 # or, when anything fails:
 node <skill-dir>/scripts/code-loop.mjs fail 1  --dir specs/issue-42 --reason "AC-2 test returns 200, expected 403"

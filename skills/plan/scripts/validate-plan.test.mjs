@@ -26,8 +26,6 @@ test("validates compliant plan.md and returns structured data", () => {
 	assert.equal(result.steps.length, 4);
 	assert.equal(result.criteria.length, 3);
 	assert.deepEqual(result.approval, { status: "pending", approvals: [] });
-	assert.equal(result.steps[0].hasCode, true);
-	assert.equal(result.steps[3].hasCode, false);
 });
 
 test("rejects plan structure problems", () => {
@@ -40,10 +38,9 @@ test("rejects plan structure problems", () => {
 	badPlan(plan("### Step 2:", "### Step 3:"), /sequential/);
 });
 
-test("New Code must be a fenced code block or _None_", () => {
-	badPlan(plan("- **New Code:** _None._", "- **New Code:** just do it"), /fenced code block/);
-	badPlan(plan(/- \*\*New Code:\*\*\n  ```js\n  app\.use[\s\S]*?```\n/.exec(validPlan)[0], "- **New Code:**\n"), /missing or empty required field "- \*\*New Code:\*\*"/);
-	badPlan(plan(`  ${F}js\n  app.use("/roles", authenticate, requireRole("admin"), roleRouter);\n  ${F}`, `  Add this:\n  ${F}js\n  x();\n  ${F}`), /only fenced code blocks/);
+test("plan.md carries no source code and requires Verification and Serves", () => {
+	badPlan(plan("- **Action:** Document POST /roles, its roles, and its error responses.", `- **Action:** Document POST /roles.\n  ${F}js\n  const x = 1;\n  ${F}`), /must not contain source code; found a "js" code block/);
+	badPlan(plan("- **Action:** Document POST /roles, its roles, and its error responses.", `- **Action:** Document POST /roles.\n- **New Code:** _None._`), /unexpected field "- \*\*New Code:\*\*"/);
 	badPlan(plan("- **Verification:** `npx markdownlint docs/specs/roles.md`\n", ""), /missing or empty required field "- \*\*Verification:\*\*"/);
 	badPlan(plan("- **Serves:** AC-3\n\n## Test Plan", "- **Serves:** none\n\n## Test Plan"), /"Serves" must reference/);
 });
@@ -55,9 +52,9 @@ test("step fields keep their order and reject unknown fields", () => {
 });
 
 test("code fences cannot break the document structure", () => {
-	const tricky = plan(`  ${F}js\n  import { Router } from "express";`, `  ${F}js\n  ## not a heading\n  ### Step 9: not a step\n  - **Verification:** not a field\n  import { Router } from "express";`);
+	const tricky = plan("- **Action:** Document POST /roles, its roles, and its error responses.", `- **Action:** Document POST /roles, its roles, and its error responses.\n  ${F}text\n  ## not a heading\n  ### Step 9: not a step\n  - **Verification:** not a field\n  ${F}`);
 	assert.equal(validatePlanContent(tricky).steps.length, 4);
-	badPlan(`${validPlan}\n${F}js\nnever closed\n`, /unclosed code fence/);
+	badPlan(`${validPlan}\n${F}text\nnever closed\n`, /unclosed code fence/);
 });
 
 test("file scope: steps stay in scope and every in-scope file is covered", () => {

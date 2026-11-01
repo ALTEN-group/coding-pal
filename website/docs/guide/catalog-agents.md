@@ -7,7 +7,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | Agent Name | File | Role & Mandate | Domain Guide | Key Constraints | Paired Skill / Instruction |
 |---|---|---|---|---|---|
 | **Thinker** | `think.agent.md` | Explores options, Forge reuse, and blast radius, producing the Think record (`think.md`). | [Think & Plan](./domain-think-plan.md) | No production or test code changes; Forge-first options; blast radius classified; decision records drafted, never signed; no code blocks. | `think` instruction, `think` skill |
-| **Planner** | `plan.agent.md` | Turns a validated Think record into the Plan record (`plan.md`) with file scope, criteria, and atomic steps. | [Think & Plan](./domain-think-plan.md) | Derived strictly from `think.md`; code only in `New Code` fields; preserve bootability; blast radius verified. | `plan` instruction, `plan` skill |
+| **Planner** | `plan.agent.md` | Turns a validated Think record into the Plan record (`plan.md`) with file scope, criteria, and atomic steps. | [Think & Plan](./domain-think-plan.md) | Derived strictly from `think.md`; no source code blocks; preserve bootability; blast radius verified. | `plan` instruction, `plan` skill |
 | **Code Agent** | `code.agent.md` | Implements the validated Plan one step per turn, runs the checks and controls until green, and opens the pull request with its record. | [Code](./domain-code.md) | Edits only a step's Files; never weakens or edits a control; no production credentials; sets no human validation; stops at the fix-loop limit. | `code-loop`, `pr-record` skills |
 | **Prove Validator** | `prove.agent.md` | Executes the full Prove verification suite and performs semantic review of the PR diff against `think.md` and `plan.md`, producing `specs/issue-<n>/prove.md`. | [Prove](./domain-prove.md) | Never edits application or test code; never weakens a control; never claims line-by-line review; validates `prove.md` with `validate-prove.mjs`. | `prove` skill, `prove` instruction |
 | **Gate Fixer** | `gate-fix.agent.md` | Diagnoses and fixes a failing deterministic gate within the step and file scope (agent auto-remediation). | [Prove](./domain-prove.md) | Never weakens, skips, edits, or waives a control; never touches protected paths; stops at the fix-loop limit. | `control-guard`, `code-loop`, `security-gate` skills, `prove-controls` instruction |
@@ -89,8 +89,8 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 
 ### 10. Thinker (`think.agent.md`) & Planner (`plan.agent.md`)
 - **Thinker Role**: Explores 2 to 4 options from a prioritized backlog issue, binds Forge assets, classifies blast radius, and writes the `think.md` record without code.
-- **Planner Role**: Takes a validated `think.md` and breaks it down into explicit file scopes, observable acceptance criteria, ordered atomic steps with `New Code`, and test plan in `plan.md`.
-- **Hard Boundaries**: No production or test code changes; Planner writes code only in Plan fields. Completed decisions and approvals use explicit automation identity and date, never fabricated human signatures.
+- **Planner Role**: Takes a validated `think.md` and breaks it down into explicit file scopes, observable acceptance criteria, ordered atomic steps (`Files`, `Action`, `Verification`, `Bootable Check`, `Serves`), and test plan in `plan.md` without writing source code.
+- **Hard Boundaries**: No production or test code changes and no source code blocks in `think.md` or `plan.md`. Completed decisions and approvals use explicit automation identity and date, never fabricated human signatures.
 - **Completion Gate**: `think.md` passes `skills/think/scripts/validate-think.mjs` and `plan.md` passes `skills/plan/scripts/validate-plan.mjs` validation with exit code 0.
 - **Full Workflow**: See [Business Needs to Specifications](./domain-think-plan.md).
 
@@ -107,7 +107,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Full Workflow**: See [Transcript to Meeting Pack](./domain-meet.md#_1-transcript-to-meeting-pack).
 
 ### 13. Code Agent (`code.agent.md`)
-- **Role**: Implements a validated `plan.md` one step per turn: applies each step's `New Code`, runs the checks and controls (`scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, `test-probe`, `preview-smoke`, `criteria-verify`), repairs failures, records progress with `code-loop`, commits on a short-lived branch, and opens the pull request with the `pr-record` body.
+- **Role**: Implements a validated `plan.md` one step per turn: implements each step's `Action`, runs the checks and controls (`scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, `test-probe`, `preview-smoke`, `criteria-verify`), repairs failures, records progress with `code-loop`, commits on a short-lived branch, and opens the pull request with the `pr-record` body.
 - **Hard Boundaries**: Edits only a step's `Files`; never weakens, skips, or edits a control; never holds production credentials; never sets the Human Validation fields; records a context-correction suggestion instead of hand-fixing a misunderstood pattern; stops for the Developer at the fix-loop limit.
 - **Completion Gate**: `code-loop.mjs status` shows every step done, `criteria-verify` confirms every `AC-<n>` is covered by a passing test, and `validate-pr.mjs --stage code` passes.
 - **Full Workflow**: See [Code](./domain-code.md).

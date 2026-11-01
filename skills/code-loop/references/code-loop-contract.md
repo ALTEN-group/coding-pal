@@ -23,7 +23,7 @@ For each step, in order:
 
 0. Code starts from a validated, approved plan. `Approved By: Automated by <identity> on YYYY-MM-DD` permits autonomous execution at every risk tier. Actual Developer approval remains supported; AI must never impersonate a person. Pending approval is accepted only with the explicit legacy `--allow-pending-approval` / `ALLOW_PENDING_APPROVAL=1` option. Missing or invalid approval still blocks `start` and `next`; the historical error text is retained for compatibility.
 1. `code-loop.mjs next`, then `start <n>`.
-2. Apply the step's `New Code`, adjusted only to fit the repository. Report any divergence.
+2. Implement the step's `Action`, adjusted only to fit the repository. Report any divergence.
 3. Write only the files listed in the step's `Files`.
 4. Run the step's `Verification` and `Bootable Check`, then the controls (`task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, `criteria-verify` on the test reports, and any installed control).
 5. All green: `pass <n>`, then commit.
@@ -83,7 +83,7 @@ If `plan.md` changes after Code started (any step started or any attempt recorde
 | `fail <n> --reason "<text>"` | Records a failed attempt. A reason is required | 1 at the limit |
 | `check-history [--base <ref>]` | Verifies with git that the counters in `progress.json` were never lowered (below) | 1 on any violation |
 
-All commands take `--dir specs/issue-<n>`. Plan steps are parsed fence-aware: `### Step` text inside a `New Code` code block is not a step.
+All commands take `--dir specs/issue-<n>`. Plan steps are parsed fence-aware: `### Step` text inside a code fence is not a step.
 
 ### `check-history`
 

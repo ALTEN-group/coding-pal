@@ -256,7 +256,7 @@ flowchart TD
     BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Architecture & reasoning session"]
     T --> TM["<b>think.md</b><br/>Options, Forge bindings, blast radius"]
     TM --> P["<b>2. Plan Phase</b><br/>Planning & sequencing session"]
-    P --> PM["<b>plan.md</b><br/>Scope, criteria, steps with code"]
+    P --> PM["<b>plan.md</b><br/>Scope, criteria, ordered atomic steps"]
     PM --> B["<b>3. Code Stage</b><br/>AI Coding Agent (1 step/turn)"]
 
     classDef stage fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
@@ -273,12 +273,12 @@ flowchart TD
 | Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
 |---|---|---|---|---|
 | `think.md` | **Think** | Planning session / `Thinker` agent | `skills/think/` | Options considered, chosen approach, Forge asset bindings, constraints and invariants, **blast radius tier**, decision record, and Persistent Context updates. **No code.** |
-| `plan.md` | **Plan** | Planning session / `Planner` agent | `skills/plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, **`New Code`**, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. |
+| `plan.md` | **Plan** | Planning session / `Planner` agent | `skills/plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. **No code.** |
 
 ### Downstream Execution Discipline
 When an AI build agent implements functionality from `plan.md`:
 1. It reads `plan.md` in a fresh chat session (clean context).
-2. It executes **exactly one step** from the checklist, applying the step's `New Code`.
+2. It executes **exactly one step** from the checklist, implementing the step's `Action`.
 3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
 4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
 
