@@ -372,6 +372,7 @@ test("CLI checks added dependencies, links, and failures", async () => {
 	const noProgress = await workItem({ progressJson: null });
 	result = run(["--body", noProgress.body, "--dir", noProgress.dir, "--stage", "code", "--root", noProgress.root]);
 	assert.match(result.error.join("\n"), /progress\.json not found/);
+	assert.equal(run(["--body", noProgress.body, "--dir", noProgress.dir, "--stage", "code", "--root", noProgress.root, "--allow-pending-approval"]).code, 0);
 	assert.equal(run(["--body", noProgress.body, "--dir", noProgress.dir, "--stage", "code", "--root", noProgress.root, "--max-fix-loop", "x"]).code, 1);
 	const fresh = await workItem();
 	result = run(["--body", fresh.body, "--dir", fresh.dir, "--stage", "code", "--root", fresh.root, "--max-fix-loop", "6"]);

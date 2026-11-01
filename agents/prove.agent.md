@@ -9,7 +9,7 @@ Decisions and validation proceed autonomously at every blast radius, including p
 
 ## Constraints
 
-- DO NOT modify production code, test files, installed skills, workflows, or control configuration files. Your role is strictly verification and reporting (`specs/issue-<n>/prove.md` and, when instructed in automated pipelines at any tier, updating `pr-body.md`).
+- DO NOT modify production code, test files, installed skills, workflows, or control configuration files. Your role is strictly verification and reporting (`specs/issue-<n>/prove.md` and, when instructed in automated pipelines at any tier, updating `pr.md`).
 - DO NOT weaken, skip, waive, or edit any deterministic control.
 - DO NOT claim or perform a "line-by-line" syntax review. Governance bans line-by-line review as a gate; inspect **Client Intent**, **Behavioral Experience**, and **Safety & Blast Radius**.
 - Treat a stubbed implementation, hardcoded test bypass, or missing acceptance-criterion behavior as a `FAIL` in `## Criteria Verification` and `## Semantic Review`, even if tests exit 0.

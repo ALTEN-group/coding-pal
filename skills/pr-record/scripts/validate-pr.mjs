@@ -431,7 +431,10 @@ export function validatePrContent(rawBody, ctx) {
 	if (recordDate && !DATE.test(recordDate)) fail("--pr-date must be formatted YYYY-MM-DD");
 	if (ctx.stage === "code") {
 		checkPlanApproval(ctx.planText, Boolean(ctx.allowPendingApproval));
-		fixLoop = checkProgress(ctx.progress, ctx.planText, ctx.maxFixLoop ?? DEFAULT_MAX_FIX_LOOP);
+		fixLoop =
+			ctx.progress === null && ctx.allowPendingApproval
+				? { attempts: 0, limit: ctx.maxFixLoop ?? DEFAULT_MAX_FIX_LOOP }
+				: checkProgress(ctx.progress, ctx.planText, ctx.maxFixLoop ?? DEFAULT_MAX_FIX_LOOP);
 	} else {
 		recordDate ??= latestVerification(ctx.progress);
 		if (!recordDate) fail("cannot determine the pull request record date; pass --pr-date YYYY-MM-DD or keep progress.json in the work item");
