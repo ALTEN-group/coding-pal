@@ -80,6 +80,7 @@ flowchart TD
 |---|---|---|---|---|
 | **Spec from Code** | Explicit prompt / agent | Domain instructions | [`spec-from-code`](./catalog-skills.md#_2-spec-from-code-skills-spec-from-code) | `docs/specs/*.md` (OpenAPI, DB schemas, async jobs) |
 | **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#_6-vitepress-docs) | [`vitepress-docs`](./catalog-instructions.md#specs-docs-instructions) | [`vitepress-docs-examples`](./catalog-skills.md#_3-vitepress-docs-examples-skills-vitepress-docs-examples) | Full VitePress site (`website/docs/`, Docker, CI) |
+| **Product Demo Videos** | [`/demo-videos`](./catalog-prompts.md#_21-demo-videos) | [`playwright-demo-videos`](./catalog-instructions.md#specs-docs-instructions) | [`playwright-demo-videos-examples`](./catalog-skills.md#_40-playwright-demo-videos-examples-skills-playwright-demo-videos-examples) | `<docs-root>/docs/public/videos/<name>.mp4` + `.jpg` poster |
 
 ---
 
@@ -115,6 +116,20 @@ flowchart TD
   - `npm run build` generates static HTML with 0 errors.
   - `./scripts/start-dev.sh` runs cleanly in Docker.
   - All pages and mermaid diagrams render cleanly in dark and light themes.
+
+### 3. Product Demo Videos: Demo Videos
+
+- **When to Run**: Showing a product's key user journeys (sign-in, editing, table settings) on its website or in a release note.
+- **Trigger**: `/demo-videos [journeys] [output-dir]`
+- **Agent**: [`Demo Videos`](./catalog-agents.md#_21-demo-videos-demo-videos-agent-md) (`demo-videos.agent.md`)
+- **Scaffolding Bundle**: Uses [`skills/playwright-demo-videos-examples`](./catalog-skills.md#_40-playwright-demo-videos-examples-skills-playwright-demo-videos-examples):
+  - A dedicated `demos/playwright.config.ts` recording every scenario at a fixed 1440×900.
+  - A `Director` injecting a visible cursor with click rings, moving and typing at human speed, and marking the edit point that cuts login and setup.
+  - Scenario templates resetting their data off camera, so a video can be filmed again on the same database.
+  - `to-mp4.mjs` encoding H.264 MP4 + JPG poster with ffmpeg into the output folder, and a VitePress home section playing each video only while visible.
+- **Falsifiable Done When**:
+  - Each scenario passes twice in a row against the local dev stack.
+  - Each journey has a reviewed MP4 and poster in the output folder.
 
 ---
 

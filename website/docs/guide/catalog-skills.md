@@ -34,6 +34,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/audit-reporting/` | Protocol & Validator | `code-audit`, `audit-fix` | Deterministic Markdown audit report contract and validation scripts for CI gating. |
 | `skills/spec-from-code/` | Protocol & Validator | `spec-from-code` | Technical specification contract under `docs/specs/` with automated schema validation. |
 | `skills/vitepress-docs-examples/` | Scaffolding Pack | `vitepress-docs` instruction | VitePress site templates: `package.json`, `config.mjs`, dev Dockerfile, and Pages workflow. |
+| `skills/playwright-demo-videos-examples/` | Scaffolding Pack | `playwright-demo-videos` instruction, `Demo Videos` agent | Demo recording templates: Playwright config, Director (fake cursor, gestures), scenarios, ffmpeg encoder, VitePress video section. |
 | `skills/node-express-examples/` | Scaffolding Pack | `node-express` instruction | Express scaffolding: route handlers, controllers, middlewares, and error envelopes. |
 | `skills/postgres-liquibase-examples/` | Scaffolding Pack | `postgres-liquibase` instruction | Liquibase XML/YAML changelogs, rollback blocks, audit triggers, and soft-delete SQL. |
 | `skills/docker-examples/` | Scaffolding Pack | `docker` instruction | Multi-stage Dockerfiles, Traefik dynamic labels, BuildKit secret mounts, and Compose files. |
@@ -360,3 +361,8 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Category**: Protocol & Validator
 - **Contents**: `SKILL.md`, `references/prove-contract.md` (schema for `specs/issue-<n>/prove.md`: header links, 13 required deterministic controls, criteria verification table cross-checked against `plan.md`, semantic review across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, numbered findings, and `PASS|FAIL` verdict), and `scripts/validate-prove.mjs` (`--stage draft|pass`).
 - **Workflow**: `node .agents/skills/prove/scripts/validate-prove.mjs --dir specs/issue-42 --stage pass`
+
+### 40. Playwright Demo Videos Examples (`skills/playwright-demo-videos-examples/`)
+- **Category**: Scaffolding Pack
+- **Contents**: `SKILL.md` and `references/examples.md` (demo `playwright.config.ts`, `support/director.ts` with fake cursor and human-speed gestures, login and editing scenario templates with off-camera reset, `to-mp4.mjs` ffmpeg encoder, VitePress `DemoVideos.vue` home section).
+- **Workflow**: `npm run demos` in the app, i.e. `playwright test --config=demos/playwright.config.ts && node demos/to-mp4.mjs <output-dir>`.

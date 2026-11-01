@@ -108,6 +108,7 @@ dependencies:
     - ALTEN-group/coding-pal/agents/api-test.agent.md
     - ALTEN-group/coding-pal/agents/e2e-test.agent.md
     - ALTEN-group/coding-pal/agents/vitepress-docs.agent.md
+    - ALTEN-group/coding-pal/agents/demo-videos.agent.md
     - ALTEN-group/coding-pal/agents/performance-tests.agent.md
     - ALTEN-group/coding-pal/agents/fuzz-tests.agent.md
     - ALTEN-group/coding-pal/agents/code-audit.agent.md
@@ -135,6 +136,7 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/angular-e2e-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/postgres-liquibase-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/vitepress-docs.prompt.md
+    - ALTEN-group/coding-pal/prompts/demo-videos.prompt.md
     - ALTEN-group/coding-pal/prompts/performance-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/fuzz-tests.prompt.md
     - ALTEN-group/coding-pal/prompts/meet.prompt.md
@@ -169,6 +171,7 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/angular-unit-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/angular-e2e-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
+    - ALTEN-group/coding-pal/instructions/playwright-demo-videos.instructions.md
     - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/think.instructions.md
@@ -194,6 +197,7 @@ dependencies:
         - docker-examples
         - angular-admin-examples
         - vitepress-docs-examples
+        - playwright-demo-videos-examples
         - k6-performance-examples
         - restler-fuzzing-examples
         - audit-reporting
