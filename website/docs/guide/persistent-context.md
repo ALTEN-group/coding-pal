@@ -81,13 +81,13 @@ flowchart TD
 Three things to read off this diagram:
 - A **prompt** never reaches the context window directly — it always hands off to the agent it maps to.
 - An **agent** (whether reached via a prompt or invoked directly) may pull in a **skill** if the task requires a reusable contract or validator.
-- A **skill** can also be reached with no agent involved at all, when the task description alone matches it.
+- A **skill** can also be loaded directly, without selecting an agent. The assistant uses the skill's name and `description` in its `SKILL.md` frontmatter as a summary; when the user's request is a semantic fit for that description, the assistant can load the full skill instructions. This is not just keyword matching. For example, a request to run linting, type checks, and tests may match a skill whose description covers multi-stage verification.
 
 | Primitive | Loading Model | Trigger Condition | Primary Purpose |
 |---|---|---|---|
 | **Instruction** | **Always-on** | Active file matches `applyTo` glob pattern | Stable rules, conventions, security guidelines, and architectural standards |
 | **Agent** | **On-demand** | Explicitly selected (e.g. `--agent <name>`) | Scoped specialist with bounded method, strict constraints, and completion criteria |
-| **Skill** | **On-demand** | Semantic task match or explicitly loaded by agent/user | Multi-file procedures, contracts, executable validation scripts, and templates |
+| **Skill** | **On-demand** | The task semantically matches the skill's declared name/description, or an agent/user explicitly loads it | Multi-file procedures, contracts, executable validation scripts, and templates |
 | **Prompt** | **On-demand** | Explicitly invoked via slash command (`/<name>`) | Parameterized entry point mapping user intent to agents and instructions |
 
 ## The Decision Tree
@@ -296,4 +296,3 @@ The first stage uses the same artifact discipline. A Meeting Pack (`skills/meeti
 ### Upstream: Triage Records
 
 Before Think starts, the same artifact discipline applies to the candidate need itself. `triage.md` (`skills/triage/`, `Triage Analyst` agent) records the evidence, system mapping, scorecard, and a **proposed** decision. The ledger (`specs/triage/ledger.md`) and the weights (`specs/triage/weights.json`) are persistent triage memory. Think starts only from a Product Owner decision of `todo` and reuses the triage evidence. See the [Triage Domain Guide](./domain-triage.md).
-
