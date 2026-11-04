@@ -20,7 +20,6 @@ const THINK_REQUIRED_H2 = [
 	"Business Need & Outcome",
 	"Options Considered",
 	"Chosen Approach",
-	"Forge Asset Bindings",
 	"System Flow & Responsibilities",
 	"Constraints & Invariants",
 	"Blast Radius",
@@ -32,11 +31,9 @@ const THINK_REQUIRED_H2 = [
 export const STAGES = ["draft", "approved"];
 const PENDING = "Pending";
 
-const OPTION_SOURCES = ["Forge reuse", "Custom build", "Hybrid"];
 export const NONE = "_None._";
 const PLACEHOLDER = /^(tbd|n\/a|\.\.\.|<[^>]*>)$/i;
 export const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
-const BINDING_LABEL = /^forge\/[a-z0-9]+(?:-[a-z0-9]+)*@\S+$/;
 export const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid", "ascii", "diagram"]);
 
 export function isPlaceholder(value) {
@@ -202,11 +199,8 @@ function parseOptions(body, filename) {
 		const end = i + 1 < heads.length ? heads[i + 1].index : body.length;
 		const fields = fieldMap(parseFields(body.slice(m.index + m[0].length, end)));
 		const where = `Option ${number}`;
-		need(fields, "Approach", where, filename, { allowNone: false });
-		const source = OPTION_SOURCES.find((s) => s.toLowerCase() === need(fields, "Source", where, filename, { allowNone: false }).toLowerCase());
-		if (!source) fail(`${filename} ${where} "Source" must be one of: ${OPTION_SOURCES.join(", ")}`);
-		for (const label of ["Trade-offs", "Cost", "Risk"]) need(fields, label, where, filename, { allowNone: false });
-		return { number, name: m[2].trim(), source };
+		for (const label of ["Approach", "Trade-offs", "Cost", "Risk"]) need(fields, label, where, filename, { allowNone: false });
+		return { number, name: m[2].trim() };
 	});
 }
 
@@ -225,10 +219,7 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	const h1 = markdown.match(/^# Think:\s+(.+)$/m);
 	if (!h1 || !h1[1].trim()) fail(`${filename} must start with a level-one heading: "# Think: <Feature or Task Name>"`);
 
-	const masked = maskFences(markdown, filename);
-	const hasForgeSection = /^## Forge Asset Bindings\s*$/m.test(masked);
-	const requiredH2 = hasForgeSection ? THINK_REQUIRED_H2 : THINK_REQUIRED_H2.filter((h) => h !== "Forge Asset Bindings");
-	const sections = splitSections(markdown, requiredH2, filename);
+	const sections = splitSections(markdown, THINK_REQUIRED_H2, filename);
 	checkThinkHasNoCode(markdown, filename);
 
 	const business = fieldMap(parseFields(sections["Business Need & Outcome"]));
@@ -245,30 +236,6 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	if (!selected) fail(`${filename} "Selected" must name one of the options, for example "Option 1" (found "${selectedRaw}")`);
 	need(chosen, "Reasoning", "## Chosen Approach", filename, { allowNone: false });
 	const approval = checkApproval(need(chosen, "Approved By", "## Chosen Approach", filename, { allowNone: false }), stage, [["Developer", "Architect"]], "## Chosen Approach", filename);
-
-	if (hasForgeSection) {
-		if (selected.source === "Custom build") {
-			need(chosen, "Custom Build Reason", "## Chosen Approach", filename, { allowNone: false });
-		}
-		const bindings = parseFields(sections["Forge Asset Bindings"]);
-		if (!bindings.length) fail(`${filename} "## Forge Asset Bindings" must list bindings as "- **<asset>:** <how it is composed>" or "- **None:** <reason>"`);
-		for (const [label, value] of bindings) {
-			if (!value || isPlaceholder(value)) fail(`${filename} Forge binding "${label}" needs a description`);
-		}
-		const hasNone = bindings.some(([label]) => label.toLowerCase() === "none");
-		for (const [label] of bindings) {
-			if (label.toLowerCase() !== "none" && !BINDING_LABEL.test(label)) fail(`${filename} Forge binding "${label}" must be formatted "forge/<asset-id>@<version>" (or "None")`);
-		}
-		if (hasNone && bindings.length > 1) fail(`${filename} Forge Asset Bindings cannot combine "None" with real bindings`);
-		if (hasNone && selected.source !== "Custom build") {
-			fail(`${filename} the selected option uses the Forge (${selected.source}), so Forge Asset Bindings must list the bound assets`);
-		}
-		if (!hasNone && selected.source === "Custom build") {
-			fail(`${filename} the selected option is a custom build, so Forge Asset Bindings must state "- **None:** <reason>"`);
-		}
-	} else if (selected.source !== "Custom build") {
-		fail(`${filename} the selected option uses the Forge (${selected.source}), so "## Forge Asset Bindings" is required`);
-	}
 
 	const flow = fieldMap(parseFields(sections["System Flow & Responsibilities"]));
 	for (const label of ["Request Tracing", "Component Responsibilities", "Boundaries"]) {

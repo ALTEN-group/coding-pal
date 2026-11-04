@@ -18,7 +18,6 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/telemetry-scan/` | Behavioral Probe | `Learn Analyst` | Predictive monitoring from exported telemetry: anomalies, trends, breaches, and the deploys that precede them. |
 | `skills/learn-signals/` | Protocol & Emitter | `Learn Analyst`, `triage` skill | Turns incidents, invalidated hypotheses, and findings into Triage issue bodies. |
 | `skills/context-health/` | Guard & Audit | `Learn Analyst` | Persistent Context lint and a corrections log that proposes new artifacts after two corrections. |
-| `skills/forge/` | Catalog & Validator | `forge` instruction, `Forge Curator`, `Thinker` | The Forge catalog (Gatelin, Foxnox), certification rules, deterministic discovery, binding checks, and health signals. |
 | `skills/decision-record/` | Protocol & Validator | `decision-record` instruction, `Decision Scribe` | Attributed autonomous decisions and escalations, with genuine human signatures supported when requested. |
 | `skills/flow-metrics/` | Metrics | `Learn Analyst`, retrospectives | The factory's metrics computed from a JSONL event log. |
 | `skills/meeting-pack/` | Protocol & Validator | `meeting-pack` instruction, `Meeting Analyst` agent | Meeting Pack contract, plain-text transcript normalizer, deterministic validator (verbatim quotes, glossary, confirmations), and Triage emission. |
@@ -107,7 +106,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 ### 10. Think (`skills/think/`) & Plan (`skills/plan/`)
 - **Category**: Protocol & Validator
 - **Contents**:
-  - `skills/think/SKILL.md` & `references/think-contract.md`: Authoritative schema for `think.md` (options, chosen approach, Forge bindings, system flow, constraints, blast radius, decision record, Persistent Context updates).
+  - `skills/think/SKILL.md` & `references/think-contract.md`: Authoritative schema for `think.md` (options, chosen approach, system flow, constraints, blast radius, decision record, Persistent Context updates).
   - `skills/think/scripts/validate-think.mjs`: Standalone deterministic Node.js validator for `think.md` (`--think` or `--dir`, with `--stage draft|approved`).
   - `skills/plan/SKILL.md` & `references/plan-contract.md`: Authoritative schema for `plan.md` (file scope, acceptance criteria, steps with `Files`, `Action`, `Verification`, `Bootable Check`, `Serves`, test plan, blast radius check).
   - `skills/plan/scripts/validate-plan.mjs`: Standalone deterministic Node.js validator for `plan.md` (`--plan` or `--dir`, with `--think` cross-check and `--stage draft|approved`).
@@ -243,27 +242,22 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Contents**: `scripts/context-lint.mjs` (missing description, broad `applyTo`, oversized or near-duplicate instructions, missing references, secrets, staleness, growth) and `scripts/context-corrections.mjs` (a log that proposes an artifact once a topic is corrected or re-explained twice).
 - **Workflow**: `node .agents/skills/context-health/scripts/context-lint.mjs --root .`
 
-### 23. Forge (`skills/forge/`)
-- **Category**: Catalog & Validator
-- **Contents**: `catalog.json` (Gatelin and Foxnox), `references/forge-contract.md`, and `scripts/validate-forge.mjs`, `discover.mjs`, `bindings-check.mjs`, `forge-health.mjs`.
-- **Workflow**: `node .agents/skills/forge/scripts/discover.mjs --need "JWT sessions and role-based access control"`
-
-### 24. Decision Record (`skills/decision-record/`)
+### 23. Decision Record (`skills/decision-record/`)
 - **Category**: Protocol & Validator
 - **Contents**: `references/decision-record-contract.md`, `scripts/validate-decision.mjs` (records, numbering, Think cross-check), and `scripts/escalations.mjs` (open escalations whose default date has passed).
 - **Workflow**: `node .agents/skills/decision-record/scripts/validate-decision.mjs --dir docs/decisions`
 
-### 25. Flow Metrics (`skills/flow-metrics/`)
+### 24. Flow Metrics (`skills/flow-metrics/`)
 - **Category**: Metrics
 - **Contents**: `references/metrics-contract.md`, `scripts/emit-event.mjs`, and `scripts/flow-metrics.mjs`, which reports every factory metric against its target from `metrics/events.jsonl`. Lines of code, story points, and editor suggestion acceptance are never computed.
 - **Workflow**: `node .agents/skills/flow-metrics/scripts/flow-metrics.mjs --events metrics/events.jsonl`
 
-### 26. Migration Docs (`skills/migration-docs/`)
+### 25. Migration Docs (`skills/migration-docs/`)
 - **Category**: Protocol & Validator
 - **Contents**: `SKILL.md`, `references/migration-contract.md` (record structure, Application Change Policy, cross-checks), and `scripts/validate-migration.mjs` with its fixtures and tests.
 - **Workflow**: `node .agents/skills/migration-docs/scripts/validate-migration.mjs --dir docs/migration/<name>`.
 
-### 27. Playwright Demo Videos (`skills/playwright-demo-videos/`)
+### 26. Playwright Demo Videos (`skills/playwright-demo-videos/`)
 - **Category**: Standards & Scaffolding
 - **Contents**: `SKILL.md` (filming, reset, encoding, and embedding rules) and `references/examples.md` (demo `playwright.config.ts`, `support/director.ts` with fake cursor and human-speed gestures, login and editing scenario templates with off-camera reset, `to-mp4.mjs` ffmpeg encoder, VitePress `DemoVideos.vue` home section).
 - **Workflow**: `npm run demos` in the app, i.e. `playwright test --config=demos/playwright.config.ts && node demos/to-mp4.mjs <output-dir>`.

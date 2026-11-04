@@ -1,12 +1,12 @@
 ---
 name: think
-description: 'Structure, author, and validate persistent Think records (think.md) from backlog issues before planning or coding, following the Agentic Software Factory. Use when a Thinker agent or architecture session explores options, binds Forge assets, sets the blast radius, and drafts decision records, or when CI validates think.md on a ready issue.'
+description: 'Structure, author, and validate persistent Think records (think.md) from backlog issues before planning or coding, following the Agentic Software Factory. Use when a Thinker agent or architecture session explores options, sets the blast radius, and drafts decision records, or when CI validates think.md on a ready issue.'
 license: MIT
 ---
 
 # Think
 
-Produce a deterministic `think.md` (the Think record) that explores solution options, binds Forge assets, records constraints, classifies the blast radius, and captures the chosen approach before any implementation plan (`plan.md`) or code is written.
+Produce a deterministic `think.md` (the Think record) that explores solution options, records constraints, classifies the blast radius, and captures the chosen approach before any implementation plan (`plan.md`) or code is written.
 
 ## When to Use This Skill
 
@@ -21,8 +21,8 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 
 1. **Read `references/think-contract.md` now.** It is the authoritative source for document structure, required headings, option fields, and validation rules. Scope exploration and architectural choices are owned by the calling `Thinker` agent (`think.agent.md`), active session, or issue trigger.
 2. Author `think.md`:
-   - Explore 2 to 4 options (discover with the `forge` skill when the repository maintains a Forge catalog; otherwise use `Source: Custom build` and omit `## Forge Asset Bindings` and `Custom Build Reason`).
-   - Choose one approach with reasoning, bind Forge assets as `forge/<id>@<version>` when a Forge catalog is in use (or `- **None:** <reason>`), trace the real codebase, record constraints, classify the blast radius, draft a decision record when a public API, schema, or boundary changes, and identify Persistent Context updates.
+   - Explore 2 to 4 options with trade-offs, cost, and risk.
+   - Choose one approach with reasoning, trace the real codebase, record constraints, classify the blast radius, draft a decision record when a public API, schema, or boundary changes, and identify Persistent Context updates.
 3. Validate with the deterministic script from this skill's directory:
 
 ```bash

@@ -2,7 +2,7 @@
 
 In agentic software development, narrative specifications (lengthy PRDs, free-form design docs) fail AI coding agents: they are ambiguous, bloat the context window, and mix option exploration with implementation details. This contract follows the Agentic Software Factory's [Think](https://alten-group.github.io/agentic-software-factory/guide/stage-think) stage.
 
-- `think.md` is the **Think record**: the options considered, the chosen approach, Forge asset bindings, constraints, blast radius, and any decision record. It is decided here, by the Developer and the Architect, with AI exploring.
+- `think.md` is the **Think record**: the options considered, the chosen approach, constraints, blast radius, and any decision record. It is decided here, by the Developer and the Architect, with AI exploring.
 - `plan.md` (governed separately by the `plan` skill) is derived downstream from a validated `think.md`.
 
 This contract defines the authoritative structure, headings, fields, and validation rules for `think.md`. `scripts/validate-think.mjs` enforces it.
@@ -30,13 +30,12 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 2. `## Business Need & Outcome`
 3. `## Options Considered`
 4. `## Chosen Approach`
-5. `## Forge Asset Bindings` *(optional — required only when the repository maintains a Forge catalog or when the selected option uses `Forge reuse` or `Hybrid`)*
-6. `## System Flow & Responsibilities`
-7. `## Constraints & Invariants`
-8. `## Blast Radius`
-9. `## Decision Record`
-10. `## Persistent Context Updates`
-11. `## Ambiguities & Open Questions`
+5. `## System Flow & Responsibilities`
+6. `## Constraints & Invariants`
+7. `## Blast Radius`
+8. `## Decision Record`
+9. `## Persistent Context Updates`
+10. `## Ambiguities & Open Questions`
 
 ### Section Requirements
 
@@ -48,26 +47,17 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 #### `## Options Considered`
 2 to 4 options, each a level-3 heading `### Option <N>: <Name>` (sequential from 1), each with fields:
 - `Approach`
-- `Source`: exactly one of `Forge reuse`, `Custom build`, `Hybrid`
 - `Trade-offs`, `Cost`, `Risk`
 
-Include credible reuse from the Forge (when a Forge catalog is configured) or existing dependencies versus custom build.
+Include credible reuse of existing modules or dependencies versus a new implementation.
 
 #### `## Chosen Approach`
 - `Selected`: `Option <N>`, naming an existing option.
 - `Reasoning`: one short paragraph.
 - `Approved By`: after validation, `Automated by <agent identity> on YYYY-MM-DD`. Use `Pending` while incomplete. Human approval remains supported when explicitly requested, but is not mandatory (see Approval Stages).
-- `Custom Build Reason`: required when `## Forge Asset Bindings` is present and the selected option is a `Custom build`. Record why no Forge asset covers it, and what was searched. Omitted when the repository does not maintain a Forge catalog and `## Forge Asset Bindings` is omitted.
-
-#### `## Forge Asset Bindings` *(optional)*
-Include this section when the repository maintains a Forge catalog (`catalog.json` / `FORGE_CATALOG`) or when the selected option uses `Forge reuse` or `Hybrid`. Omit it when the repository has no Forge catalog and the selected option is `Custom build`.
-When present, list pre-approved reusable services, libraries, templates, and API contracts composed into the approach, as `- **forge/<asset-id>@<version>:** <how it is composed>`, for example `- **forge/gatelin@0.1.0-alpha.9:** Fronts the API for JWT sessions and RBAC`. The id and version come from the Forge catalog (see the `forge` skill, which checks bindings with `bindings-check.mjs`).
-- A `Forge reuse` or `Hybrid` selection must include `## Forge Asset Bindings` and list real bindings. A label that is not `forge/<asset-id>@<version>` (or `None`) is rejected.
-- When `## Forge Asset Bindings` is included for a `Custom build` selection, it must state `- **None:** <reason>`.
-- `None` cannot be combined with real bindings.
 
 #### `## System Flow & Responsibilities`
-Grounded in the real codebase, Forge assets, and Persistent Context. Never invent layers.
+Grounded in the real codebase and Persistent Context. Never invent layers.
 - `Request Tracing`: how requests or events flow through the layers.
 - `Component Responsibilities`: each affected component and its single responsibility.
 - `Boundaries`: where the change begins and ends.
@@ -125,9 +115,8 @@ For human approvals, role strings are exact, dates real, and the two approvers d
 2. **No code in `think.md`.** Code is written once in the Code stage, not in Think or Plan.
 3. **No task checklists or `### Step` headings in `think.md`.** Sequencing belongs to the Plan stage.
 4. **No re-deriving Triage.** When `triage.md` exists, reuse its evidence and system mapping.
-5. **No unrecorded custom build.** A custom implementation needs a recorded `Custom Build Reason`.
-6. **No forged human signatures.** Use `Automated by <identity> on YYYY-MM-DD` for AI decisions, including the decision-record Status in Think; reserve `Signed by <name> (Architect)` for actual human signatures.
-7. **No unvalidated approval.** Record automated approval only after the record and required decision records pass their controls.
+5. **No forged human signatures.** Use `Automated by <identity> on YYYY-MM-DD` for AI decisions, including the decision-record Status in Think; reserve `Signed by <name> (Architect)` for actual human signatures.
+6. **No unvalidated approval.** Record automated approval only after the record and required decision records pass their controls.
 
 ---
 

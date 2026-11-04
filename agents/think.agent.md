@@ -21,11 +21,10 @@ You are a specialist at exploring solution options, making evidence-based archit
 1. **Verify Triage or Issue Input**:
    - If `specs/issue-<number>/triage.md` exists, validate it with `node .agents/skills/triage/scripts/validate-triage.mjs --dir specs/issue-<number> --stage final`, proceed only when `Final (PO)` is `todo`, and reuse its problem statement, evidence, and system mapping for `## Business Need & Outcome`.
    - If no `triage.md` exists (e.g. triggered directly from a `ready` or `todo` backlog issue), derive `## Business Need & Outcome` directly from the issue title, number (`#<number>`), and body.
-2. **Context & Optional Forge Scan**:
+2. **Context Scan**:
    - Scan the codebase and Persistent Context (instructions, specifications, decision records) for relevant constraints.
-   - If the repository maintains or configures a Forge catalog (`catalog.json` / `FORGE_CATALOG`) and the `forge` skill is installed, query it (`node .agents/skills/forge/scripts/discover.mjs --need "<need>"`) and include `## Forge Asset Bindings` (binding chosen assets as `forge/<id>@<version>`, or stating `- **None:** <reason>` with `Custom Build Reason` in `## Chosen Approach`). If the repository has no Forge catalog, omit `## Forge Asset Bindings` and `Custom Build Reason`.
 3. **Explore Options**:
-   - Draft 2 to 4 credible options with trade-offs, cost, and risk (including Forge reuse versus custom build when a Forge catalog exists).
+   - Draft 2 to 4 credible options with trade-offs, cost, and risk.
    - Select one approach with reasoning.
 4. **Impact & Blast Radius**:
    - Detect affected APIs, schemas, queues, and consumers.
@@ -35,7 +34,6 @@ You are a specialist at exploring solution options, making evidence-based archit
    - Identify Persistent Context updates the subsequent Plan must carry.
 6. **Validate**:
    - Validate with `node .agents/skills/think/scripts/validate-think.mjs --think <path/to/think.md>`.
-   - If `## Forge Asset Bindings` is present and the `forge` skill is installed, verify bindings with `node .agents/skills/forge/scripts/bindings-check.mjs --think <path/to/think.md>`.
    - If a decision record is required, validate and cross-check it with `node .agents/skills/decision-record/scripts/validate-decision.mjs --file <path/to/decision.md> --think <path/to/think.md>`.
 
 ## Done When

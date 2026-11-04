@@ -32,9 +32,9 @@ test("rejects plan structure problems", () => {
 	badPlan("", /empty/);
 	badPlan(plan("## Test Plan", "## Tests"), /heading #5/);
 	badPlan(plan("- Reference: `specs/issue-42/think.md`.", "- Nothing."), /reference the think\.md/);
-	badPlan(plan("- The Forge RBAC client package is installed.\n", ""), /at least one dependency, environment variable, or service/);
-	badPlan(plan("- The Forge RBAC client package is installed.\n", "\n  \n"), /at least one dependency/);
-	assert.equal(validatePlanContent(plan("- The Forge RBAC client package is installed.", "- None.")).steps.length > 0, true);
+	badPlan(plan("- The shared RBAC client package is installed.\n", ""), /at least one dependency, environment variable, or service/);
+	badPlan(plan("- The shared RBAC client package is installed.\n", "\n  \n"), /at least one dependency/);
+	assert.equal(validatePlanContent(plan("- The shared RBAC client package is installed.", "- None.")).steps.length > 0, true);
 	badPlan(plan("### Step 2:", "### Step 3:"), /sequential/);
 });
 
@@ -102,7 +102,7 @@ test("open questions must be answered before Code unless allowed", () => {
 	const open = plan(" **Answer:** Yes, it is returned in `data.id`.", "");
 	badPlan(open, /still open/);
 	assert.equal(validatePlanContent(open, "plan.md", { allowOpenQuestions: true }).steps.length, 4);
-	badPlan(plan("- **Assumption:** The Forge RBAC client accepts the request body without transformation.\n- **Question:**", "- **Idea:** x\n- **Question:**"), /must be "Question" or "Assumption"/);
+	badPlan(plan("- **Assumption:** The shared RBAC client accepts the request body without transformation.\n- **Question:**", "- **Idea:** x\n- **Question:**"), /must be "Question" or "Assumption"/);
 });
 
 test("blast radius check: tier must hold or be raised with a reason", () => {

@@ -58,7 +58,7 @@ Coding Pal publishes the Persistent Context primitives that the [Agentic Softwar
 | 5 — Prove | [Prove](./domain-prove.md) |
 | 6 — Release | [Release](./domain-release.md) |
 | 7 — Learn | [Learn](./domain-learn.md) |
-| Enablers and governance | [Forge](./domain-forge.md), [Governance & Decisions](./domain-governance.md), [Flow Metrics](./domain-metrics.md) |
+| Enablers and governance | [Governance & Decisions](./domain-governance.md), [Flow Metrics](./domain-metrics.md) |
 
 ## The Problem Solved
 
@@ -75,7 +75,7 @@ Coding Pal eliminates these issues by codifying standards into 4 well-defined pr
 
 - Understand the [Persistent Context Architecture](./persistent-context.md).
 - Learn why [Deterministic Controls](./deterministic-controls.md) are required to scale agent autonomy, and explore the [Controls & Safeguards Domain](./domain-controls.md).
-- Explore [Capabilities by Domain](./domain-think-plan.md) (Meet, Triage, Think & Plan, Code, Prove, Release, Learn, Forge, Governance, Metrics, Testing, Auditing, Docs, Stacks, Controls, Migration).
+- Explore [Capabilities by Domain](./domain-think-plan.md) (Meet, Triage, Think & Plan, Code, Prove, Release, Learn, Governance, Metrics, Testing, Auditing, Docs, Stacks, Controls, Migration).
 - Browse [Primitives by Type](./catalog-prompts.md) (Prompts, Agents, Instructions, Skills).
 - Examine the exact [Prompt Markdown Schema](./schema-prompts.md) and [Agent Markdown Schema](./schema-agents.md).
 

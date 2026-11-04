@@ -221,7 +221,6 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 | **Human validation by blast radius** | `skills/code/scripts/validate-pr.mjs --stage prove` | Gate (Skill) |
 | **Rollout decision** | `skills/release-plan/scripts/evaluate-rollout.mjs` promotes, holds, or rolls back with no AI | Gate (Skill) |
 | **Predictive monitoring** | `skills/telemetry-scan/scripts/telemetry-scan.mjs` finds anomalies, trends, and breaches | Probe (Skill) |
-| **Forge bindings** | `skills/forge/scripts/bindings-check.mjs` checks Think bindings against the catalog | Contract (Skill) |
 | **Persistent Context lint** | `skills/context-health/scripts/context-lint.mjs` | Guard (Skill) |
 | **Triage validator** | `skills/triage/scripts/validate-triage.mjs` checks evidence, verbatim quotes, scorecard, decision rules & ledger | Gate (Skill) |
 | **Deterministic backlog ranking** | `skills/triage/scripts/rank-backlog.mjs` ranks scorecards with Product Owner weights | Gate (Skill) |

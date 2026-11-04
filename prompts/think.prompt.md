@@ -1,6 +1,6 @@
 ---
 name: think
-description: "Explore solution options, bind Forge assets, classify blast radius, and produce a validated think.md record from a prioritized backlog issue or triage record."
+description: "Explore solution options, classify blast radius, and produce a validated think.md record from a prioritized backlog issue or triage record."
 agent: Thinker
 argument-hint: "issue number, triage path, or specs directory, e.g. #42 or specs/issue-42"
 ---
@@ -15,4 +15,4 @@ If no argument is given, use the active editor file when it sits in a `specs/iss
 
 ## Run
 
-Hand the resolved target to **Thinker**. If `specs/issue-<number>/triage.md` exists, validate it at the `final` stage and proceed only when `Final (PO)` is `todo`; otherwise derive the need from the issue title, number, and body. Explore 2 to 4 options, bind Forge assets when applicable, classify the blast radius, record any required decision under `docs/decisions/`, write `specs/issue-<number>/think.md` without source code, and validate it with `skills/think/scripts/validate-think.mjs`.
+Hand the resolved target to **Thinker**. If `specs/issue-<number>/triage.md` exists, validate it at the `final` stage and proceed only when `Final (PO)` is `todo`; otherwise derive the need from the issue title, number, and body. Explore 2 to 4 options, classify the blast radius, record any required decision under `docs/decisions/`, write `specs/issue-<number>/think.md` without source code, and validate it with `skills/think/scripts/validate-think.mjs`.

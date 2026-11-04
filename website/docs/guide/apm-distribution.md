@@ -122,7 +122,6 @@ dependencies:
     - ALTEN-group/coding-pal/agents/gate-fix.agent.md
     - ALTEN-group/coding-pal/agents/release.agent.md
     - ALTEN-group/coding-pal/agents/learn.agent.md
-    - ALTEN-group/coding-pal/agents/forge-curator.agent.md
     - ALTEN-group/coding-pal/agents/decision-scribe.agent.md
     - ALTEN-group/coding-pal/agents/triage.agent.md
     - ALTEN-group/coding-pal/agents/migration-docs.agent.md
@@ -154,8 +153,6 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/incident.prompt.md
     - ALTEN-group/coding-pal/prompts/pre-read.prompt.md
     - ALTEN-group/coding-pal/prompts/operating-retro.prompt.md
-    - ALTEN-group/coding-pal/prompts/forge-search.prompt.md
-    - ALTEN-group/coding-pal/prompts/forge-certify.prompt.md
     - ALTEN-group/coding-pal/prompts/decision.prompt.md
     - ALTEN-group/coding-pal/prompts/migration-docs.prompt.md
 
@@ -180,7 +177,6 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/prove.instructions.md
     - ALTEN-group/coding-pal/instructions/release.instructions.md
     - ALTEN-group/coding-pal/instructions/learn.instructions.md
-    - ALTEN-group/coding-pal/instructions/forge.instructions.md
     - ALTEN-group/coding-pal/instructions/decision-record.instructions.md
     - ALTEN-group/coding-pal/instructions/migration-docs.instructions.md
 
@@ -211,7 +207,6 @@ dependencies:
         - telemetry-scan
         - learn-signals
         - context-health
-        - forge
         - decision-record
         - flow-metrics
         - contract-validator

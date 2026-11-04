@@ -109,7 +109,7 @@ flowchart TD
   2. **Validate**:
      ```bash
      node .agents/skills/decision-record/scripts/validate-decision.mjs \
-       --file docs/decisions/0007-rbac-via-forge.md --think specs/issue-42/think.md
+       --file docs/decisions/0007-rbac-service.md --think specs/issue-42/think.md
      ```
   3. **Decide**: After validation, the agent sets Accepted or Rejected with explicit Automation attribution. For an accepted decision, Think's decision Status becomes `Automated by <identity> on YYYY-MM-DD`. Human signatures remain supported only for actual human decisions.
   4. **Gate**: CI validates the whole directory on every pull request that touches `docs/decisions/`:

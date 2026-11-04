@@ -15,7 +15,7 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 | `/demo-videos` | `demo-videos.prompt.md` | **Demo Videos** | `journeys and output folder, e.g. login, edit policy -> website/docs/public/videos` | [Specs & Docs](./domain-docs.md#_3-product-demo-videos-demo-videos) | Records Playwright demo videos of user journeys as MP4 for a website. |
 | `/performance-tests` | `performance-tests.prompt.md` | **Performance Tester** | `target service or route` | [Testing & Verification](./domain-testing.md#_6-k6-performance-load-benchmarking) | Scaffolds or updates a k6 performance test suite. |
 | `/fuzz-tests` | `fuzz-tests.prompt.md` | **Fuzz Tester** | `OpenAPI path or service name` | [Testing & Verification](./domain-testing.md#_7-restler-api-grammar-fuzzing) | Scaffolds or runs RESTler grammar-based fuzzing tests. |
-| `/think` | `think.prompt.md` | **Thinker** | `issue number, triage path, or specs directory, e.g. #42 or specs/issue-42` | [Think & Plan](./domain-think-plan.md) | Explores options, Forge bindings, and blast radius, producing a validated `think.md`. |
+| `/think` | `think.prompt.md` | **Thinker** | `issue number, triage path, or specs directory, e.g. #42 or specs/issue-42` | [Think & Plan](./domain-think-plan.md) | Explores options and blast radius, producing a validated `think.md`. |
 | `/plan` | `plan.prompt.md` | **Planner** | `issue number, think.md path, or specs directory, e.g. 42 or specs/issue-42` | [Think & Plan](./domain-think-plan.md) | Turns a validated `think.md` into an ordered implementation checklist in `plan.md`. |
 | `/code` | `code.prompt.md` | **Code Agent** | `issue number or specs directory` | [Code](./domain-code.md) | Implements a validated plan in step order until green, then opens the pull request with its record. |
 | `/prove` | `prove.prompt.md` | **Prove Validator** | `pull request number, issue number, or specs directory` | [Prove](./domain-prove.md) | Validates a pull request against its `think.md`, `plan.md`, and all deterministic controls, writing `specs/issue-<n>/prove.md`. |
@@ -26,8 +26,6 @@ Prompts are user-facing entry points exposed as slash commands in the AI chat wi
 | `/incident` | `incident.prompt.md` | **Learn Analyst** | `timeline notes file or incident record` | [Learn](./domain-learn.md) | Drafts and validates an incident record. |
 | `/pre-read` | `pre-read.prompt.md` | **Learn Analyst** | `triage-review, outcome-review, context-review, or operating-retro` | [Learn](./domain-learn.md) | Drafts the AI pre-read for a recurring meeting. Writes nothing. |
 | `/operating-retro` | `operating-retro.prompt.md` | **Learn Analyst** | `events file or metrics report` | [Learn](./domain-learn.md) | Prepares the monthly Operating-Model Retrospective pack. |
-| `/forge-search` | `forge-search.prompt.md` | **Forge Curator** | `the need in a sentence` | [Forge](./domain-forge.md) | Searches the Forge for reusable assets and produces the Think bindings evidence. |
-| `/forge-certify` | `forge-certify.prompt.md` | **Forge Curator** | `repository URL or path of the proposed asset` | [Forge](./domain-forge.md) | Evaluates a proposed asset against the certification checklist and drafts its catalog entry. |
 | `/decision` | `decision.prompt.md` | **Decision Scribe** | `the decision to record, or a path to think.md` | [Governance & Decisions](./domain-governance.md) | Records an attributed autonomous decision or escalation. |
 | `/meet` | `meet.prompt.md` | **Meeting Analyst** | `transcript export or meeting directory` | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | Turns a client meeting transcript into `transcript.md` and a validated Meeting Pack. |
 | `/meet-readback` | `meet-readback.prompt.md` | **Meeting Analyst** | `transcript file` | [Meet](./domain-meet.md#_2-read-back-list) | Prepares the Product Owner's read-back list before the meeting ends. |
@@ -104,7 +102,7 @@ Each prompt enforces a deterministic parameter resolution pipeline (argument $\r
 ### 13. `/think` and `/plan`
 - **Invocation**: `/think [issue-number-or-specs-dir]` and `/plan [issue-number-or-specs-dir]`
 - **Target Resolution**: Resolves an issue number (`42`, `#42`), a `triage.md` or `think.md` path, or a `specs/issue-<number>/` directory, falling back to the active editor file.
-- **Delegation**: `/think` hands off to **Thinker** to explore options, bind Forge assets, classify blast radius, and validate `specs/issue-<number>/think.md`. `/plan` hands off to **Planner** to turn the validated `think.md` into `specs/issue-<number>/plan.md` and validate it. See [Think & Plan](./domain-think-plan.md).
+- **Delegation**: `/think` hands off to **Thinker** to explore options, classify blast radius, and validate `specs/issue-<number>/think.md`. `/plan` hands off to **Planner** to turn the validated `think.md` into `specs/issue-<number>/plan.md` and validate it. See [Think & Plan](./domain-think-plan.md).
 
 ### 14. `/code`
 - **Invocation**: `/code [issue-number-or-specs-dir]`
@@ -122,27 +120,19 @@ Each prompt enforces a deterministic parameter resolution pipeline (argument $\r
 - **Invocation**: `/release-plan [issue-number-or-specs-dir]`
 - **Delegation**: **Release Planner** drafts `release.md` for DevOps to approve. See [Release](./domain-release.md).
 
-### 18. `/forge-search`
-- **Invocation**: `/forge-search "<the need in a sentence>"`
-- **Delegation**: **Forge Curator** in discover mode returns ranked assets and the Think bindings evidence. See [Forge](./domain-forge.md).
-
-### 19. `/forge-certify`
-- **Invocation**: `/forge-certify [repository-url-or-path]`
-- **Delegation**: **Forge Curator** in certify mode evaluates the asset and drafts its catalog entry. See [Forge](./domain-forge.md).
-
-### 20. `/decision`
+### 18. `/decision`
 - **Invocation**: `/decision [decision-or-think-path]`
 - **Delegation**: **Decision Scribe** chooses and validates an explicitly attributed automated decision, or records an escalation. See [Governance & Decisions](./domain-governance.md).
 
-### 21. `/outcome-review`, `/context-review`, `/incident`, `/pre-read`, `/operating-retro`
+### 19. `/outcome-review`, `/context-review`, `/incident`, `/pre-read`, `/operating-retro`
 - **Delegation**: All five hand off to **Learn Analyst**. `/outcome-review` lists hypotheses due with proposed verdicts and the maths; `/context-review` runs the context lint and proposes artifacts from repeated corrections; `/incident` drafts and validates an incident record; `/pre-read <meeting>` drafts the AI pre-read for `triage-review`, `outcome-review`, `context-review`, or `operating-retro` and writes nothing; `/operating-retro` prepares the monthly retrospective from the flow-metrics report. None of them decides. See [Learn](./domain-learn.md).
 
-### 22. `/migration-docs`
+### 20. `/migration-docs`
 - **Invocation**: `/migration-docs [source to target] [docs-dir]`
 - **Target Resolution**: Takes the source, the target, and an optional output directory (default `docs/migration/<name>/`). Asks when the source or the target is unclear and continues with the next missing record instead of overwriting a validated one.
 - **Delegation**: **Migration Documenter** writes and validates the records. See [Migration](./domain-migration.md).
 
-### 23. `/demo-videos`
+### 21. `/demo-videos`
 - **Invocation**: `/demo-videos [journeys] [output-dir]`
 - **Target Resolution**: Takes the journeys to film and the output folder (usually `<docs-root>/docs/public/videos`); asks for any that is missing.
 - **Delegation**: **Demo Videos** scaffolds `demos/`, films each journey, and encodes MP4 + poster. See [Product Demo Videos](./domain-docs.md#_3-product-demo-videos-demo-videos).

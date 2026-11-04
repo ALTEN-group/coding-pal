@@ -155,7 +155,7 @@ test("type-specific fields", () => {
 });
 
 test("record file names carry a 4-digit number", () => {
-	assert.equal(recordNumber("docs/decisions/0007-rbac-via-forge.md"), 7);
+	assert.equal(recordNumber("docs/decisions/0007-rbac-service.md"), 7);
 	assert.throws(() => recordNumber("docs/decisions/7-rbac.md"), matches(/<NNNN>-<slug>/));
 	assert.throws(() => recordNumber("docs/decisions/0007-RBAC.md"), matches(/<NNNN>-<slug>/));
 });
@@ -187,7 +187,7 @@ test("supersession must be consistent in both directions", () => {
 });
 
 test("think.md decision record facts", () => {
-	assert.deepEqual(parseThinkDecision(THINK_SIGNED), { required: true, record: "docs/decisions/0001-forge-rbac.md", status: "signed", tier: "High" });
+	assert.deepEqual(parseThinkDecision(THINK_SIGNED), { required: true, record: "docs/decisions/0001-rbac-service.md", status: "signed", tier: "High" });
 	assert.deepEqual(parseThinkDecision(THINK_NO), { required: false, record: null, status: null, tier: "Low" });
 	assert.throws(() => parseThinkDecision("# Think\n\n## Blast Radius\n- **Tier:** Low\n"), matches(/no "## Decision Record" section/));
 	assert.throws(() => parseThinkDecision(THINK_NO.replace("Required:** no", "Required:** maybe")), matches(/"yes" or "no"/));
@@ -220,7 +220,7 @@ async function workspace() {
 
 test("CLI validates files, directories, escalations, and think cross-checks", async () => {
 	const { root, dir } = await workspace();
-	const record = join(dir, "0001-forge-rbac.md");
+	const record = join(dir, "0001-rbac-service.md");
 	await writeFile(record, signed());
 	await writeFile(join(dir, "0002-model-x.md"), makeDecision({ type: "model-adoption", extra: MODEL_EXTRA }));
 	await writeFile(join(dir, "README.md"), "# Decisions\n");
@@ -242,9 +242,9 @@ test("CLI validates files, directories, escalations, and think cross-checks", as
 		assert.equal(await runValidator(["--think", think, "--root", root]), 0);
 		assert.equal(await runValidator(["--file", join(dir, "0002-model-x.md"), "--root", root, "--think", think]), 1, "file differs from the Record");
 
-		await writeFile(join(dir, "0001-forge-rbac.md"), makeDecision());
+		await writeFile(join(dir, "0001-rbac-service.md"), makeDecision());
 		assert.equal(await runValidator(["--think", think, "--root", root]), 1, "think calls an unsigned record Signed");
-		await writeFile(join(dir, "0001-forge-rbac.md"), signed());
+		await writeFile(join(dir, "0001-rbac-service.md"), signed());
 
 		await writeFile(join(dir, "0004-gap.md"), makeDecision());
 		assert.equal(await runValidator(["--dir", dir, "--root", root]), 1, "numbering gap");

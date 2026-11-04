@@ -30,7 +30,6 @@ Examples in Coding Pal:
 - `skills/telemetry-scan/` (Predictive monitoring probe)
 - `skills/learn-signals/` (Learn-to-Triage emitter)
 - `skills/context-health/` (Persistent Context lint & corrections log)
-- `skills/forge/` (Forge catalog, discovery & binding checks)
 - `skills/decision-record/` (Decision records & escalations)
 - `skills/flow-metrics/` (Flow metrics from events)
 - `skills/meeting-pack/` (Meeting Pack protocol, normalizer, validator & emitter)

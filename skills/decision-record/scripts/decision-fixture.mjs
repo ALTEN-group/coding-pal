@@ -5,7 +5,7 @@ export const UNSIGNED = "Drafted: unsigned";
 
 /** A valid decision record. Override header fields; extra header lines are appended after Signature. */
 export function makeDecision({
-	title = "Expose role management through the Forge RBAC service",
+	title = "Expose role management through the shared RBAC service",
 	status = "Drafted",
 	date = "2026-10-13",
 	type = "contract-change",
@@ -18,13 +18,13 @@ export function makeDecision({
 } = {}) {
 	const optionBlocks =
 		options ??
-		`### Option 1: Call the Forge RBAC service
+		`### Option 1: Call the shared RBAC service
 - **Pros:** No local persistence. Reuses audited authorization logic.
-- **Cons:** Adds a runtime dependency on the Forge service.
+- **Cons:** Adds a runtime dependency on the shared service.
 
 ### Option 2: Build a local role table
 - **Pros:** No network hop.
-- **Cons:** A second source of truth for permissions that drifts from the Forge.
+- **Cons:** A second source of truth for permissions that drifts from the shared service.
 `;
 	return `# Decision: ${title}
 
@@ -37,15 +37,15 @@ export function makeDecision({
 - **Signature:** ${signature}
 ${extra}
 ## Context
-The admin portal needs to create roles. Authorization rules already live in the Forge RBAC service, and a second copy would diverge.
+The admin portal needs to create roles. Authorization rules already live in the shared RBAC service, and a second copy would diverge.
 
 ## Options
 ${optionBlocks}
 ## Decision
-Option 1: the route handler calls the Forge RBAC service. No role data is stored locally.
+Option 1: the route handler calls the shared RBAC service. No role data is stored locally.
 
 ## Consequences
-- The new endpoint fails closed when the Forge service is unavailable.
+- The new endpoint fails closed when the shared service is unavailable.
 - Role changes are audited in one place.
 `;
 }
@@ -89,7 +89,7 @@ export const THINK_SIGNED = `# Think: Role management
 
 ## Decision Record
 - **Required:** yes
-- **Record:** \`docs/decisions/0001-forge-rbac.md\`
+- **Record:** \`docs/decisions/0001-rbac-service.md\`
 - **Status:** Signed
 
 ## Ambiguities & Open Questions

@@ -2,7 +2,7 @@
 
 The **Think & Plan** domain provides an agentic specification methodology that turns a prioritized backlog issue into persistent, machine-consumable records: `think.md` (the **Think record**) and `plan.md` (the **Plan record**). It implements stages [2 — Think](https://alten-group.github.io/agentic-software-factory/guide/stage-think) and [3 — Plan](https://alten-group.github.io/agentic-software-factory/guide/stage-plan) of the Agentic Software Factory and follows the [Triage](./domain-triage.md) stage.
 
-Rather than narrative PRDs, Coding Pal enforces two stages: **Think** chooses and records an approach, Forge bindings, constraints, and blast radius; **Plan** defines file scope, criteria, atomic steps, and tests. AI decides and approves autonomously at every risk tier, including API, schema, High, and Critical changes. Required controls, rollback evidence, and retry limits remain enforced. People intervene on unresolved failures or requested checkpoints.
+Rather than narrative PRDs, Coding Pal enforces two stages: **Think** chooses and records an approach, constraints, and blast radius; **Plan** defines file scope, criteria, atomic steps, and tests. AI decides and approves autonomously at every risk tier, including API, schema, High, and Critical changes. Required controls, rollback evidence, and retry limits remain enforced. People intervene on unresolved failures or requested checkpoints.
 
 ---
 
@@ -20,8 +20,8 @@ flowchart TD
 
     subgraph Phase1 ["1. Think Phase (Developer + Architect)"]
         direction TB
-        AG_THINK["<b>Thinker</b><br/>Options, Forge discovery, context scan, impact analysis"]
-        THINK_DOC["<b>think.md</b><br/>Options, chosen approach, Forge bindings,<br/>constraints, blast radius, decision record"]
+        AG_THINK["<b>Thinker</b><br/>Options, context scan, impact analysis"]
+        THINK_DOC["<b>think.md</b><br/>Options, chosen approach,<br/>constraints, blast radius, decision record"]
         AG_THINK --> THINK_DOC
     end
 
@@ -41,7 +41,6 @@ flowchart TD
 
     subgraph Context ["Inputs & Standards"]
         direction TB
-        FORGE["<b>The Forge</b><br/>Reusable services, libraries, contracts"]
         PC["<b>Persistent Context</b><br/>Instructions, specs, decision records"]
         INST_SPEC["<b>think.instructions.md / plan.instructions.md</b>"]
         SKILL_SPEC["<b>skills/think/ &amp; skills/plan/</b><br/>Contracts, validate-think.mjs &amp; validate-plan.mjs"]
@@ -55,7 +54,6 @@ flowchart TD
     PLAN_DOC --> BUILD_AG
     THINK_DOC -.-> ARCH
     PLAN_DOC -.-> DEV
-    FORGE -.-> AG_THINK
     PC -.-> AG_THINK
     AG_THINK -.->|Standards| INST_SPEC
     AG_PLAN -.->|Standards| INST_SPEC
@@ -69,7 +67,7 @@ flowchart TD
     classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
     classDef human fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
 
-    class TRI,FORGE,PC input;
+    class TRI,PC input;
     class AG_THINK,AG_PLAN,BUILD_AG stage;
     class INST_SPEC instruction;
     class SKILL_SPEC skill;
@@ -83,7 +81,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Business Needs to Specifications** | [`/think` & `/plan`](./catalog-prompts.md) or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps) |
+| **Business Needs to Specifications** | [`/think` & `/plan`](./catalog-prompts.md) or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, blast radius, acceptance criteria, atomic steps) |
 
 ---
 
@@ -93,12 +91,12 @@ flowchart TD
 |---|---|---|
 | **Owner** | Developer + Architect | Architect + Developer |
 | **Decides** | The approach | The sequence |
-| **Contains** | Options considered, chosen approach, optional Forge asset bindings (when a Forge catalog exists), system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
+| **Contains** | Options considered, chosen approach, system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
 | **Code** | None | None (code is written once in Code) |
-| **Reads** | The backlog issue and `triage.md`, the Forge, Persistent Context, the codebase | The validated `think.md` |
+| **Reads** | The backlog issue and `triage.md`, Persistent Context, the codebase | The validated `think.md` |
 | **Approved by** | Explicit automation identity and date in `## Chosen Approach` | Explicit automation identity and date in `## Approval` |
 
-The Plan reads Think's bindings, constraints, and tier. After validation, both records use `Approved By: Automated by <identity> on YYYY-MM-DD`, with Plan dated no earlier than Think. Human approval remains supported for requested checkpoints; automation must never forge a human signature.
+The Plan reads Think's constraints and tier. After validation, both records use `Approved By: Automated by <identity> on YYYY-MM-DD`, with Plan dated no earlier than Think. Human approval remains supported for requested checkpoints; automation must never forge a human signature.
 
 ---
 
@@ -110,7 +108,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
 - **Why It Replaces Traditional Specs**:
   - Traditional PRDs and narrative design docs are verbose, full of unstated assumptions, and swamp the LLM context window with conversational prose.
   - In an agentic operating model, specifications are actionable data structures for models:
-    1. `think.md` records the options weighed, the approach chosen, the reusable assets composed, and the blast radius, so the decision is reviewable before anything is planned.
+    1. `think.md` records the options weighed, the approach chosen, and the blast radius, so the decision is reviewable before anything is planned.
     2. `plan.md` sequences the implementation into atomic, dependency-ordered steps. Each step carries its files, action, a narrow verification, and a bootable check, and traces to the acceptance criteria it serves.
   - Downstream build agents consume `plan.md` in dependency order in a clean context session, verifying each step before proceeding.
 - **Workflow Steps**:
@@ -118,7 +116,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
      - *Interactive (IDE)*: Run `/think 42` (or `/think specs/issue-42`) to invoke the **Thinker** agent and save the Think record to `specs/issue-42/think.md`.
      - *Headless (GitHub Action)*: Triggered by the Product Owner's `decision:todo` label, invoking the **Thinker** agent (`think.agent.md`). Where Triage is not used, trigger on `issues: [opened]` with the issue title and body.
      - The agent validates `triage.md` at the `final` stage and proceeds only on `todo`, reusing the Triage evidence and system mapping.
-     - It scans the codebase, Forge, and Persistent Context, weighs 2 to 4 options, selects one, binds assets, and classifies blast radius. Required decisions are accepted with an Automation decider and `Automated by <identity> on YYYY-MM-DD` attribution after validation.
+     - It scans the codebase and Persistent Context, weighs 2 to 4 options, selects one, and classifies blast radius. Required decisions are accepted with an Automation decider and `Automated by <identity> on YYYY-MM-DD` attribution after validation.
   2. **Phase 2: Plan**:
      - *Interactive (IDE)*: In a clean session, run `/plan 42` (or `/plan specs/issue-42`) to invoke the **Planner** agent and generate `specs/issue-42/plan.md` from `specs/issue-42/think.md`.
      - *Headless (CI)*: The **Planner** agent (`plan.agent.md`) synthesizes `plan.md` from the validated `think.md`.
@@ -138,8 +136,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
 | Check | Why |
 |---|---|
 | Exact section order and headings in both records | Predictable structure for reviewers and agents |
-| 2 to 4 sequential options, each with source, trade-offs, cost, and risk | Think records a decision, not a conclusion |
-| Forge bindings (optional: required when a Forge catalog is used or `Forge reuse` / `Hybrid` is selected) are `forge/<id>@<version>` and match the selected option | Compose before you build without boilerplate when no Forge catalog exists |
+| 2 to 4 sequential options, each with trade-offs, cost, and risk | Think records a decision, not a conclusion |
 | Blast radius tier set; rollback named for High and Critical (also when Plan raises the tier) | The tier drives automated validation and rollback evidence in Prove |
 | No source code in `think.md` or `plan.md`, and no checklist or step headings in `think.md` | Code is written once in Code, never in Think or Plan |
 | Critical requires a decision record; autonomous records use an Automation decider and valid automation attribution | Human signatures remain reserved for actual humans |
@@ -217,7 +214,6 @@ flowchart TD
 - [Skills Catalog](./catalog-skills.md)
 - [Persistent Context Architecture](./persistent-context.md)
 - [Triage Domain](./domain-triage.md)
-- [Forge Domain](./domain-forge.md)
 - [Governance & Decisions](./domain-governance.md)
 - [Code Domain](./domain-code.md)
 - [Specs & Docs Domain](./domain-docs.md)

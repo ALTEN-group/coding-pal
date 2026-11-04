@@ -165,59 +165,46 @@ Slash commands live in `prompts/*.prompt.md`.
 
 ## The Golden Split
 
-When an agent executes a workflow that produces a structured artifact (e.g., Code Audit producing an audit report, or Spec from Code producing technical specifications), responsibilities are split strictly according to the **Golden Split**:
+When an agent executes a workflow that produces a structured artifact or code change (e.g., Code Audit producing an audit report, Audit Fix repairing a finding, or Spec from Code producing technical specifications), responsibilities are split strictly across canonical primitives and the deterministic control roles they own:
 
 ```mermaid
 ---
-caption: The Extended Golden Split Responsibility Matrix
+caption: The Golden Split Responsibility Architecture
 ---
-classDiagram
-    class Agent:::agent {
-        +Target scope
-        +Investigation method
-        +Constraints
-        +Coverage completion ("Done When")
-    }
-    class DomainInstruction:::instruction {
-        +Universal coding conventions
-        +Security standards
-        +Architecture rules
-    }
-    class Guard:::guard {
-        +Allowed paths whitelist
-        +Forbidden file protection
-        +Diff churn thresholds
-    }
-    class Skill:::skill {
-        +Reusable output contract
-        +Report format in references/
-        +Validator script in scripts/
-        +Validation fixtures in fixtures/
-    }
-    class Gate:::gate {
-        +Narrowest test command
-        +AST / Schema verification
-        +Actionable self-repair diagnostics
-    }
-    class Workflow_CI:::execution {
-        +Artifact publication
-        +PR gating & retries
-    }
+flowchart TD
+    INST["<b>Instruction</b><br/><code>instructions/*.instructions.md</code><br/>• Universal coding conventions<br/>• Security &amp; architecture rules"]
 
-    Agent --> DomainInstruction : Enforces quality standard
-    Agent --> Guard : Constrained by blast-radius
-    Agent --> Skill : Implements contract
-    Agent --> Gate : Certified by completion gate
-    Workflow_CI --> Skill : Executes validator script
-    Workflow_CI --> Gate : Executes verification gate
-    Workflow_CI --> Guard : Verifies scope compliance
+    AGENT["<b>Agent</b><br/><code>agents/*.agent.md</code><br/>• Target files &amp; system scope<br/>• Investigation / implementation method<br/>• Constraints &amp; boundaries<br/>• Task coverage <code>Done When</code>"]
+
+    subgraph SKILL ["<b>Skill Package</b> (<code>skills/&lt;name&gt;/</code> &amp; <code>skills/prove/</code>)"]
+        direction TB
+        CONTRACT["<b>📄 Contract</b> (<code>references/</code>)<br/>• Reusable output schema &amp; markers<br/>• Artifact validity <code>Done When</code>"]
+        GUARD["<b>🛡️ Guard</b> (<code>skills/prove/scripts/</code>)<br/>• Allowed paths whitelist<br/>• Forbidden file &amp; secret protection<br/>• Diff churn &amp; dependency limits"]
+        GATE["<b>🚦 Gate &amp; 🎯 Probe</b> (<code>scripts/</code> &amp; <code>fixtures/</code>)<br/>• Deterministic artifact validator<br/>• Multi-stage <code>task-gate</code> &amp; narrowest tests<br/>• Anti-tautology &amp; rollback probes"]
+    end
+
+    CI["<b>Consuming Workflow / CI</b><br/>• Executes Guards, Gates &amp; Validators<br/>• PR gating, retries &amp; artifact publication"]
+
+    INST -->|"Governs quality standards"| AGENT
+    AGENT -->|"Follows contract"| CONTRACT
+    AGENT -->|"Self-checks in loop"| GUARD
+    AGENT -->|"Self-certifies completion"| GATE
+    CI -->|"Enforces scope &amp; safety"| GUARD
+    CI -->|"Verifies &amp; gates PR"| GATE
 
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
+    classDef contract fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
     classDef guard fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
     classDef gate fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
     classDef execution fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
+
+    class INST instruction;
+    class AGENT agent;
+    class CONTRACT contract;
+    class GUARD guard;
+    class GATE gate;
+    class CI execution;
 ```
 
 | Concern | Authoritative Owner | Example in Coding Pal |
@@ -225,12 +212,12 @@ classDiagram
 | Target files and systems to examine | **Agent** | `code-audit.agent.md` defines which modules are in scope |
 | Method of investigation or repair | **Agent** | `audit-fix.agent.md` defines surgical one-finding repair |
 | Domain coding standards & security rules | **Instruction** | `node-express.instructions.md`, `docker.instructions.md` |
-| Blast-radius & file churn boundary | **Guard** (`skills/prove/`) | `skills/prove/scripts/scope-guard.mjs` prevents out-of-scope diffs |
-| Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
-| Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
-| Falsifiable execution certification | **Gate** | Narrowest test suite command + `validate-think.mjs` / `validate-plan.mjs` |
 | Task coverage completion | **Agent** (`Done When`) | "Every file in scope has been examined" |
-| Artifact validity completion | **Skill** (`Done When`) | "Report satisfies the validation contract" |
+| Reusable output schema and format | **Skill — Contract** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
+| Artifact validity completion | **Skill — Contract** (`Done When`) | "Report satisfies the validation contract" |
+| Blast-radius, secret & dependency boundaries | **Skill — Guard** (`skills/prove/scripts/`) | `scope-guard.mjs`, `secret-guard.mjs`, `dependency-guard.mjs` |
+| Deterministic artifact validation | **Skill — Gate** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
+| Falsifiable execution certification & probes | **Skill — Gate & Probe** (`scripts/`) | `task-gate.mjs`, `test-probe.mjs`, `validate-think.mjs`, `validate-plan.mjs` |
 | CI publication, gating, and PR checks | **Consuming Workflow** | GitHub Actions workflow in consumer repo |
 
 > [!IMPORTANT]
@@ -238,60 +225,47 @@ classDiagram
 
 ---
 
-## Specifications as Persistent Context: Think & Plan
+## Stage Records as Persistent Context
 
-In traditional engineering, specifications are narrative Product Requirement Documents (PRDs) written in conversational prose. For AI coding agents, traditional specifications introduce critical failure modes:
-1. **Context Window Exhaustion**: Long descriptive documents deplete the agent's context window before coding even begins.
-2. **Ambiguity & Hallucinated Scope**: Models infer unstated features or refactor adjacent components when requirements lack strict boundaries.
-3. **Monolithic Error Compounding**: Asking an agent to implement a full feature in one shot leads to cascading failures across multiple files.
+While **Instructions**, **Agents**, **Skills**, and **Prompts** define *how* an assistant operates, agents also need durable project memory across turns and lifecycle stages. Relying on narrative prose documents or volatile chat history introduces three failure modes:
+1. **Context Window Exhaustion**: Long descriptive threads deplete the agent's context window before execution begins.
+2. **Ambiguity & Hallucinated Scope**: Models infer unstated requirements or refactor adjacent components when boundaries are not explicit.
+3. **Cross-Session State Loss**: Handing work from one specialist agent to the next (or resuming in a clean session) loses reasoning and constraints unless state is committed to the repository.
 
-Coding Pal replaces traditional specifications with **two persistent, machine-consumable artifacts**:
+Across the [Agentic Software Factory](./overview.md#agentic-software-factory-coverage), every stage reads validated artifacts committed by upstream stages and writes its own machine-validated record:
 
 ```mermaid
 ---
-caption: Phased Specification Architecture (Think -> Plan -> Code)
+caption: Repository Artifacts as Persistent Context Across Stages
 ---
-flowchart TD
-    BN["<b>Business Need</b><br/>User story / issue"] --> T["<b>1. Think Phase</b><br/>Architecture & reasoning session"]
-    T --> TM["<b>think.md</b><br/>Options, Forge bindings, blast radius"]
-    TM --> P["<b>2. Plan Phase</b><br/>Planning & sequencing session"]
-    P --> PM["<b>plan.md</b><br/>Scope, criteria, ordered atomic steps"]
-    PM --> B["<b>3. Code Stage</b><br/>AI Coding Agent (1 step/turn)"]
+flowchart LR
+    M["<b>0. Meet</b><br/>meeting-pack.md<br/>docs/glossary.md"] --> TR["<b>1. Triage</b><br/>triage.md<br/>ledger.md / weights.json"]
+    TR --> TH["<b>2. Think</b><br/>think.md"]
+    TH --> PL["<b>3. Plan</b><br/>plan.md"]
+    PL --> CD["<b>4. Code &amp; 5. Prove</b><br/>PR record &amp; prove.md"]
+    CD --> RL["<b>6. Release</b><br/>release.md"]
+    RL --> LN["<b>7. Learn</b><br/>Verdicts &amp; incidents"]
+    LN -.->|"New issues &amp; context updates"| TR
 
-    classDef stage fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
     classDef artifact fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
-    classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
-
-    class BN input;
-    class T,P,B stage;
-    class TM,PM artifact;
+    class M,TR,TH,PL,CD,RL,LN artifact;
 ```
 
-### The Two Specification Primitives
-
-| Specification Artifact | Phase | Execution Mode | Authoritative Owner | Key Content |
+| Stage | Persistent Record(s) | Authoritative Skill | Role in Context Continuity | Domain Guide |
 |---|---|---|---|---|
-| `think.md` | **Think** | Planning session / `Thinker` agent | `skills/think/` | Options considered, chosen approach, Forge asset bindings, constraints and invariants, **blast radius tier**, decision record, and Persistent Context updates. **No code.** |
-| `plan.md` | **Plan** | Planning session / `Planner` agent | `skills/plan/` | File scope, acceptance criteria, numbered atomic steps (`### Step N:`) with `Files`, `Action`, `Verification`, **bootability check**, and `Serves`, plus a test plan and a blast radius check. **No code.** |
+| **0 — Meet** | `meeting-pack.md`, `docs/glossary.md` | `skills/meeting-pack/` | Captures verbatim client quotes and updates the shared domain glossary by PR | [Meet](./domain-meet.md) |
+| **1 — Triage** | `triage.md`, `specs/triage/ledger.md`, `weights.json` | `skills/triage/` | Records evidence, system mapping, scorecard, and persistent triage memory | [Triage](./domain-triage.md) |
+| **2 — Think** | `specs/issue-<n>/think.md` | `skills/think/` | Records options considered, chosen approach, constraints, and blast radius tier (no code) | [Think & Plan](./domain-think-plan.md) |
+| **3 — Plan** | `specs/issue-<n>/plan.md` | `skills/plan/` | Sequences file scope, acceptance criteria, and dependency-ordered atomic steps with verification and bootability checks (no code) | [Think & Plan](./domain-think-plan.md) |
+| **4 — Code** | Short-lived branch & PR record | `skills/code/` | Executes plan steps in clean sessions, linking the issue, plan, and criterion-to-test traceability | [Code](./domain-code.md) |
+| **5 — Prove** | `specs/issue-<n>/prove.md` | `skills/prove/` | Certifies deterministic controls (`control-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, etc.) against `think.md` and `plan.md` | [Prove](./domain-prove.md) |
+| **6 — Release** | `specs/issue-<n>/release.md` | `skills/release-plan/` | Declares rollout thresholds and rollback procedures before deployment | [Release](./domain-release.md) |
+| **7 — Learn** | Hypothesis ledger & incident records | `skills/learn/`, `skills/context-health/` | Evaluates production outcomes, checks Persistent Context health, and feeds new issues back into Triage | [Learn](./domain-learn.md) |
 
-### Downstream Execution Discipline
-When an AI build agent implements functionality from `plan.md`:
-1. It reads `plan.md` in a fresh chat session (clean context).
-2. It executes **exactly one step** from the checklist, implementing the step's `Action`.
-3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
-4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
+### Clean-Session Execution Discipline
 
-> [!TIP]
-> For automated workflows, headless CI execution, and the GitHub issue attachment pattern, see the dedicated [Think & Plan Domain Guide](./domain-think-plan.md).
+Because each stage's output is committed and deterministically validated by its owning skill script, downstream agents do not need the upstream conversation history:
+1. Each agent starts in a **fresh chat session (clean context)** and loads only the upstream record(s) it depends on.
+2. It performs a bounded unit of work (for example, choosing an approach in `think.md`, sequencing steps in `plan.md`, or executing a single step in **Code**).
+3. It runs the narrowest deterministic verification command and contract validator before handing off to the next stage.
 
-### Downstream: Code, Prove, Release, Learn
-
-After Plan, the same discipline continues. The Code Agent executes plan steps in dependency order within the fix-loop limit. The Code skill (`skills/code/`) guards short-lived agent branches and validates the pull request record—linking the issue and the Plan, tracing every acceptance criterion to a test, and recording human validation at the level the blast radius requires. Controls such as `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, and `preview-smoke` run in the loop and in Prove (`skills/prove/`), and agents never change them. `release.md` (`skills/release-plan/`) declares thresholds and rollback before deployment. Learn keeps the hypothesis ledger and incident records, and its outputs become new Triage issues. Persistent Context itself is checked by `skills/context-health/`. See the [Code](./domain-code.md), [Prove](./domain-prove.md), [Release](./domain-release.md), and [Learn](./domain-learn.md) guides.
-
-### Upstream: Meeting Packs and the Glossary
-
-The first stage uses the same artifact discipline. A Meeting Pack (`skills/meeting-pack/`, `Meeting Analyst` agent) turns a client conversation into an immutable transcript plus a structured pack with verbatim, client-attributed quotes. The domain glossary (`docs/glossary.md`) is the Persistent Context the meeting agent reads, and new client terminology flows back to it by pull request. Confirmed packs become `needs:triage` issues. See the [Meet Domain Guide](./domain-meet.md).
-
-### Upstream: Triage Records
-
-Before Think starts, the same artifact discipline applies to the candidate need itself. `triage.md` (`skills/triage/`, `Triage Analyst` agent) records the evidence, system mapping, scorecard, and a **proposed** decision. The ledger (`specs/triage/ledger.md`) and the weights (`specs/triage/weights.json`) are persistent triage memory. Think starts only from a Product Owner decision of `todo` and reuses the triage evidence. See the [Triage Domain Guide](./domain-triage.md).

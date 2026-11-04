@@ -24,7 +24,7 @@ test("validates compliant think.md and returns structured data", () => {
 	const result = validateThinkContent(validThink);
 	assert.equal(result.tier, "Medium");
 	assert.equal(result.options.length, 2);
-	assert.equal(result.selected.source, "Forge reuse");
+	assert.equal(result.selected.name, "Compose the shared RBAC service");
 	assert.deepEqual(result.contextUpdates, ["docs/specs/roles.md"]);
 });
 
@@ -32,38 +32,20 @@ test("rejects empty, wrong heading, and missing or extra sections", () => {
 	badThink("", /empty/);
 	badThink(think("# Think:", "# Plan:"), /level-one heading/);
 	badThink(think("## Options Considered", "## Options"), /heading #2/);
-	badThink(`${validThink}\n## Extra\nx\n`, /exactly 10/);
+	badThink(`${validThink}\n## Extra\nx\n`, /exactly 9/);
 	badThink(think("## Decision Record\n- **Required:** no\n- **Reason:** No public contract changes, schema changes, or boundary shifts. The new endpoint is additive.\n", "## Decision Record\n"), /empty section/);
 });
 
 test("requires 2 to 4 sequential options with complete fields", () => {
 	badThink(think(/### Option 2:[\s\S]*?(?=## Chosen)/.exec(validThink)[0], ""), /2 to 4 options/);
 	badThink(think("### Option 2:", "### Option 3:"), /sequential/);
-	badThink(think("- **Source:** Forge reuse", "- **Source:** Open source"), /"Source" must be one of/);
 	badThink(think("- **Cost:** Low\n", ""), /missing the "- \*\*Cost:\*\*"/);
 });
 
-test("chosen approach must name an existing option and justify a custom build", () => {
+test("chosen approach must name an existing option", () => {
 	badThink(think("- **Selected:** Option 1", "- **Selected:** Option 5"), /must name one of the options/);
-	const custom = think("- **Selected:** Option 1", "- **Selected:** Option 2").replace(
-		"- **forge/rbac-service@2.1:** Called by the route handler to create roles. No local persistence.",
-		"- **None:** The Forge catalog has no role persistence asset.",
-	);
-	badThink(custom, /Custom Build Reason/);
-	const ok = custom.replace("- **Reasoning:**", "- **Custom Build Reason:** Searched the catalog: no role persistence asset exists.\n- **Reasoning:**");
-	assert.equal(validateThinkContent(ok).selected.source, "Custom build");
-});
-
-test("Forge bindings must match the selected option, and may be omitted for a custom build when no Forge catalog exists", () => {
-	badThink(think("- **forge/rbac-service@2.1:** Called by the route handler to create roles. No local persistence.", "- **None:** Not needed."), /uses the Forge/);
-	const customWithBinding = think("- **Selected:** Option 1", "- **Selected:** Option 2").replace("- **Reasoning:**", "- **Custom Build Reason:** x reason.\n- **Reasoning:**");
-	badThink(customWithBinding, /custom build, so Forge Asset Bindings must state/);
-	badThink(think("## Forge Asset Bindings\n", "## Forge Asset Bindings\n- **None:** nothing.\n"), /cannot combine/);
-
-	const withoutForgeSection = validThink.replace(/## Forge Asset Bindings\n- \*\*forge\/rbac-service@2\.1:\*\*.*\n\n/, "");
-	badThink(withoutForgeSection, /uses the Forge \(Forge reuse\), so "## Forge Asset Bindings" is required/);
-	const customWithoutForgeSection = withoutForgeSection.replace("- **Selected:** Option 1", "- **Selected:** Option 2");
-	assert.equal(validateThinkContent(customWithoutForgeSection).selected.source, "Custom build");
+	const option2 = think("- **Selected:** Option 1", "- **Selected:** Option 2");
+	assert.equal(validateThinkContent(option2).selected.number, 2);
 });
 
 test("blast radius tier is required, and High or Critical need a rollback", () => {
@@ -75,14 +57,6 @@ test("blast radius tier is required, and High or Critical need a rollback", () =
 	const high = think("- **Tier:** Medium", "- **Tier:** High").replace("- **Rollback:** _None._", "- **Rollback:** Feature flag roles-api, disable and redeploy.");
 	assert.equal(validateThinkContent(high).tier, "High");
 	badThink(think("- **Affected:** New public endpoint POST /roles. Consumer: admin portal.\n", ""), /missing the "- \*\*Affected:\*\*"/);
-});
-
-test("Forge bindings must be formatted forge/<id>@<version>", () => {
-	const binding = "- **forge/rbac-service@2.1:**";
-	badThink(think(binding, "- **some library:**"), /must be formatted "forge\/<asset-id>@<version>"/);
-	badThink(think(binding, "- **forge/rbac-service:**"), /must be formatted "forge\/<asset-id>@<version>"/);
-	badThink(think(binding, "- **Forge/RBAC_Service@2.1:**"), /must be formatted/);
-	assert.equal(validateThinkContent(think(binding, "- **forge/gatelin@0.1.0-alpha.9:**")).tier, "Medium");
 });
 
 test("think.md carries no source code and no task checklist", () => {

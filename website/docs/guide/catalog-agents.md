@@ -6,14 +6,13 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 
 | Agent Name | File | Role & Mandate | Domain Guide | Key Constraints | Paired Skill / Instruction |
 |---|---|---|---|---|---|
-| **Thinker** | `think.agent.md` | Explores options, Forge reuse, and blast radius, producing the Think record (`think.md`). | [Think & Plan](./domain-think-plan.md) | No production or test code changes; Forge-first options; blast radius classified; decision records drafted, never signed; no code blocks. | `think` instruction, `think` skill |
+| **Thinker** | `think.agent.md` | Explores options and blast radius, producing the Think record (`think.md`). | [Think & Plan](./domain-think-plan.md) | No production or test code changes; 2 to 4 options; blast radius classified; decision records drafted, never signed; no code blocks. | `think` instruction, `think` skill |
 | **Planner** | `plan.agent.md` | Turns a validated Think record into the Plan record (`plan.md`) with file scope, criteria, and atomic steps. | [Think & Plan](./domain-think-plan.md) | Derived strictly from `think.md`; no source code blocks; preserve bootability; blast radius verified. | `plan` instruction, `plan` skill |
 | **Code Agent** | `code.agent.md` | Implements the validated Plan steps in dependency order, runs the checks and controls until green, and opens the pull request with its record. | [Code](./domain-code.md) | Edits only a step's Files; never weakens or edits a control; no production credentials; sets no human validation; stops at the fix-loop limit. | `code` skill, `code` instruction |
 | **Prove Validator** | `prove.agent.md` | Executes the full Prove verification suite and performs semantic review of the PR diff against `think.md` and `plan.md`, producing `specs/issue-<n>/prove.md`. | [Prove](./domain-prove.md) | Never edits application or test code; never weakens a control; never claims line-by-line review; validates `prove.md` with `validate-prove.mjs`. | `prove` skill, `prove` instruction |
 | **Gate Fixer** | `gate-fix.agent.md` | Diagnoses and fixes a failing deterministic gate within the step and file scope (agent auto-remediation). | [Prove](./domain-prove.md) | Never weakens, skips, or edits a control; never touches protected paths; stops at the fix-loop limit. | `prove` skill, `prove` instruction |
 | **Learn Analyst** | `learn.agent.md` | Watches what a release does in production: detects and explains anomalies, proposes hypothesis verdicts, drafts incident records, runs the context review, and emits Triage issues. | [Learn](./domain-learn.md) | Never decides, mitigates in production, holds production credentials, or writes a verdict. | `telemetry-scan`, `hypothesis-ledger`, `incident-record`, `learn-signals`, `context-health` skills |
 | **Release Planner** | `release.agent.md` | Prepares and validates `release.md` for automated authorization. | [Release](./domain-release.md) | Never deploys, holds production credentials, loosens thresholds, or fabricates human approval. | `release-plan` skill |
-| **Forge Curator** | `forge-curator.agent.md` | Searches the Forge for reuse (discover mode) and evaluates proposed assets for certification (certify mode). | [Forge](./domain-forge.md) | Never invents assets; never edits the catalog without a pull request; never certifies by itself. | `forge` skill |
 | **Decision Scribe** | `decision-scribe.agent.md` | Chooses and records attributed autonomous decisions, or escalations. | [Governance & Decisions](./domain-governance.md) | No source changes, fabricated human signatures, or waived controls. | `decision-record` skill |
 | **Meeting Analyst** | `meeting-pack.agent.md` | Turns a client meeting transcript into an immutable Meeting Pack with candidate business needs. | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | Zero code changes; verbatim client quotes only; transcript never edited; never confirms. | `meeting-pack` skill |
 | **Triage Analyst** | `triage.agent.md` | Turns a candidate business need into an evidence-linked `triage.md` with a scorecard and a proposed decision. | [Triage](./domain-triage.md#_1-candidate-need-to-backlog-issue) | Zero code changes; verbatim evidence only; never sets the final decision or a blast radius tier. | `triage` skill |
@@ -88,7 +87,7 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Full Workflow**: See [API Fuzz Testing](./domain-testing.md#_7-restler-api-grammar-fuzzing).
 
 ### 10. Thinker (`think.agent.md`) & Planner (`plan.agent.md`)
-- **Thinker Role**: Explores 2 to 4 options from a prioritized backlog issue, binds Forge assets, classifies blast radius, and writes the `think.md` record without code.
+- **Thinker Role**: Explores 2 to 4 options from a prioritized backlog issue, classifies blast radius, and writes the `think.md` record without code.
 - **Planner Role**: Takes a validated `think.md` and breaks it down into explicit file scopes, observable acceptance criteria, ordered atomic steps (`Files`, `Action`, `Verification`, `Bootable Check`, `Serves`), and test plan in `plan.md` without writing source code.
 - **Hard Boundaries**: No production or test code changes and no source code blocks in `think.md` or `plan.md`. Completed decisions and approvals use explicit automation identity and date, never fabricated human signatures.
 - **Completion Gate**: `think.md` passes `skills/think/scripts/validate-think.mjs` and `plan.md` passes `skills/plan/scripts/validate-plan.mjs` validation with exit code 0.
@@ -124,37 +123,31 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Completion Gate**: `release.md` passes `validate-release.mjs` with `--think`.
 - **Full Workflow**: See [Release](./domain-release.md).
 
-### 16. Forge Curator (`forge-curator.agent.md`)
-- **Role**: In discover mode, searches the Forge (semantically and with `discover.mjs`) for reuse before a custom build and produces the Think bindings evidence. In certify mode, evaluates a proposed asset against the certification checklist and drafts its catalog entry.
-- **Hard Boundaries**: Never invents an asset; never edits the catalog without a pull request (the Architect owns the Forge); never certifies an asset itself.
-- **Completion Gate**: The catalog passes `validate-forge.mjs`, and any Think record passes `bindings-check.mjs`.
-- **Full Workflow**: See [Forge](./domain-forge.md).
-
-### 17. Decision Scribe (`decision-scribe.agent.md`)
+### 16. Decision Scribe (`decision-scribe.agent.md`)
 - **Role**: Drafts decision records and escalations from a Think record or a described decision.
 - **Hard Boundaries**: Completed decisions may be Accepted with explicit Automation attribution. Incomplete decisions stay Drafted and unsigned; never fabricate human sign-off or weaken controls.
 - **Completion Gate**: The record passes `validate-decision.mjs`.
 - **Full Workflow**: See [Governance & Decisions](./domain-governance.md).
 
-### 18. Learn Analyst (`learn.agent.md`)
+### 17. Learn Analyst (`learn.agent.md`)
 - **Role**: Owned by the QA and maintainer. In its modes it detects and explains (telemetry scan plus correlated deploys), presents proposed hypothesis verdicts, drafts and validates incident records, answers "what should a control have caught?", runs the Persistent Context health checks, and emits Triage issues so the loop closes.
 - **Hard Boundaries**: Never decides, never mitigates in production, never holds production credentials, never writes a ledger verdict.
 - **Completion Gate**: Every artifact it produces passes its skill's validator, and every Learn output is a Triage issue.
 - **Full Workflow**: See [Learn](./domain-learn.md).
 
-### 19. Migration Documenter (`migration-docs.agent.md`)
+### 18. Migration Documenter (`migration-docs.agent.md`)
 - **Role**: Inventories the current infrastructure from the repository and manifests, maps each component to the target, registers the unavoidable application changes, and writes the migration plan and cutover runbook.
 - **Hard Boundaries**: Writes only under `docs/migration/`; never modifies application code, infrastructure code, or pipelines; resolves gaps infrastructure-side first; no secret values; a `Refactor` decision record stays drafted and unsigned.
 - **Completion Gate**: The records pass `skills/migration-docs/scripts/validate-migration.mjs --dir` with exit code 0, and `scope-guard` and `secret-guard` are clean.
 - **Full Workflow**: See [Migration](./domain-migration.md).
 
-### 20. Prove Validator (`prove.agent.md`)
+### 19. Prove Validator (`prove.agent.md`)
 - **Role**: Executes the 8 deterministic controls on a pull request branch (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) and performs semantic review of the PR diff against `think.md` and `plan.md` across `Client Intent`, `Behavioral Experience`, and `Safety & Blast Radius`, writing `specs/issue-<n>/prove.md`.
 - **Hard Boundaries**: Writes only `specs/issue-<n>/prove.md`; never edits application or test code; never weakens or skips a control; never claims line-by-line review.
 - **Completion Gate**: `specs/issue-<n>/prove.md` passes `skills/prove/scripts/validate-prove.mjs --dir specs/issue-<n>` with exit code 0.
 - **Full Workflow**: See [Prove](./domain-prove.md).
 
-### 21. Demo Videos (`demo-videos.agent.md`)
+### 20. Demo Videos (`demo-videos.agent.md`)
 - **Role**: Films named user journeys as short demo videos for a product website.
 - **Hard Boundaries**: Edits only `demos/**`, the app `demos` script and gitignore, and the encoded files in the user-named output folder; production code is read-only; runs against the local dev stack only.
 - **Completion Gate**: Each scenario passes twice in a row on the same database, and its MP4 + JPG poster are reviewed in the output folder.

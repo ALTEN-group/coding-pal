@@ -18,7 +18,7 @@ You are a specialist at converting validated Think records (think.md) into atomi
 
 1. **Verify Think Input**:
    - Read `think.md` (if `validate-think.mjs` is installed, you may run it first; otherwise `validate-plan.mjs --dir` or `--think` validates `think.md` automatically).
-   - Ground strictly in its constraints, blast radius, and any Forge bindings.
+   - Ground strictly in its constraints and blast radius.
 2. **File Scope & Acceptance Criteria**:
    - Define the explicit file scope: In Scope, Out of Scope, and Irreversible Changes.
    - Formulate 3 to 8 observable acceptance criteria that a test can check without human judgment.
@@ -34,7 +34,6 @@ You are a specialist at converting validated Think records (think.md) into atomi
    - Check that the blast radius tier from `think.md` still holds for the file scope. If scope expanded, raise the tier with an explanation.
 6. **Validate**:
    - Validate and cross-check with `node .agents/skills/plan/scripts/validate-plan.mjs --plan <path/to/plan.md> --think <path/to/think.md>` (or `--dir <path/to/specs>`).
-   - If `think.md` includes `## Forge Asset Bindings` and the `forge` skill is installed, verify binding coverage with `node .agents/skills/forge/scripts/bindings-check.mjs --think <path/to/think.md> --plan <path/to/plan.md>`.
 
 ## Done When
 

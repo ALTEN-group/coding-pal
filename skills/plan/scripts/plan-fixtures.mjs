@@ -8,37 +8,32 @@ export const validThink = `# Think: Add POST /roles endpoint
 
 ## Options Considered
 
-### Option 1: Compose the Forge RBAC service
-- **Approach:** Add a thin route that calls the Forge RBAC service for role creation.
-- **Source:** Forge reuse
-- **Trade-offs:** Fastest and certified. Couples the endpoint to the Forge service contract.
+### Option 1: Compose the shared RBAC service
+- **Approach:** Add a thin route that calls the shared RBAC service for role creation.
+- **Trade-offs:** Fastest and audited. Couples the endpoint to the shared service contract.
 - **Cost:** Low
 - **Risk:** Low
 
 ### Option 2: Custom role table and service
 - **Approach:** Add a roles table, repository, and service inside this application.
-- **Source:** Custom build
-- **Trade-offs:** Full control. Duplicates what the Forge already offers.
+- **Trade-offs:** Full control. Duplicates existing authorization logic.
 - **Cost:** High
 - **Risk:** Medium
 
 ## Chosen Approach
 - **Selected:** Option 1
-- **Reasoning:** The Forge service is certified, versioned, and already enforces the audit trail, so composing it avoids duplicate logic.
+- **Reasoning:** The shared RBAC service is versioned and already enforces the audit trail, so composing it avoids duplicate logic.
 - **Approved By:** Pending
 
-## Forge Asset Bindings
-- **forge/rbac-service@2.1:** Called by the route handler to create roles. No local persistence.
-
 ## System Flow & Responsibilities
-- **Request Tracing:** Express router -> role route -> Forge RBAC service client.
+- **Request Tracing:** Express router -> role route -> shared RBAC service client.
 - **Component Responsibilities:**
   - \`src/routes/role.js\`: validate input and delegate.
   - \`src/app.js\`: mount the router behind authentication.
-- **Boundaries:** Starts at the HTTP route and ends at the Forge client call. No schema change.
+- **Boundaries:** Starts at the HTTP route and ends at the RBAC client call. No schema change.
 
 ## Constraints & Invariants
-- **Decision Records:** \`docs/decisions/0007-rbac-via-forge.md\`
+- **Decision Records:** \`docs/decisions/0007-rbac-service.md\`
 - **Non-Negotiable Rules:** Only admins may create roles. Responses use the \`{ data }\` / \`{ error }\` envelope.
 - **Side-Effect Constraints:** Existing routes and the database schema stay untouched.
 
@@ -68,7 +63,7 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 
 ## Prerequisites & Context
 - Reference: \`specs/issue-42/think.md\`.
-- The Forge RBAC client package is installed.
+- The shared RBAC client package is installed.
 
 ## Acceptance Criteria
 - **AC-1:** Given an unauthenticated request to POST /roles, then the response is 401 with an empty body.
@@ -79,7 +74,7 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 
 ### Step 1: Create the role route
 - **Files:** \`src/routes/role.js\`
-- **Action:** Add a POST handler that validates the body and calls the Forge RBAC client (\`@forge/rbac-client\`).
+- **Action:** Add a POST handler that validates the body and calls the shared RBAC client (\`@acme/rbac-client\`).
 - **Verification:** \`npm test -- tests/routes/role.test.js\`
 - **Bootable Check:** \`node -e 'import("./src/routes/role.js")'\`
 - **Serves:** AC-3
@@ -113,7 +108,7 @@ export const validPlan = `# Plan: Add POST /roles endpoint
 | AC-3 | tests/routes/role.test.js: creates a role | Step 3 |
 
 ## Open Questions & Assumptions
-- **Assumption:** The Forge RBAC client accepts the request body without transformation.
+- **Assumption:** The shared RBAC client accepts the request body without transformation.
 - **Question:** Does the admin portal need the role id in the response? **Answer:** Yes, it is returned in \`data.id\`.
 
 ## Blast Radius Check

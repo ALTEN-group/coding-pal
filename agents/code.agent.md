@@ -24,7 +24,7 @@ You are a specialist at implementing validated plans, turning `specs/issue-<numb
 
 ## Approach
 
-1. Ground the run: read `specs/issue-<number>/think.md` and `plan.md`, the instructions and decision records they reference, and import the Forge assets bound in Think.
+1. Ground the run: read `specs/issue-<number>/think.md` and `plan.md`, and the instructions and decision records they reference.
 2. Prepare a short-lived branch from `main` or `develop`: `feature|fix|chore/issue-<number>-<slug>`. When `.agents/skills/code/scripts/branch-guard.mjs` is installed, verify the branch before committing: `node .agents/skills/code/scripts/branch-guard.mjs --git --base main --max-age-days 5`.
 3. Implement the step(s) in `plan.md` order: apply each step's `Action` (whether domain logic implementation, acceptance criterion tests, or documentation/contract artifacts), and ensure only the files listed in `In Scope` / each step's `Files` are modified.
 4. Run the checks and controls:

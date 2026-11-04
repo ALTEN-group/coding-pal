@@ -61,7 +61,6 @@ export default withMermaid(defineConfig({
           { text: 'Prove', link: '/guide/domain-prove' },
           { text: 'Release', link: '/guide/domain-release' },
           { text: 'Learn', link: '/guide/domain-learn' },
-          { text: 'Forge', link: '/guide/domain-forge' },
           { text: 'Migration', link: '/guide/domain-migration' },
           { text: 'Governance & Decisions', link: '/guide/domain-governance' },
           { text: 'Flow Metrics', link: '/guide/domain-metrics' },

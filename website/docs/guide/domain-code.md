@@ -16,7 +16,7 @@ flowchart TD
     subgraph Inputs ["Persistent Inputs"]
         direction TB
         PLAN["<b>plan.md + think.md</b><br/>Approved, validated, never edited in Code"]
-        CTX["<b>Persistent Context</b><br/>Instructions, specifications, Forge bindings"]
+        CTX["<b>Persistent Context</b><br/>Instructions, specifications, decision records"]
     end
 
     subgraph Loop ["1. Autonomous Loop (AI)"]
@@ -75,7 +75,7 @@ flowchart TD
 - **When to Run**: After Plan validation and explicit automated approval (`Automated by <identity> on YYYY-MM-DD`), or an actual human approval when requested. All risk tiers can proceed automatically. Run interactively or headlessly in CI.
 - **Why a Loop**: Running the checks costs seconds, not a CI cycle. The agent reads the failure, repairs, and runs again, so humans see only green work. Implementing steps in dependency order keeps each change small enough to verify and to revert.
 - **Workflow Steps**:
-  1. **Ground**: Read Think, Plan, Forge bindings, and constraints. Stop on invalid records or unresolved questions; valid automated approval satisfies the approval gate without a human signature.
+  1. **Ground**: Read Think, Plan, and constraints. Stop on invalid records or unresolved questions; valid automated approval satisfies the approval gate without a human signature.
   2. **Branch**: Create `feature|fix|chore/issue-<n>-<slug>` from `main` or `develop`.
   3. **Step**: Implement each step's `Action` in dependency order, adjusted only to fit the repository, and report any divergence. Write only the step's `Files`.
   4. **Check**: Run the step's `Verification` and `Bootable Check`, the project's build, types, lint, and tests, and the controls: `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard`, `control-guard`, and, when installed and relevant, `criteria-verify` on the test reports, `test-probe` on new or updated tests, and `preview-smoke` on a running preview.

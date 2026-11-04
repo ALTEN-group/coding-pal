@@ -17,8 +17,7 @@ When authoring or validating the Think record, follow the installed `think` skil
 ## `think.md` Standards
 
 - **Options, not conclusions**: Record 2 to 4 credible options with trade-offs, cost, and risk, then the chosen approach with its reasoning.
-- **Compose before you build (when a Forge catalog exists)**: When the repository maintains or configures a Forge catalog (`catalog.json` / `FORGE_CATALOG`), include `## Forge Asset Bindings` and bind chosen assets as `forge/<id>@<version>` (or state `- **None:** <reason>` plus `Custom Build Reason` for a custom build). When the repository does not maintain a Forge catalog, omit `## Forge Asset Bindings` and `Custom Build Reason`.
-- **Ground in reality**: Trace requests through actual codebase components and layers. Never hallucinate nonexistent layers or Forge assets.
+- **Ground in reality**: Trace requests through actual codebase components and layers. Never hallucinate nonexistent layers.
 - **Respect Persistent Context**: Read instructions, specifications, and decision records, and list the ones that bound the solution.
 - **Blast radius is set here, once**: Classify the tier from the affected APIs, schemas, queues, and consumers. Name the rollback mechanism for High and Critical.
 - **Autonomous decisions**: Select the approach and record API, schema, and boundary decisions, including High and Critical changes. Keep constraints, compatibility checks, decision records, and rollback requirements enforced. After validation, record `Approved By: Automated by <agent identity> on YYYY-MM-DD` and use the same explicit automation attribution on an accepted decision record; never invent a human signature.

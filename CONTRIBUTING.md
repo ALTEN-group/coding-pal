@@ -155,12 +155,12 @@ When an agent uses a skill, divide responsibility this way:
 | Files and systems to examine | Agent |
 | Domain-specific review or implementation method | Agent and applicable instructions |
 | Universal coding standards | Instruction |
-| Blast-radius & file churn boundary | Guard (`skills/prove/scripts/scope-guard.mjs`) |
-| Reusable output contract | Skill (`references/`) |
-| Report parsing, validation, normalization | Skill script (`scripts/`) |
-| Falsifiable execution certification | Gate (narrow test command + validator) |
-| Task coverage completion | Agent `Done When` |
-| Artifact validity completion | Skill `Done When` |
+| Task coverage completion | Agent (`Done When`) |
+| Reusable output contract | Skill — Contract (`references/`) |
+| Artifact validity completion | Skill — Contract (`Done When`) |
+| Blast-radius, secret & dependency boundaries | Skill — Guard (`skills/prove/scripts/`) |
+| Report parsing, validation, normalization | Skill — Gate (`scripts/`) |
+| Falsifiable execution certification & probes | Skill — Gate & Probe (narrow test command + `task-gate.mjs` / `test-probe.mjs` / validators) |
 | CI retries, artifacts, publication, and fallbacks | Consuming workflow |
 
 An agent may say “follow the installed `audit-reporting` skill.” It must not duplicate report headings, field definitions, finding IDs, or validator rules. A workflow must execute the validator; model compliance alone is not enforcement.

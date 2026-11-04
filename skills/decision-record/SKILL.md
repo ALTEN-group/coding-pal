@@ -28,13 +28,13 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 
 ```bash
 # One record, or an escalation
-node scripts/validate-decision.mjs --file docs/decisions/0007-rbac-via-forge.md
+node scripts/validate-decision.mjs --file docs/decisions/0007-rbac-service.md
 
 # The whole directory: numbering, supersession, escalations
 node scripts/validate-decision.mjs --dir docs/decisions
 
 # Cross-check the Think record against its decision record
-node scripts/validate-decision.mjs --file docs/decisions/0007-rbac-via-forge.md --think specs/issue-42/think.md
+node scripts/validate-decision.mjs --file docs/decisions/0007-rbac-service.md --think specs/issue-42/think.md
 ```
 
 4. For an escalation, write `docs/decisions/escalations/<YYYY-MM-DD>-<slug>.md` and validate it the same way. List what is due:
