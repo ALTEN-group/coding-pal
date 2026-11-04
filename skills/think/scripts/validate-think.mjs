@@ -6,11 +6,11 @@ import { pathToFileURL } from "node:url";
 
 export class ValidationError extends Error {}
 
-function fail(message) {
+export function fail(message) {
 	throw new ValidationError(message);
 }
 
-function normalizeNewlines(value) {
+export function normalizeNewlines(value) {
 	return value.replace(/\r\n?/g, "\n");
 }
 
@@ -33,18 +33,18 @@ export const STAGES = ["draft", "approved"];
 const PENDING = "Pending";
 
 const OPTION_SOURCES = ["Forge reuse", "Custom build", "Hybrid"];
-const NONE = "_None._";
+export const NONE = "_None._";
 const PLACEHOLDER = /^(tbd|n\/a|\.\.\.|<[^>]*>)$/i;
-const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
+export const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
 const BINDING_LABEL = /^forge\/[a-z0-9]+(?:-[a-z0-9]+)*@\S+$/;
-const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid"]);
+export const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid", "ascii", "diagram"]);
 
-function isPlaceholder(value) {
+export function isPlaceholder(value) {
 	return !value || PLACEHOLDER.test(value.trim());
 }
 
 /** Replaces every line inside a fenced code block with a filler so structural regexes cannot match code. */
-function maskFences(markdown, filename = "document") {
+export function maskFences(markdown, filename = "document") {
 	let fence = null;
 	const masked = markdown.split("\n").map((line) => {
 		const m = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
@@ -62,7 +62,7 @@ function maskFences(markdown, filename = "document") {
 	return masked.join("\n");
 }
 
-function splitSections(markdown, required, filename) {
+export function splitSections(markdown, required, filename) {
 	const masked = maskFences(markdown, filename);
 	const matches = [...masked.matchAll(/^## (.+)$/gm)];
 	const names = matches.map((m) => m[1].trim());
@@ -82,7 +82,7 @@ function splitSections(markdown, required, filename) {
 }
 
 /** Parses "- **Label:** value" fields; continuation lines (tables, sub-bullets, code) belong to the previous field. */
-function parseFields(body) {
+export function parseFields(body) {
 	const masked = maskFences(body).split("\n");
 	const entries = [];
 	body.split("\n").forEach((line, i) => {
@@ -93,7 +93,7 @@ function parseFields(body) {
 	return entries.map(([label, value]) => [label, value.trim()]);
 }
 
-function fieldMap(entries) {
+export function fieldMap(entries) {
 	const map = new Map();
 	for (const [label, value] of entries) map.set(label.toLowerCase(), value);
 	return map;
@@ -129,7 +129,7 @@ function checkSignature(status, filename) {
 
 const APPROVER = /^(.+?) \((Developer|Architect)\) on (\d{4}-\d{2}-\d{2})$/;
 
-function checkApproval(value, stage, allowedRoles, where, filename) {
+export function checkApproval(value, stage, allowedRoles, where, filename) {
 	const automated = automatedApproval(value, filename);
 	if (automated) return automated;
 	if (stage === "draft") {
@@ -156,7 +156,7 @@ function checkApproval(value, stage, allowedRoles, where, filename) {
 	return { status: "approved", approvals };
 }
 
-function need(map, label, where, filename, { allowNone = true } = {}) {
+export function need(map, label, where, filename, { allowNone = true } = {}) {
 	const value = map.get(label.toLowerCase());
 	if (value === undefined) fail(`${filename} "${where}" is missing the "- **${label}:**" field`);
 	if (!value || (!value.includes("\n") && isPlaceholder(value))) fail(`${filename} "${where}" field "${label}" is empty or a placeholder`);
@@ -164,17 +164,17 @@ function need(map, label, where, filename, { allowNone = true } = {}) {
 	return value;
 }
 
-function parseTier(value, label, filename) {
+export function parseTier(value, label, filename) {
 	const tier = TIERS.find((t) => t.toLowerCase() === value.split(/[\s.,;:(]/)[0].toLowerCase());
 	if (!tier) fail(`${filename} ${label} must start with one of: ${TIERS.join(", ")}`);
 	return tier;
 }
 
-function extractPaths(value) {
+export function extractPaths(value) {
 	return [...value.matchAll(/`([^`\n]+)`/g)].map((m) => m[1].trim().replace(/^\.\//, "")).filter(Boolean);
 }
 
-function checkPath(path, where, filename) {
+export function checkPath(path, where, filename) {
 	if (path.startsWith("/") || /(^|\/)\.\.(\/|$)/.test(path) || /\s/.test(path)) {
 		fail(`${filename} ${where} path "${path}" must be a workspace-relative path without spaces or ".."`);
 	}
@@ -225,7 +225,10 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	const h1 = markdown.match(/^# Think:\s+(.+)$/m);
 	if (!h1 || !h1[1].trim()) fail(`${filename} must start with a level-one heading: "# Think: <Feature or Task Name>"`);
 
-	const sections = splitSections(markdown, THINK_REQUIRED_H2, filename);
+	const masked = maskFences(markdown, filename);
+	const hasForgeSection = /^## Forge Asset Bindings\s*$/m.test(masked);
+	const requiredH2 = hasForgeSection ? THINK_REQUIRED_H2 : THINK_REQUIRED_H2.filter((h) => h !== "Forge Asset Bindings");
+	const sections = splitSections(markdown, requiredH2, filename);
 	checkThinkHasNoCode(markdown, filename);
 
 	const business = fieldMap(parseFields(sections["Business Need & Outcome"]));
@@ -242,25 +245,29 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	if (!selected) fail(`${filename} "Selected" must name one of the options, for example "Option 1" (found "${selectedRaw}")`);
 	need(chosen, "Reasoning", "## Chosen Approach", filename, { allowNone: false });
 	const approval = checkApproval(need(chosen, "Approved By", "## Chosen Approach", filename, { allowNone: false }), stage, [["Developer", "Architect"]], "## Chosen Approach", filename);
-	if (selected.source === "Custom build") {
-		need(chosen, "Custom Build Reason", "## Chosen Approach", filename, { allowNone: false });
-	}
 
-	const bindings = parseFields(sections["Forge Asset Bindings"]);
-	if (!bindings.length) fail(`${filename} "## Forge Asset Bindings" must list bindings as "- **<asset>:** <how it is composed>" or "- **None:** <reason>"`);
-	for (const [label, value] of bindings) {
-		if (!value || isPlaceholder(value)) fail(`${filename} Forge binding "${label}" needs a description`);
-	}
-	const hasNone = bindings.some(([label]) => label.toLowerCase() === "none");
-	for (const [label] of bindings) {
-		if (label.toLowerCase() !== "none" && !BINDING_LABEL.test(label)) fail(`${filename} Forge binding "${label}" must be formatted "forge/<asset-id>@<version>" (or "None")`);
-	}
-	if (hasNone && bindings.length > 1) fail(`${filename} Forge Asset Bindings cannot combine "None" with real bindings`);
-	if (hasNone && selected.source !== "Custom build") {
-		fail(`${filename} the selected option uses the Forge (${selected.source}), so Forge Asset Bindings must list the bound assets`);
-	}
-	if (!hasNone && selected.source === "Custom build") {
-		fail(`${filename} the selected option is a custom build, so Forge Asset Bindings must state "- **None:** <reason>"`);
+	if (hasForgeSection) {
+		if (selected.source === "Custom build") {
+			need(chosen, "Custom Build Reason", "## Chosen Approach", filename, { allowNone: false });
+		}
+		const bindings = parseFields(sections["Forge Asset Bindings"]);
+		if (!bindings.length) fail(`${filename} "## Forge Asset Bindings" must list bindings as "- **<asset>:** <how it is composed>" or "- **None:** <reason>"`);
+		for (const [label, value] of bindings) {
+			if (!value || isPlaceholder(value)) fail(`${filename} Forge binding "${label}" needs a description`);
+		}
+		const hasNone = bindings.some(([label]) => label.toLowerCase() === "none");
+		for (const [label] of bindings) {
+			if (label.toLowerCase() !== "none" && !BINDING_LABEL.test(label)) fail(`${filename} Forge binding "${label}" must be formatted "forge/<asset-id>@<version>" (or "None")`);
+		}
+		if (hasNone && bindings.length > 1) fail(`${filename} Forge Asset Bindings cannot combine "None" with real bindings`);
+		if (hasNone && selected.source !== "Custom build") {
+			fail(`${filename} the selected option uses the Forge (${selected.source}), so Forge Asset Bindings must list the bound assets`);
+		}
+		if (!hasNone && selected.source === "Custom build") {
+			fail(`${filename} the selected option is a custom build, so Forge Asset Bindings must state "- **None:** <reason>"`);
+		}
+	} else if (selected.source !== "Custom build") {
+		fail(`${filename} the selected option uses the Forge (${selected.source}), so "## Forge Asset Bindings" is required`);
 	}
 
 	const flow = fieldMap(parseFields(sections["System Flow & Responsibilities"]));
@@ -318,7 +325,7 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 	return { title: h1[1].trim(), options, selected, tier, rollback, decisionRequired, contextUpdates, approval };
 }
 
-async function fileExists(path) {
+export async function fileExists(path) {
 	try {
 		return (await stat(path)).isFile();
 	} catch {
@@ -326,7 +333,7 @@ async function fileExists(path) {
 	}
 }
 
-async function dirExists(path) {
+export async function dirExists(path) {
 	try {
 		return (await stat(path)).isDirectory();
 	} catch {

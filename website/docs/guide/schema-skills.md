@@ -16,26 +16,14 @@ skills/<skill-name>/
 ```
 
 Examples in Coding Pal:
-- `skills/scope-guard/` (Guard & churn limiter)
-- `skills/dependency-guard/` (Guard & dependency sentinel)
-- `skills/secret-guard/` (Guard & credential sentinel)
-- `skills/task-gate/` (Gate & verification runner)
 - `skills/contract-validator/` (Declarative schema contract)
-- `skills/test-probe/` (Behavioral anti-tautology probe)
 - `skills/rollback-probe/` (Migration roundtrip probe)
 - `skills/audit-reporting/` (Finding protocol & validator)
 - `skills/think/` (Problem specification protocol & validator)
 - `skills/plan/` (Execution plan protocol & validator)
 - `skills/triage/` (Triage protocol, validator & ranker)
-- `skills/code-loop/` (Code loop tracker & branch guard)
-- `skills/pr-record/` (Pull request contract & human-validation record)
-- `skills/criteria-verify/` (Criteria Test Verification gate)
-- `skills/mutation-bar/` (Mutation Testing Bar gate)
-- `skills/contract-compat/` (API contract compatibility gate)
-- `skills/security-gate/` (Security, policy & license gate)
-- `skills/control-guard/` (Control integrity guard & bug rule)
-- `skills/preview-smoke/` (Preview smoke probe)
-- `skills/verification-pipeline/` (Platform Rails workflow templates & rails-check)
+- `skills/code/` (Agent branch guard & pull request contract / human-validation record)
+- `skills/prove/` (Prove verification record validator & all 8 deterministic control scripts: `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`)
 - `skills/release-plan/` (Release declaration & rollout decision)
 - `skills/hypothesis-ledger/` (Hypothesis ledger)
 - `skills/incident-record/` (Incident record protocol & validator)
@@ -47,7 +35,7 @@ Examples in Coding Pal:
 - `skills/flow-metrics/` (Flow metrics from events)
 - `skills/meeting-pack/` (Meeting Pack protocol, normalizer, validator & emitter)
 - `skills/migration-docs/` (Migration records protocol & validator)
-- `skills/vitepress-docs-examples/` (Scaffolding bundle)
+- `skills/vitepress-docs/` (Standards & scaffolding bundle)
 - `skills/node-express-examples/` (Scaffolding bundle)
 
 ---
@@ -68,7 +56,7 @@ license: string
 
 | Field | Type | Required | Description | Constraints & Best Practices |
 |---|---|---|---|---|
-| `name` | `string` | **Yes** | Lowercase kebab-case identifier. | Must match the directory name (e.g., `audit-reporting`, `vitepress-docs-examples`). |
+| `name` | `string` | **Yes** | Lowercase kebab-case identifier. | Must match the directory name (e.g., `audit-reporting`, `vitepress-docs`). |
 | `description` | `string` | **Yes** | Semantic discovery description. | **Crucial for activation.** AI harnesses match user prompts against this field. Include specific trigger phrases and nouns. |
 | `license` | `string` | **Yes** | License identifier. | Set to `MIT`. |
 
@@ -76,8 +64,8 @@ license: string
 
 ```yaml
 ---
-name: vitepress-docs-examples
-description: 'Scaffold or match a VitePress product docs site (package.json, config.mjs, home/guide pages, mermaid, dev dockerfile, Pages workflow). Use when adding or updating documentation under a user-supplied docs root.'
+name: vitepress-docs
+description: 'Scaffold, configure, or edit a VitePress product documentation site (user-supplied docs root, Markdown guides, Mermaid, Traefik /docs in dev, GitHub Pages in prod). Use when adding or updating documentation under a user-supplied docs root.'
 license: MIT
 ---
 ```
@@ -130,33 +118,31 @@ Substitute `<variable>` wherever parameter placeholders appear.
 
 ```markdown
 ---
-name: vitepress-docs-examples
-description: 'Scaffold or match a VitePress product docs site (package.json, config.mjs, home/guide pages, mermaid, dev dockerfile, Pages workflow). Use when adding or updating documentation under a user-supplied docs root.'
+name: node-express-examples
+description: 'Scaffold or match Node.js + Express REST microservice files (src/routes, src/entities, middlewares, services, db, dockerfile, compose, package.json). Use when creating a new Express service or adding a resource to one.'
 license: MIT
 ---
 
-# VitePress Docs Examples
+# Node Express Examples
 
-On-demand templates for the VitePress docs instruction. Normative rules stay in the installed `vitepress-docs` instruction; this skill owns scaffolding templates only.
+On-demand templates for the Node Express instruction. Normative rules stay in the installed `node-express` instruction; this skill owns scaffolding templates only.
 
 ## When to Use This Skill
 
-- Creating a docs site from scratch.
-- Adding a guide page, sidebar group, Compose docs service, or GitHub Pages workflow in that pattern.
+- Creating a new Express microservice.
+- Adding a new route or entity resource in that pattern.
 
 ## Path resolution
 
 Resolve `references/` relative to **this skill's install directory** (the folder that contains this `SKILL.md`).
 
-Templates write `<docs-root>` wherever the site root appears. Substitute the resolved root before copying.
-
 ## Workflow
 
-1. Follow the installed VitePress docs instruction for layout, stack, and sidebar rules.
+1. Follow the installed `node-express` instruction for layout, stack, and middleware rules.
 2. **Read `references/examples.md` now** before scaffolding.
-3. Copy templates into the docs root.
+3. Copy templates and adapt placeholders to the service.
 
 ## Done When
 
-- Copied files match these templates, with `<docs-root>` substituted everywhere.
+- Copied files match these templates and pass the service test suite.
 ```

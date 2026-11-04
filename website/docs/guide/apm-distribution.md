@@ -143,6 +143,8 @@ dependencies:
     - ALTEN-group/coding-pal/prompts/meet-readback.prompt.md
     - ALTEN-group/coding-pal/prompts/triage.prompt.md
     - ALTEN-group/coding-pal/prompts/triage-review.prompt.md
+    - ALTEN-group/coding-pal/prompts/think.prompt.md
+    - ALTEN-group/coding-pal/prompts/plan.prompt.md
     - ALTEN-group/coding-pal/prompts/code.prompt.md
     - ALTEN-group/coding-pal/prompts/prove.prompt.md
     - ALTEN-group/coding-pal/prompts/fix-gates.prompt.md
@@ -170,17 +172,12 @@ dependencies:
     - ALTEN-group/coding-pal/instructions/angular-admin.instructions.md
     - ALTEN-group/coding-pal/instructions/angular-unit-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/angular-e2e-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/vitepress-docs.instructions.md
-    - ALTEN-group/coding-pal/instructions/playwright-demo-videos.instructions.md
-    - ALTEN-group/coding-pal/instructions/k6-performance-tests.instructions.md
-    - ALTEN-group/coding-pal/instructions/restler-fuzzing-tests.instructions.md
     - ALTEN-group/coding-pal/instructions/think.instructions.md
     - ALTEN-group/coding-pal/instructions/plan.instructions.md
     - ALTEN-group/coding-pal/instructions/meeting-pack.instructions.md
     - ALTEN-group/coding-pal/instructions/triage.instructions.md
-    - ALTEN-group/coding-pal/instructions/code-loop.instructions.md
+    - ALTEN-group/coding-pal/instructions/code.instructions.md
     - ALTEN-group/coding-pal/instructions/prove.instructions.md
-    - ALTEN-group/coding-pal/instructions/prove-controls.instructions.md
     - ALTEN-group/coding-pal/instructions/release.instructions.md
     - ALTEN-group/coding-pal/instructions/learn.instructions.md
     - ALTEN-group/coding-pal/instructions/forge.instructions.md
@@ -196,26 +193,18 @@ dependencies:
         - postgres-liquibase-examples
         - docker-examples
         - angular-admin-examples
-        - vitepress-docs-examples
-        - playwright-demo-videos-examples
-        - k6-performance-examples
-        - restler-fuzzing-examples
+        - vitepress-docs
+        - playwright-demo-videos
+        - k6-performance-tests
+        - restler-fuzzing-tests
         - audit-reporting
         - spec-from-code
         - think
         - plan
         - meeting-pack
         - triage
-        - code-loop
-        - pr-record
+        - code
         - prove
-        - criteria-verify
-        - mutation-bar
-        - contract-compat
-        - security-gate
-        - control-guard
-        - preview-smoke
-        - verification-pipeline
         - release-plan
         - hypothesis-ledger
         - incident-record
@@ -225,12 +214,7 @@ dependencies:
         - forge
         - decision-record
         - flow-metrics
-        - scope-guard
-        - dependency-guard
-        - secret-guard
-        - task-gate
         - contract-validator
-        - test-probe
         - rollback-probe
         - migration-docs
   mcp: {}

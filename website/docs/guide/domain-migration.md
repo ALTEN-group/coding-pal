@@ -65,7 +65,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|
-| **Migration Documentation** | [`/migration-docs`](./catalog-prompts.md#_20-migration-docs) | [`migration-docs`](./catalog-instructions.md#migration-instructions) | [`migration-docs`](./catalog-skills.md#_38-migration-docs-skills-migration-docs) | `docs/migration/<name>/assessment.md`, `migration-plan.md`, `runbook.md` |
+| **Migration Documentation** | [`/migration-docs`](./catalog-prompts.md#_22-migration-docs) | [`migration-docs`](./catalog-instructions.md#migration-instructions) | [`migration-docs`](./catalog-skills.md#_26-migration-docs-skills-migration-docs) | `docs/migration/<name>/assessment.md`, `migration-plan.md`, `runbook.md` |
 
 ---
 

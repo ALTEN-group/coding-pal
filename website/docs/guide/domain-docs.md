@@ -49,25 +49,21 @@ flowchart TD
         direction TB
         P_DOCS["<b>/vitepress-docs [docs-root]</b><br/>User Slash Command"]
         AG_DOCS["<b>VitePress Docs Agent</b><br/>(vitepress-docs.agent.md)"]
-        INST_DOCS["<b>vitepress-docs.instructions.md</b><br/>Site rules, Mermaid, Base URLs"]
-        SKILL_DOCS["<b>skills/vitepress-docs-examples/</b><br/>Scaffolding, Docker & Pages CI"]
+        SKILL_DOCS["<b>skills/vitepress-docs/</b><br/>Site rules, scaffolding, Docker & Pages CI"]
         SITE_OUT["<b>Static Documentation Site</b><br/>Hot-reload dev & GitHub Pages"]
 
         P_DOCS --> AG_DOCS
-        AG_DOCS -.->|Rules| INST_DOCS
-        AG_DOCS ===|Scaffolding Pack| SKILL_DOCS
+        AG_DOCS ===|Rules & Scaffolding Pack| SKILL_DOCS
         AG_DOCS --> SITE_OUT
     end
 
     classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
     classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
 
     class P_DOCS prompt;
     class AG_DOCS agent;
-    class INST_DOCS instruction;
     class SKILL_DOCS skill;
     class SITE_OUT verify;
 ```
@@ -79,8 +75,8 @@ flowchart TD
 | Capability | Invocation / Entry Point | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|
 | **Spec from Code** | Explicit prompt / agent | Domain instructions | [`spec-from-code`](./catalog-skills.md#_2-spec-from-code-skills-spec-from-code) | `docs/specs/*.md` (OpenAPI, DB schemas, async jobs) |
-| **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#_6-vitepress-docs) | [`vitepress-docs`](./catalog-instructions.md#specs-docs-instructions) | [`vitepress-docs-examples`](./catalog-skills.md#_3-vitepress-docs-examples-skills-vitepress-docs-examples) | Full VitePress site (`website/docs/`, Docker, CI) |
-| **Product Demo Videos** | [`/demo-videos`](./catalog-prompts.md#_21-demo-videos) | [`playwright-demo-videos`](./catalog-instructions.md#specs-docs-instructions) | [`playwright-demo-videos-examples`](./catalog-skills.md#_40-playwright-demo-videos-examples-skills-playwright-demo-videos-examples) | `<docs-root>/docs/public/videos/<name>.mp4` + `.jpg` poster |
+| **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#_6-vitepress-docs) | — | [`vitepress-docs`](./catalog-skills.md#_3-vitepress-docs-skills-vitepress-docs) | Full VitePress site (`website/docs/`, Docker, CI) |
+| **Product Demo Videos** | [`/demo-videos`](./catalog-prompts.md#_23-demo-videos) | — | [`playwright-demo-videos`](./catalog-skills.md#_27-playwright-demo-videos-skills-playwright-demo-videos) | `<docs-root>/docs/public/videos/<name>.mp4` + `.jpg` poster |
 
 ---
 
@@ -107,7 +103,7 @@ flowchart TD
 - **When to Run**: Launching or upgrading a product documentation site for an open-source library, microservice catalog, or company platform.
 - **Trigger**: `/vitepress-docs [docs-root]`
 - **Agent**: [`VitePress Docs`](./catalog-agents.md#_7-vitepress-docs-vitepress-docs-agent-md) (`vitepress-docs.agent.md`)
-- **Scaffolding Bundle**: Uses [`skills/vitepress-docs-examples`](./catalog-skills.md#_3-vitepress-docs-examples-skills-vitepress-docs-examples) to supply pre-configured scaffolding assets:
+- **Scaffolding Bundle**: Uses [`skills/vitepress-docs`](./catalog-skills.md#_3-vitepress-docs-skills-vitepress-docs) to supply site standards and pre-configured scaffolding assets:
   - `package.json` with pinned VitePress, Mermaid, and Markdown plugins.
   - `.vitepress/config.mjs` pre-configured with theme settings, responsive SVG logo/favicon, Mermaid optimization, and dynamic base URL resolution for GitHub Pages / local dev.
   - Multi-service Docker Compose files (`scripts/start-dev.sh`, `scripts/stop-dev.sh`, `docker/docker-compose.yml`) enabling hot-reloaded local editing on port 5174 without local Node.js dependencies.
@@ -122,7 +118,7 @@ flowchart TD
 - **When to Run**: Showing a product's key user journeys (sign-in, editing, table settings) on its website or in a release note.
 - **Trigger**: `/demo-videos [journeys] [output-dir]`
 - **Agent**: [`Demo Videos`](./catalog-agents.md#_21-demo-videos-demo-videos-agent-md) (`demo-videos.agent.md`)
-- **Scaffolding Bundle**: Uses [`skills/playwright-demo-videos-examples`](./catalog-skills.md#_40-playwright-demo-videos-examples-skills-playwright-demo-videos-examples):
+- **Scaffolding Bundle**: Uses [`skills/playwright-demo-videos`](./catalog-skills.md#_27-playwright-demo-videos-skills-playwright-demo-videos):
   - A dedicated `demos/playwright.config.ts` recording every scenario at a fixed 1440×900.
   - A `Director` injecting a visible cursor with click rings, moving and typing at human speed, and marking the edit point that cuts login and setup.
   - Scenario templates resetting their data off camera, so a video can be filmed again on the same database.

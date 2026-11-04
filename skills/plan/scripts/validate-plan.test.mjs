@@ -54,10 +54,14 @@ test("step fields keep their order and reject unknown fields", () => {
 test("code fences cannot break the document structure", () => {
 	const tricky = plan("- **Action:** Document POST /roles, its roles, and its error responses.", `- **Action:** Document POST /roles, its roles, and its error responses.\n  ${F}text\n  ## not a heading\n  ### Step 9: not a step\n  - **Verification:** not a field\n  ${F}`);
 	assert.equal(validatePlanContent(tricky).steps.length, 4);
+	const asciiFence = plan("- **Action:** Document POST /roles, its roles, and its error responses.", `- **Action:** Document POST /roles, its roles, and its error responses.\n  ${F}ascii\n  [Client] -> [API]\n  ${F}`);
+	assert.equal(validatePlanContent(asciiFence).steps.length, 4);
 	badPlan(`${validPlan}\n${F}text\nnever closed\n`, /unclosed code fence/);
 });
 
 test("file scope: steps stay in scope and every in-scope file is covered", () => {
+	const globScope = plan("`src/routes/role.js`, `src/app.js`", "`src/routes/**`, `src/app.js`");
+	assert.equal(validatePlanContent(globScope).steps.length, 4);
 	badPlan(plan("- **Files:** `src/app.js`", "- **Files:** `src/server.js`"), /not declared In Scope/);
 	badPlan(plan("- **Files:** `src/app.js`", "- **Files:** `src/routes/user.js`"), /Out of Scope/);
 	badPlan(plan("- **Files:** `docs/specs/roles.md`", "- **Files:** `tests/routes/role.test.js`"), /"docs\/specs\/roles.md" is not covered/);

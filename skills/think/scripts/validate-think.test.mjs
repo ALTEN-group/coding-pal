@@ -54,11 +54,16 @@ test("chosen approach must name an existing option and justify a custom build", 
 	assert.equal(validateThinkContent(ok).selected.source, "Custom build");
 });
 
-test("Forge bindings must match the selected option", () => {
+test("Forge bindings must match the selected option, and may be omitted for a custom build when no Forge catalog exists", () => {
 	badThink(think("- **forge/rbac-service@2.1:** Called by the route handler to create roles. No local persistence.", "- **None:** Not needed."), /uses the Forge/);
 	const customWithBinding = think("- **Selected:** Option 1", "- **Selected:** Option 2").replace("- **Reasoning:**", "- **Custom Build Reason:** x reason.\n- **Reasoning:**");
 	badThink(customWithBinding, /custom build, so Forge Asset Bindings must state/);
 	badThink(think("## Forge Asset Bindings\n", "## Forge Asset Bindings\n- **None:** nothing.\n"), /cannot combine/);
+
+	const withoutForgeSection = validThink.replace(/## Forge Asset Bindings\n- \*\*forge\/rbac-service@2\.1:\*\*.*\n\n/, "");
+	badThink(withoutForgeSection, /uses the Forge \(Forge reuse\), so "## Forge Asset Bindings" is required/);
+	const customWithoutForgeSection = withoutForgeSection.replace("- **Selected:** Option 1", "- **Selected:** Option 2");
+	assert.equal(validateThinkContent(customWithoutForgeSection).selected.source, "Custom build");
 });
 
 test("blast radius tier is required, and High or Critical need a rollback", () => {

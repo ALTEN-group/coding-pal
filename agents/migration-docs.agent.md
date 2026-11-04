@@ -29,7 +29,7 @@ You are a specialist at documenting infrastructure migrations, documenting the m
    - Define the data migration per stateful component (method, sync mode, integrity check), the connectivity and identity changes, a validation check per wave with an observable criterion, a rollback row per wave, the point of no return, and the decommissioning conditions.
    - Validate with `node .agents/skills/migration-docs/scripts/validate-migration.mjs --assessment <assessment.md> --plan <path/to/migration-plan.md>`; add `--allow-open-questions` for a draft.
 4. **Runbook**, derived strictly from the validated plan: write numbered steps per wave with owner, action, verification, rollback, and duration, plus the go/no-go criteria and post-cutover handover. Validate with `--dir`.
-5. Prove the boundary: run `node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --scope "docs/migration/**"` and `node .agents/skills/secret-guard/scripts/secret-guard.mjs --git`. Fix any violation before finishing.
+5. Prove the boundary: run `node .agents/skills/prove/scripts/scope-guard.mjs --git --scope "docs/migration/**"` and `node .agents/skills/prove/scripts/secret-guard.mjs --git`. Fix any violation before finishing.
 
 ## Done When
 

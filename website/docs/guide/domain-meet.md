@@ -72,9 +72,9 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Transcript to Meeting Pack** | [`/meet`](./catalog-prompts.md#_11-meet) or the [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) in CI | [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_19-meeting-pack-skills-meeting-pack) | `meetings/<date>-<slug>/transcript.md` and `pack.md` |
-| **Read-Back List** | [`/meet-readback`](./catalog-prompts.md#_12-meet-readback) | [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) (read-back mode) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_19-meeting-pack-skills-meeting-pack) | Needs, quotes, terms, and open questions for the Product Owner (no files written) |
-| **Handoff to Triage** | CI after confirmation (`emit-candidates.mjs`) | None (deterministic) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_19-meeting-pack-skills-meeting-pack) | Backlog issue bodies, `candidates.json`, `glossary-additions.md` |
+| **Transcript to Meeting Pack** | [`/meet`](./catalog-prompts.md#_11-meet) or the [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) in CI | [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_15-meeting-pack-skills-meeting-pack) | `meetings/<date>-<slug>/transcript.md` and `pack.md` |
+| **Read-Back List** | [`/meet-readback`](./catalog-prompts.md#_12-meet-readback) | [`Meeting Analyst`](./catalog-agents.md#_12-meeting-analyst-meeting-pack-agent-md) (read-back mode) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_15-meeting-pack-skills-meeting-pack) | Needs, quotes, terms, and open questions for the Product Owner (no files written) |
+| **Handoff to Triage** | CI after confirmation (`emit-candidates.mjs`) | None (deterministic) | [`meeting-pack`](./catalog-instructions.md#meeting-pack-instructions) | [`meeting-pack`](./catalog-skills.md#_15-meeting-pack-skills-meeting-pack) | Backlog issue bodies, `candidates.json`, `glossary-additions.md` |
 
 ---
 

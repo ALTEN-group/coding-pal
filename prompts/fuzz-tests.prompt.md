@@ -15,4 +15,4 @@ If no application root is named and the current workspace contains more than one
 
 ## Run
 
-Hand the resolved application root and optional mode to Fuzz Tester. Implement the complete suite when no mode is specified. Select the applicable tool-specific instruction and skill; the current RESTler implementation uses `restler-fuzzing-tests` and `restler-fuzzing-examples`.
+Hand the resolved application root and optional mode to Fuzz Tester. Implement the complete suite when no mode is specified. Select the applicable tool-specific skill; the current RESTler implementation uses `restler-fuzzing-tests`.

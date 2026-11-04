@@ -12,13 +12,12 @@ When authoring or validating the Think record, follow the installed `think` skil
 - **Clean context separation**: Triage, Think, Plan, and Code run in separate sessions with clean context to prevent token depletion and error compounding.
 - **Strict sequence**: Never create `plan.md` without a validated `think.md`. Never begin coding without a validated `plan.md`.
 - **Triage input**: When `triage.md` exists for the work item, Think starts only from a Product Owner decision of `todo` and reuses its evidence and system mapping rather than re-deriving them. Think owns the blast radius tier, which Triage never sets.
-- **Where code lives**: `think.md` contains **no source code**. Code appears only in `plan.md`.
+- **Where code lives**: `think.md` and `plan.md` contain **no source code**. Source and test code are written only in the Code stage.
 
 ## `think.md` Standards
 
-- **Options, not conclusions**: Record 2 to 4 credible options with trade-offs, cost, and risk, including Forge reuse versus custom build, then the chosen approach with its reasoning.
-- **Compose before you build**: Bind pre-approved Forge assets. A custom build needs a recorded reason and a note of what the Forge catalog was searched for.
-- **Bind Forge assets as `forge/<id>@<version>`** (checked with the `forge` skill when installed), or state `- **None:** <reason>` for a custom build.
+- **Options, not conclusions**: Record 2 to 4 credible options with trade-offs, cost, and risk, then the chosen approach with its reasoning.
+- **Compose before you build (when a Forge catalog exists)**: When the repository maintains or configures a Forge catalog (`catalog.json` / `FORGE_CATALOG`), include `## Forge Asset Bindings` and bind chosen assets as `forge/<id>@<version>` (or state `- **None:** <reason>` plus `Custom Build Reason` for a custom build). When the repository does not maintain a Forge catalog, omit `## Forge Asset Bindings` and `Custom Build Reason`.
 - **Ground in reality**: Trace requests through actual codebase components and layers. Never hallucinate nonexistent layers or Forge assets.
 - **Respect Persistent Context**: Read instructions, specifications, and decision records, and list the ones that bound the solution.
 - **Blast radius is set here, once**: Classify the tier from the affected APIs, schemas, queues, and consumers. Name the rollback mechanism for High and Critical.

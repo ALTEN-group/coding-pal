@@ -60,4 +60,4 @@ labels:
   - traefik.http.routers.app.entrypoints=web
 ```
 
-Documentation-site service block and its Pages workflow: see `vitepress-docs-examples`.
+Documentation-site service block and its Pages workflow: see `vitepress-docs`.

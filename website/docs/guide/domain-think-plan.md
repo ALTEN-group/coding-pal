@@ -32,9 +32,9 @@ flowchart TD
         AG_PLAN --> PLAN_DOC
     end
 
-    subgraph Phase3 ["3. Code Phase (Atomic Execution)"]
+    subgraph Phase3 ["3. Code Phase (Dependency-Order Execution)"]
         direction TB
-        BUILD_AG["<b>AI Build / Coding Agent</b><br/>Applies exactly 1 step per turn"]
+        BUILD_AG["<b>AI Build / Coding Agent</b><br/>Implements steps in dependency order"]
         DONE["<b>Verified Implementation</b><br/>Application boots, all narrow tests pass"]
         BUILD_AG --> DONE
     end
@@ -83,7 +83,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Business Needs to Specifications** | Planning session or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps) |
+| **Business Needs to Specifications** | [`/think` & `/plan`](./catalog-prompts.md) or [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) agents (CI) | [`Thinker` & `Planner`](./catalog-agents.md#_10-thinker-think-agent-md-planner-plan-agent-md) | [`think` & `plan`](./catalog-instructions.md#think-plan-instructions) | [`think` & `plan`](./catalog-skills.md#_10-think-skills-think-plan-skills-plan) | `specs/issue-<n>/think.md` and `plan.md` (options, Forge bindings, blast radius, acceptance criteria, atomic steps) |
 
 ---
 
@@ -93,7 +93,7 @@ flowchart TD
 |---|---|---|
 | **Owner** | Developer + Architect | Architect + Developer |
 | **Decides** | The approach | The sequence |
-| **Contains** | Options considered, chosen approach, Forge asset bindings, system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
+| **Contains** | Options considered, chosen approach, optional Forge asset bindings (when a Forge catalog exists), system flow, constraints and invariants, blast radius, decision record, Persistent Context updates, open questions | File scope and boundaries, prerequisites, acceptance criteria, implementation checklist, test plan, open questions and assumptions, blast radius check |
 | **Code** | None | None (code is written once in Code) |
 | **Reads** | The backlog issue and `triage.md`, the Forge, Persistent Context, the codebase | The validated `think.md` |
 | **Approved by** | Explicit automation identity and date in `## Chosen Approach` | Explicit automation identity and date in `## Approval` |
@@ -112,15 +112,15 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
   - In an agentic operating model, specifications are actionable data structures for models:
     1. `think.md` records the options weighed, the approach chosen, the reusable assets composed, and the blast radius, so the decision is reviewable before anything is planned.
     2. `plan.md` sequences the implementation into atomic, dependency-ordered steps. Each step carries its files, action, a narrow verification, and a bootable check, and traces to the acceptance criteria it serves.
-  - Downstream build agents consume `plan.md` one step at a time in fresh context sessions, preventing error compounding.
+  - Downstream build agents consume `plan.md` in dependency order in a clean context session, verifying each step before proceeding.
 - **Workflow Steps**:
   1. **Phase 1: Think**:
-     - *Interactive (IDE)*: Open a planning session: *"Think through issue #42 and save the Think record to specs/issue-42/think.md."*
+     - *Interactive (IDE)*: Run `/think 42` (or `/think specs/issue-42`) to invoke the **Thinker** agent and save the Think record to `specs/issue-42/think.md`.
      - *Headless (GitHub Action)*: Triggered by the Product Owner's `decision:todo` label, invoking the **Thinker** agent (`think.agent.md`). Where Triage is not used, trigger on `issues: [opened]` with the issue title and body.
      - The agent validates `triage.md` at the `final` stage and proceeds only on `todo`, reusing the Triage evidence and system mapping.
      - It scans the codebase, Forge, and Persistent Context, weighs 2 to 4 options, selects one, binds assets, and classifies blast radius. Required decisions are accepted with an Automation decider and `Automated by <identity> on YYYY-MM-DD` attribution after validation.
   2. **Phase 2: Plan**:
-     - *Interactive (IDE)*: In a clean session: *"From specs/issue-42/think.md, generate specs/issue-42/plan.md."*
+     - *Interactive (IDE)*: In a clean session, run `/plan 42` (or `/plan specs/issue-42`) to invoke the **Planner** agent and generate `specs/issue-42/plan.md` from `specs/issue-42/think.md`.
      - *Headless (CI)*: The **Planner** agent (`plan.agent.md`) synthesizes `plan.md` from the validated `think.md`.
      - Emits the file scope, acceptance criteria, steps with `Files`, `Action`, `Verification`, `Bootable Check`, and `Serves`, the test plan, and the blast radius check.
   3. **Phase 3: Automated Validation**:
@@ -131,7 +131,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
      This checks the drafts (`--stage draft`, the default). After the named approvals are recorded, `--stage approved` checks them.
   4. **Phase 4: Agentic Coding**:
      - After validation, record automated approval in `## Approval` and launch the [`Code Agent`](./domain-code.md) with clean context (`/code 42`). Human review is an optional requested checkpoint.
-     - It implements one step per turn through `code-loop`, implementing the step's `Action`, adjusting only as needed to fit the real repository, and keeps the application bootable.
+     - It implements the steps in dependency order, executing each step's `Action`, adjusting only as needed to fit the real repository, and keeps the application bootable.
 
 #### What the Validator Enforces
 
@@ -139,7 +139,7 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
 |---|---|
 | Exact section order and headings in both records | Predictable structure for reviewers and agents |
 | 2 to 4 sequential options, each with source, trade-offs, cost, and risk | Think records a decision, not a conclusion |
-| Forge bindings are `forge/<id>@<version>` and match the selected option; a custom build needs a recorded reason | Compose before you build |
+| Forge bindings (optional: required when a Forge catalog is used or `Forge reuse` / `Hybrid` is selected) are `forge/<id>@<version>` and match the selected option | Compose before you build without boilerplate when no Forge catalog exists |
 | Blast radius tier set; rollback named for High and Critical (also when Plan raises the tier) | The tier drives automated validation and rollback evidence in Prove |
 | No source code in `think.md` or `plan.md`, and no checklist or step headings in `think.md` | Code is written once in Code, never in Think or Plan |
 | Critical requires a decision record; autonomous records use an Automation decider and valid automation attribution | Human signatures remain reserved for actual humans |
@@ -158,12 +158,12 @@ The Plan reads Think's bindings, constraints, and tier. After validation, both r
 #### Downstream Execution Discipline
 
 When an AI build agent implements functionality from `plan.md`:
-1. It reads `plan.md` in a fresh chat session (clean context).
-2. It executes **exactly one step** from the checklist, implementing the step's `Action`.
-3. It runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
-4. Only when both pass does it mark the step done and proceed to the next step in a clean session.
+1. It reads `plan.md` in a clean session.
+2. It executes the checklist steps in dependency order, implementing each step's `Action` inside its declared `Files`.
+3. For each step, it runs the step's `Verification` command and asserts that the application still boots (`Bootable Check`).
+4. Only when every step's checks and the deterministic controls pass does it open the pull request with its record.
 
-The plan's In Scope list can also feed the [`scope-guard`](./catalog-skills.md#_11-scope-guard-skills-scope-guard) skill, and the `AC-n` identifiers give Prove a stable handle for criteria-test verification.
+The plan's In Scope list feeds `scope-guard.mjs` in the [`prove`](./catalog-skills.md#_11-prove-skills-prove) skill, and the `AC-n` identifiers give Prove a stable handle for criteria-test verification (`verify-criteria.mjs`).
 
 #### Storage & GitHub Issue Attachment Pattern
 

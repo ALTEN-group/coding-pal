@@ -72,27 +72,27 @@ flowchart TD
 
 | Capability | Role | Skill Package | Contract & Schema | Executable Engine | Primary Failure Mode Solved |
 |---|---|---|---|---|---|
-| **Scope & Blast-Radius** | 🛡️ Guard | [`skills/scope-guard/`](./catalog-skills.md#_11-scope-guard-skills-scope-guard) | [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/scope-guard/references/guard-contract.md) | `scope-guard.mjs` | Modifying out-of-scope files, lockfiles, `.env`, or exceeding churn thresholds. |
-| **Dependency Containment** | 🛡️ Guard | [`skills/dependency-guard/`](./catalog-skills.md#_15-dependency-guard-skills-dependency-guard) | [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/dependency-guard/references/dependency-contract.md) | `dependency-guard.mjs` | Silently adding unvetted dependencies to `package.json` or importing banned libraries. |
-| **Secret Leak Prevention** | 🛡️ Guard | [`skills/secret-guard/`](./catalog-skills.md#_16-secret-guard-skills-secret-guard) | [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/secret-guard/references/secret-contract.md) | `secret-guard.mjs` | Hardcoding cloud keys (AWS), SSH/PGP private keys, platform tokens, or credentials. |
-| **Multi-Stage Task Gate** | 🚦 Gate | [`skills/task-gate/`](./catalog-skills.md#_12-task-gate-skills-task-gate) | [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/task-gate/references/gate-contract.md) | `task-gate.mjs` | Premature completion claims; provides decisive error snippets for agent self-repair. |
-| **Declarative Artifact Schema** | 📄 Contract | [`skills/contract-validator/`](./catalog-skills.md#_13-contract-validator-skills-contract-validator) | [`contract-schema.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/contract-validator/references/contract-schema.md) | `validate-contract.mjs` | Generating malformed Markdown/JSON artifacts lacking required markers or headings. |
-| **Anti-Tautology Testing** | 🎯 Probe | [`skills/test-probe/`](./catalog-skills.md#_14-test-probe-skills-test-probe) | [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/test-probe/references/probe-contract.md) | `test-probe.mjs` | Writing vacuous tests that pass unconditionally without proving the underlying bugfix. |
-| **Migration Reversibility** | 🎯 Probe | [`skills/rollback-probe/`](./catalog-skills.md#_17-rollback-probe-skills-rollback-probe) | [`rollback-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/rollback-probe/references/rollback-contract.md) | `rollback-probe.mjs` | Authoring irreversible database migrations or broken `<rollback>` and `DOWN` scripts. |
+| **Scope & Blast-Radius** | 🛡️ Guard | [`skills/prove/`](./catalog-skills.md#_11-prove-skills-prove) | [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/guard-contract.md) | `scope-guard.mjs` | Modifying out-of-scope files, lockfiles, `.env`, or exceeding churn thresholds. |
+| **Dependency Containment** | 🛡️ Guard | [`skills/prove/`](./catalog-skills.md#_11-prove-skills-prove) | [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/dependency-contract.md) | `dependency-guard.mjs` | Silently adding unvetted dependencies to `package.json` or importing banned libraries. |
+| **Secret Leak Prevention** | 🛡️ Guard | [`skills/prove/`](./catalog-skills.md#_11-prove-skills-prove) | [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/secret-contract.md) | `secret-guard.mjs` | Hardcoding cloud keys (AWS), SSH/PGP private keys, platform tokens, or credentials. |
+| **Multi-Stage Task Gate** | 🚦 Gate | [`skills/prove/`](./catalog-skills.md#_11-prove-skills-prove) | [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/gate-contract.md) | `task-gate.mjs` | Premature completion claims; provides decisive error snippets for agent self-repair. |
+| **Declarative Artifact Schema** | 📄 Contract | [`skills/contract-validator/`](./catalog-skills.md#_12-contract-validator-skills-contract-validator) | [`contract-schema.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/contract-validator/references/contract-schema.md) | `validate-contract.mjs` | Generating malformed Markdown/JSON artifacts lacking required markers or headings. |
+| **Anti-Tautology Testing** | 🎯 Probe | [`skills/prove/`](./catalog-skills.md#_11-prove-skills-prove) | [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/probe-contract.md) | `test-probe.mjs` | Writing vacuous tests that pass unconditionally without proving the underlying bugfix. |
+| **Migration Reversibility** | 🎯 Probe | [`skills/rollback-probe/`](./catalog-skills.md#_13-rollback-probe-skills-rollback-probe) | [`rollback-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/rollback-probe/references/rollback-contract.md) | `rollback-probe.mjs` | Authoring irreversible database migrations or broken `<rollback>` and `DOWN` scripts. |
 
 ---
 
 ## Detailed Control Workflows
 
-### 1. Scope & Blast-Radius Guard (`skills/scope-guard/`)
+### 1. Scope & Blast-Radius Guard (`skills/prove/scripts/scope-guard.mjs`)
 
 - **Role**: 🛡️ Guard
 - **When to Use**: During agent code editing, PR preparation, and in pre-commit git hooks.
-- **Governing Contract**: [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/scope-guard/references/guard-contract.md)
+- **Governing Contract**: [`guard-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/guard-contract.md)
 - **Workflow & Command**:
   ```bash
   # Check git working tree changes (or branch diff via --base origin/main) against allowed scopes
-  node .agents/skills/scope-guard/scripts/scope-guard.mjs \
+  node .agents/skills/prove/scripts/scope-guard.mjs \
     --scope "src/auth/**,tests/auth/**" \
     --git \
     --base origin/main \
@@ -106,18 +106,18 @@ flowchart TD
 
 ---
 
-### 2. Dependency Containment Guard (`skills/dependency-guard/`)
+### 2. Dependency Containment Guard (`skills/prove/scripts/dependency-guard.mjs`)
 
 - **Role**: 🛡️ Guard
 - **When to Use**: Whenever an agent touches package manifests (`package.json`, `pom.xml`, `requirements.txt`).
-- **Governing Contract**: [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/dependency-guard/references/dependency-contract.md)
+- **Governing Contract**: [`dependency-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/dependency-contract.md)
 - **Workflow & Command**:
   ```bash
   # Check git changes to package.json against baseline HEAD (or --base origin/main)
-  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git
+  node .agents/skills/prove/scripts/dependency-guard.mjs --git
 
   # Permit specific, pre-approved additions
-  node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --base origin/main --allow "zod,dotenv"
+  node .agents/skills/prove/scripts/dependency-guard.mjs --git --base origin/main --allow "zod,dotenv"
   ```
 - **Invariants Enforced**:
   - Rejects additions to `dependencies` or `devDependencies` without explicit `--allow` authorization.
@@ -126,18 +126,18 @@ flowchart TD
 
 ---
 
-### 3. Secret & Credential Guard (`skills/secret-guard/`)
+### 3. Secret & Credential Guard (`skills/prove/scripts/secret-guard.mjs`)
 
 - **Role**: 🛡️ Guard
 - **When to Use**: Before any commit or patch generation to ensure zero confidential credentials leak.
-- **Governing Contract**: [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/secret-guard/references/secret-contract.md)
+- **Governing Contract**: [`secret-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/secret-contract.md)
 - **Workflow & Command**:
   ```bash
   # Scan added lines in git diff against HEAD (or --base origin/main)
-  node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+  node .agents/skills/prove/scripts/secret-guard.mjs --git
 
   # Scan specific source files directly
-  node .agents/skills/secret-guard/scripts/secret-guard.mjs --file src/config.js --file src/api.js
+  node .agents/skills/prove/scripts/secret-guard.mjs --file src/config.js --file src/api.js
   ```
 - **Invariants Enforced**:
   - Detects AWS Access Key IDs (`AKIA[0-9A-Z]{16}`).
@@ -147,15 +147,15 @@ flowchart TD
 
 ---
 
-### 4. Multi-Stage Task Gate (`skills/task-gate/`)
+### 4. Multi-Stage Task Gate (`skills/prove/scripts/task-gate.mjs`)
 
 - **Role**: 🚦 Gate
 - **When to Use**: Inside an agent's `Done When` declaration and CI verification jobs.
-- **Governing Contract**: [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/task-gate/references/gate-contract.md)
+- **Governing Contract**: [`gate-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/gate-contract.md)
 - **Workflow & Command**:
   ```bash
   # Execute verification stages with fail-fast execution and self-repair diagnostics
-  node .agents/skills/task-gate/scripts/task-gate.mjs \
+  node .agents/skills/prove/scripts/task-gate.mjs \
     --stage "lint:npm run lint" \
     --stage "types:npx tsc --noEmit" \
     --stage "test:npm test -- tests/auth.test.js" \
@@ -188,15 +188,15 @@ flowchart TD
 
 ---
 
-### 6. Anti-Tautology Test Probe (`skills/test-probe/`)
+### 6. Anti-Tautology Test Probe (`skills/prove/scripts/test-probe.mjs`)
 
 - **Role**: 🎯 Probe / Oracle
 - **When to Use**: When an agent authors unit or integration tests, to prove the tests actually verify the fix.
-- **Governing Contract**: [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/test-probe/references/probe-contract.md)
+- **Governing Contract**: [`probe-contract.md`](https://github.com/ALTEN-group/coding-pal/blob/main/skills/prove/references/probe-contract.md)
 - **Workflow & Command**:
   ```bash
   # Assert test suite fails when source fix is temporarily reverted (against HEAD or --base origin/main)
-  node .agents/skills/test-probe/scripts/test-probe.mjs \
+  node .agents/skills/prove/scripts/test-probe.mjs \
     --test-cmd "npm test -- tests/auth.test.js" \
     --source "src/auth/service.js" \
     --base origin/main
@@ -242,19 +242,19 @@ Instead of subjective completion criteria, reference deterministic skill scripts
 - The assigned defect or feature requirement is resolved in code.
 - Blast-radius guard exits with code 0:
   ```bash
-  node .agents/skills/scope-guard/scripts/scope-guard.mjs --scope "src/auth/**" --git
+  node .agents/skills/prove/scripts/scope-guard.mjs --scope "src/auth/**" --git
   ```
 - Security guard detects 0 hardcoded credentials:
   ```bash
-  node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+  node .agents/skills/prove/scripts/secret-guard.mjs --git
   ```
 - Verification gate passes all stages:
   ```bash
-  node .agents/skills/task-gate/scripts/task-gate.mjs --stage "lint:npm run lint" --stage "test:npm test -- tests/auth.test.js"
+  node .agents/skills/prove/scripts/task-gate.mjs --stage "lint:npm run lint" --stage "test:npm test -- tests/auth.test.js"
   ```
 - Anti-tautology probe confirms test falsifiability:
   ```bash
-  node .agents/skills/test-probe/scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
+  node .agents/skills/prove/scripts/test-probe.mjs --test-cmd "npm test -- tests/auth.test.js" --source "src/auth/service.js"
   ```
 ```
 
@@ -268,9 +268,9 @@ Automate developer and agent safeguards locally before changes can be committed:
 set -e
 
 echo "Running Coding Pal Deterministic Safeguards..."
-node .agents/skills/scope-guard/scripts/scope-guard.mjs --git
-node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git
-node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
+node .agents/skills/prove/scripts/scope-guard.mjs --git
+node .agents/skills/prove/scripts/dependency-guard.mjs --git
+node .agents/skills/prove/scripts/secret-guard.mjs --git
 echo "Safeguards passed cleanly."
 ```
 

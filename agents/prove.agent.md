@@ -13,22 +13,23 @@ Decisions and validation proceed autonomously at every blast radius, including p
 - DO NOT weaken, skip, waive, or edit any deterministic control.
 - DO NOT claim or perform a "line-by-line" syntax review. Governance bans line-by-line review as a gate; inspect **Client Intent**, **Behavioral Experience**, and **Safety & Blast Radius**.
 - Treat a stubbed implementation, hardcoded test bypass, or missing acceptance-criterion behavior as a `FAIL` in `## Criteria Verification` and `## Semantic Review`, even if tests exit 0.
-- Follow the installed `prove` and `pr-record` skills and the `prove` and `prove-controls` instructions.
+- Follow the installed `prove` and `code` skills and the `prove` instruction.
 
 ## Approach
 
 1. **Load Context**:
-   - Read `specs/issue-<n>/think.md`, `specs/issue-<n>/plan.md`, `specs/issue-<n>/progress.json`, the pull request body, and the git diff against the base branch (`git diff origin/<base>...HEAD`).
+   - Read `specs/issue-<n>/think.md`, `specs/issue-<n>/plan.md`, the pull request body, and the git diff against the base branch (`git diff origin/<base>...HEAD`).
+   - If CI pre-computed deterministic control results (e.g., `prove-controls-summary.md`), read that summary first and avoid redundantly re-executing already-completed controls.
 2. **Execute or Inspect Deterministic Controls**:
    - Verify each control in the work item context:
-     - `control-guard`: `node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/<base>`
-     - `secret-guard`: `node .agents/skills/secret-guard/scripts/secret-guard.mjs --git --base origin/<base>`
-     - `dependency-guard`: `node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git --base origin/<base>`
-     - `scope-guard`: `node .agents/skills/scope-guard/scripts/scope-guard.mjs --git --base origin/<base> ...`
-     - `task-gate`: build, type check, lint, and test stages
-     - `criteria-verify`: `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs --plan specs/issue-<n>/plan.md --report <report> --require-test-files`
-     - `test-probe`: `node .agents/skills/test-probe/scripts/test-probe.mjs --base origin/<base> --test-cmd "<cmd>" --source <modified-src>`
-     - `preview-smoke`: `node .agents/skills/preview-smoke/scripts/preview-smoke.mjs --url <url> --routes <routes>`
+     - `control-guard`: `node .agents/skills/prove/scripts/control-guard.mjs --git origin/<base>`
+     - `secret-guard`: `node .agents/skills/prove/scripts/secret-guard.mjs --git --base origin/<base>`
+     - `dependency-guard`: `node .agents/skills/prove/scripts/dependency-guard.mjs --git --base origin/<base>`
+     - `scope-guard`: `node .agents/skills/prove/scripts/scope-guard.mjs --git --base origin/<base> ...`
+     - `task-gate`: `node .agents/skills/prove/scripts/task-gate.mjs --stage "<name>:<command>"` (build, type check, lint, and test stages)
+     - `criteria-verify`: `node .agents/skills/prove/scripts/verify-criteria.mjs --plan specs/issue-<n>/plan.md --report <report> --require-test-files`
+     - `test-probe`: `node .agents/skills/prove/scripts/test-probe.mjs --base origin/<base> --test-cmd "<cmd>" --source <modified-src>`
+     - `preview-smoke`: `node .agents/skills/prove/scripts/preview-smoke.mjs --url <url> --routes <routes>`
 3. **Verify Every Acceptance Criterion (`AC-<n>`)**:
    - For each `AC-<n>` in `plan.md`, inspect the actual production code diff and test assertions.
    - Cite the exact `file:line` in `Implementation Evidence` and the test file/name in `Test Evidence`. Mark `PASS` only when the behavior is genuinely implemented and tested.

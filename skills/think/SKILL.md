@@ -21,8 +21,8 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
 
 1. **Read `references/think-contract.md` now.** It is the authoritative source for document structure, required headings, option fields, and validation rules. Scope exploration and architectural choices are owned by the calling `Thinker` agent (`think.agent.md`), active session, or issue trigger.
 2. Author `think.md`:
-   - Explore 2 to 4 options (including Forge reuse versus custom build; discover with the `forge` skill when installed, or record `Source: Custom build` with `Custom Build Reason` and `- **None:** <reason>` when no Forge catalog or matching asset exists).
-   - Choose one approach with reasoning, bind Forge assets as `forge/<id>@<version>` (or `- **None:** <reason>`), trace the real codebase, record constraints, classify the blast radius, draft a decision record when a public API, schema, or boundary changes, and identify Persistent Context updates.
+   - Explore 2 to 4 options (discover with the `forge` skill when the repository maintains a Forge catalog; otherwise use `Source: Custom build` and omit `## Forge Asset Bindings` and `Custom Build Reason`).
+   - Choose one approach with reasoning, bind Forge assets as `forge/<id>@<version>` when a Forge catalog is in use (or `- **None:** <reason>`), trace the real codebase, record constraints, classify the blast radius, draft a decision record when a public API, schema, or boundary changes, and identify Persistent Context updates.
 3. Validate with the deterministic script from this skill's directory:
 
 ```bash

@@ -85,10 +85,10 @@ flowchart TD
 |---|---|---|---|---|---|
 | What to build next inside the agreed outcome | Product Owner | Squad, customers | Scorecard row | [`triage`](./domain-triage.md) `triage.md` | `validate-triage.mjs --stage final` |
 | Whether to run an experiment | Product Owner | Architect | Hypothesis entry | `hypothesis-ledger` | `ledger.mjs validate` |
-| Implementation approach inside the squad's code | Developer | Architect | Pull request | [`think` & `plan`](./domain-think-plan.md) approach, `pr-record` | `validate-think.mjs`, `validate-plan.mjs`, `validate-pr.mjs` |
+| Implementation approach inside the squad's code | Developer | Architect | Pull request | [`think` & `plan`](./domain-think-plan.md) approach, `code` | `validate-think.mjs`, `validate-plan.mjs`, `validate-pr.mjs` |
 | Public contract or cross-service boundary change | Architect | Owning squads | Decision record | `decision-record`, Type `contract-change` | `validate-decision.mjs` |
 | Data model change affecting other squads | Architect | Affected squads | Decision record + migration plan | `decision-record`, Type `data-model` (`Migration Plan`) | `validate-decision.mjs` |
-| Security-sensitive change (auth, PII, billing) | Architect | Developer, squad | Review record on the pull request | `pr-record` dual validation, `security-gate`; `decision-record` Type `security` when it sets lasting policy | `validate-pr.mjs`, `validate-decision.mjs` |
+| Security-sensitive change (auth, PII, billing) | Architect | Developer, squad | Review record on the pull request | `code` dual validation, `prove` (`secret-guard`, `dependency-guard`, `control-guard`); `decision-record` Type `security` when it sets lasting policy | `validate-pr.mjs`, `validate-prove.mjs`, `validate-decision.mjs` |
 | Adding a new runtime, database, or vendor | Architect | DevOps | Decision record | `decision-record`, Type `runtime-vendor` | `validate-decision.mjs` |
 | AI usage policy and model access | Architect | Legal | Policy version | `decision-record`, Type `ai-policy` (the accepted record number is the policy version) | `validate-decision.mjs` |
 | Adopting a new model, agent, or prompt standard | Architect | Squads | Evaluation report | `decision-record`, Type `model-adoption` (`Evaluation Report` must exist) | `validate-decision.mjs --root .` |
@@ -177,16 +177,16 @@ Where a mechanical guard exists it is named. **Policy** means no script can enfo
 
 | Factory anti-pattern | Guard in Coding Pal |
 |---|---|
-| Developers still writing code syntax | `flow-metrics` Human rework rate (`pr.human_edit`, target 0%) detects it; `pr-record` keeps the Human Validation to intent, experience, and safety. Otherwise policy |
-| Manual line-by-line syntax reviews | `pr-record` (a Human Validation that claims a line-by-line review is rejected); `flow-metrics` validation turnaround shows reviewers slipping into reading (trend only, it never warns) |
+| Developers still writing code syntax | `flow-metrics` Human rework rate (`pr.human_edit`, target 0%) detects it; `code` keeps the Human Validation to intent, experience, and safety. Otherwise policy |
+| Manual line-by-line syntax reviews | `code` (a Human Validation that claims a line-by-line review is rejected); `flow-metrics` validation turnaround shows reviewers slipping into reading (trend only, it never warns) |
 | Skipping client meetings and building from stale tickets | `meeting-pack` (confirmed packs only) and `triage` (verbatim, source-checked evidence) |
 | The AI center of excellence that owns delivery | Policy |
-| Enablement as an approval board | Policy. The mechanical alternative is a guardrail such as `security-gate` or `control-guard` instead of a meeting |
+| Enablement as an approval board | Policy. The mechanical alternative is a guardrail such as `secret-guard`, `dependency-guard`, or `control-guard` instead of a meeting |
 | Technology-layer squads | Policy |
-| Skipping Plan | `plan` (a validated `plan.md` with testable acceptance criteria that every step serves), `code-loop` (Code runs step by step from `plan.md`; a plan edited after Code started stops the loop) |
-| Weak deterministic controls ("Trust the model") | `control-guard` (weakened or skipped tests, lowered thresholds, suppressions), `security-gate`; the full set is in [Prove](./domain-prove.md) |
+| Skipping Plan | `plan` (a validated `plan.md` with testable acceptance criteria that every step serves) and `code` (`validate-pr.mjs` requires an approved `plan.md` and criteria traceability) |
+| Weak deterministic controls ("Trust the model") | `control-guard` (weakened or skipped tests, lowered thresholds, suppressions), `secret-guard`, `dependency-guard`; the full set is in [Prove](./domain-prove.md) |
 | Hand-fixing generated bugs | `control-guard` (the bug rule: the new check is committed before the fix), `flow-metrics` Human rework rate (`pr.human_edit`), `context-health` (corrections become Persistent Context) |
-| Uniform review effort | `think` & `plan` (one blast radius tier), `pr-record` (tier-matched automated evidence; High/Critical retain rollback checks) |
+| Uniform review effort | `think` & `plan` (one blast radius tier), `code` (tier-matched automated evidence; High/Critical retain rollback checks) |
 | Batching releases | `release-plan` (exactly one issue per release) |
 | Prompting instead of context | `context-health` (a topic corrected or re-explained twice needs an artifact) |
 | The everything instruction | `context-health` (instruction length limit, broad `applyTo`, near-duplicates) |

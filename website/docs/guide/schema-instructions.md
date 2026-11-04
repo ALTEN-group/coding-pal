@@ -15,7 +15,7 @@ Examples:
 - `instructions/sharp-agent.instructions.md`
 - `instructions/node-express.instructions.md`
 - `instructions/docker.instructions.md`
-- `instructions/vitepress-docs.instructions.md`
+- `instructions/angular-admin.instructions.md`
 
 ---
 
@@ -41,8 +41,8 @@ applyTo: string
 
 ```yaml
 ---
-description: "VitePress product documentation site: user-supplied docs root, Markdown guides, Mermaid, Traefik /docs in dev, GitHub Pages in prod. Use when scaffolding or editing a VitePress docs site."
-applyTo: "**/.vitepress/**,**/docs/guide/**/*.md,**/docs/index.md,**/docs/public/**"
+description: "Node.js + Express backend microservice conventions: structure, routing, middlewares, error envelopes, validation, security, and health checks. Use when creating or modifying backend JavaScript code."
+applyTo: "src/**/*.js"
 ---
 ```
 

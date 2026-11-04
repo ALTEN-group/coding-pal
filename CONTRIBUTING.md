@@ -17,15 +17,14 @@ Use the smallest primitive that owns the behavior without forcing unrelated work
 
 ## Decision Tree
 
-1. Does the guidance apply to most code changes in a file family?
-   - Create an **instruction**.
-2. Does it define a named specialist with a distinct scope, method, or permissions?
-   - Create an **agent**.
-3. Does it provide a reusable workflow, a contract, scripts, fixtures, templates, or references used by several tasks or agents?
-   - Create a **skill**.
-4. Is it one focused operation with a small set of inputs?
-   - Create a **prompt**.
-5. If it does not fit one answer, split responsibilities. Do not make one file own everything.
+1. **When should it load?**
+   - **Always-on** (applies across a file glob or background rule): create an **instruction** (`instructions/*.instructions.md`). If it also needs code scaffolds or multi-line examples, offload them to a paired **skill** (`skills/<name>-examples/`).
+   - **On-demand** (invoked per task): branch by **what it owns** below.
+2. **What does it own (on-demand)?**
+   - **User slash command** (`/name` + input resolution): create a **prompt** (`prompts/*.prompt.md`) that delegates to an **agent**.
+   - **Specialist persona** (bounded scope, constraints, method, and `Done When`): create an **agent** (`agents/*.agent.md`). If it emits a structured artifact or needs machine validation, pair it with a **skill**.
+   - **Reusable workflow or check** (contract, validator script, fixtures, or templates): create a **skill** (`skills/<name>/SKILL.md`).
+3. If a capability spans multiple branches, split responsibilities across paired primitives. Do not make one file own everything.
 
 ## Ownership Rules
 
@@ -156,7 +155,7 @@ When an agent uses a skill, divide responsibility this way:
 | Files and systems to examine | Agent |
 | Domain-specific review or implementation method | Agent and applicable instructions |
 | Universal coding standards | Instruction |
-| Blast-radius & file churn boundary | Guard (`skills/scope-guard`) |
+| Blast-radius & file churn boundary | Guard (`skills/prove/scripts/scope-guard.mjs`) |
 | Reusable output contract | Skill (`references/`) |
 | Report parsing, validation, normalization | Skill script (`scripts/`) |
 | Falsifiable execution certification | Gate (narrow test command + validator) |

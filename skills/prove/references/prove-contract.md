@@ -51,7 +51,7 @@ A Markdown table with columns `Control | Status | Evidence`:
 | preview-smoke | PASS | GET / returned 200 within latency budget |
 ```
 
-- Every core control (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) must appear once. Additional project controls (`mutation-bar`, `contract-compat`, `security-gate`) may also be included.
+- Every core control (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) must appear once.
 - `Status` is `PASS`, `FAIL`, or `N/A (<reason>)` (for example `N/A (no existing tracked src/** file modified)`).
 - `Evidence` must be concrete, non-placeholder text.
 

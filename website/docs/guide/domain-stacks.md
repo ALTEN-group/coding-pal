@@ -78,8 +78,8 @@ flowchart TD
 - **Architectural Rules**:
   - **Directory Layering**: Strict separation between `routes/`, `controllers/`, `services/`, `models/`, and `middlewares/`. Controllers never execute database queries; services never handle HTTP `req`/`res`.
   - **Standardized Envelopes**:
-    - Success: `{ "data": ... }`
-    - Failure: `{ "error": { "code": "RESOURCE_NOT_FOUND", "message": "..." } }`
+    - Success: `{ "rows": [...], "total": n }` (or `204 No Content`)
+    - Failure: `{ "statusCode": 404, "message": "..." }` (`@dwtechs/errandler-express`)
   - **Hardened Security**: Helmet enabled, strict CORS whitelist, rate-limiting on public routes, and input validation via schemas.
 
 ### 2. Angular Enterprise Admin Portal

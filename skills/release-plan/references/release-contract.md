@@ -8,7 +8,7 @@ AI prepares and validates release records. Deterministic controls authorize rele
 
 ## 1. Directory & Naming
 
-- `specs/issue-<number>/release.md`, next to `triage.md`, `think.md`, `plan.md`, and `progress.json`.
+- `specs/issue-<number>/release.md`, next to `triage.md`, `think.md`, `plan.md`, and `prove.md`.
 - File name is exactly `release.md` (lowercase ASCII). UTF-8 without BOM.
 - **One issue per release.** Batching changes into one release multiplies blast radius and is an anti-pattern: the `Issue` field holds exactly one `#<n>`.
 - Trunk-based: a tag `v<version>` on `main` triggers the release pipeline (`references/release.yml`). The tag message names the one issue (`Issue: #<n>`).

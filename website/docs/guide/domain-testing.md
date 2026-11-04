@@ -151,26 +151,19 @@ flowchart TD
         A_PERF["<b>Performance Tester Agent</b><br/>(performance-tests.agent.md)"]
     end
 
-    subgraph Standards ["Scoped Instruction"]
-        I_PERF["<b>k6-performance-tests.instructions.md</b><br/>tests/perf/"]
-    end
-
     subgraph Bundles ["Executable Skill"]
-        S_PERF["<b>skills/k6-performance-examples/</b><br/>Fixtures, thresholds, runners"]
+        S_PERF["<b>skills/k6-performance-tests/</b><br/>Rules, fixtures, thresholds, runners"]
     end
 
     P_PERF --> A_PERF
-    A_PERF -.-> I_PERF
     A_PERF === S_PERF
 
     classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef standard fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
 
     class P_PERF prompt;
     class A_PERF agent;
-    class I_PERF standard;
     class S_PERF skill;
 ```
 
@@ -189,26 +182,19 @@ flowchart TD
         A_FUZZ["<b>Fuzz Tester Agent</b><br/>(fuzz-tests.agent.md)"]
     end
 
-    subgraph Standards ["Scoped Instruction"]
-        I_FUZZ["<b>restler-fuzzing-tests.instructions.md</b><br/>tests/restler/"]
-    end
-
     subgraph Bundles ["Executable Skill"]
-        S_FUZZ["<b>skills/restler-fuzzing-examples/</b><br/>OpenAPI dicts, auth scripts"]
+        S_FUZZ["<b>skills/restler-fuzzing-tests/</b><br/>Rules, OpenAPI dicts, auth scripts"]
     end
 
     P_FUZZ --> A_FUZZ
-    A_FUZZ -.-> I_FUZZ
     A_FUZZ === S_FUZZ
 
     classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef standard fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
 
     class P_FUZZ prompt;
     class A_FUZZ agent;
-    class I_FUZZ standard;
     class S_FUZZ skill;
 ```
 
@@ -223,8 +209,8 @@ flowchart TD
 | **Angular Component Specs** | [`/angular-unit-tests`](./catalog-prompts.md#_3-angular-unit-tests) | [`Unit Tester`](./catalog-agents.md#_4-unit-tester-unit-test-agent-md) | [`angular-unit-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Vitest (`ng test`) |
 | **Angular E2E Flows** | [`/angular-e2e-tests`](./catalog-prompts.md#_4-angular-e2e-tests) | [`E2E Tester`](./catalog-agents.md#_6-e2e-tester-e2e-test-agent-md) | [`angular-e2e-tests`](./catalog-instructions.md#automated-testing-instructions) | — | Playwright |
 | **PostgreSQL Migration Tests** | [`/postgres-liquibase-tests`](./catalog-prompts.md#_5-postgres-liquibase-tests) | [`Unit Tester`](./catalog-agents.md#_4-unit-tester-unit-test-agent-md) | [`postgres-liquibase-tests`](./catalog-instructions.md#automated-testing-instructions) | — | SQL Assertions |
-| **k6 Performance Tests** | [`/performance-tests`](./catalog-prompts.md#_7-performance-tests) | [`Performance Tester`](./catalog-agents.md#_8-performance-tester-performance-tests-agent-md) | [`k6-performance-tests`](./catalog-instructions.md#automated-testing-instructions) | [`k6-performance-examples`](./catalog-skills.md#_8-k6-performance-examples-skills-k6-performance-examples) | k6 (Docker runner) |
-| **RESTler API Fuzzing** | [`/fuzz-tests`](./catalog-prompts.md#_8-fuzz-tests) | [`Fuzz Tester`](./catalog-agents.md#_9-fuzz-tester-fuzz-tests-agent-md) | [`restler-fuzzing-tests`](./catalog-instructions.md#automated-testing-instructions) | [`restler-fuzzing-examples`](./catalog-skills.md#_9-restler-fuzzing-examples-skills-restler-fuzzing-examples) | Microsoft RESTler |
+| **k6 Performance Tests** | [`/performance-tests`](./catalog-prompts.md#_7-performance-tests) | [`Performance Tester`](./catalog-agents.md#_8-performance-tester-performance-tests-agent-md) | — | [`k6-performance-tests`](./catalog-skills.md#_8-k6-performance-tests-skills-k6-performance-tests) | k6 (Docker runner) |
+| **RESTler API Fuzzing** | [`/fuzz-tests`](./catalog-prompts.md#_8-fuzz-tests) | [`Fuzz Tester`](./catalog-agents.md#_9-fuzz-tester-fuzz-tests-agent-md) | — | [`restler-fuzzing-tests`](./catalog-skills.md#_9-restler-fuzzing-tests-skills-restler-fuzzing-tests) | Microsoft RESTler |
 
 ---
 
@@ -254,7 +240,7 @@ flowchart TD
   - Uses **Supertest** (`supertest(app)`) to drive HTTP requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) through the Express middleware pipeline.
   - Mocks database operations and external outbound HTTP clients at the boundary, without mocking route handlers or internal Express middleware.
 - **Falsifiable Done When**:
-  - Asserts HTTP status codes, JSON response body envelopes (`{ data }`, `{ error }`), and Content-Type headers.
+  - Asserts HTTP status codes, JSON response body envelopes (`{ rows, total }`, `{ statusCode, message }`), and Content-Type headers.
   - Validates query routes (`POST /search`), mutations, validation failures (400), authentication/ACL denials (401/403), and missing resources (404).
   - Route test suite passes via narrowest command (`npm test -- tests/routes/<resource>.test.js`).
   - **Zero production code files are modified.**
@@ -287,7 +273,7 @@ flowchart TD
 - **Trigger**: `/postgres-liquibase-tests [db/changelog/path]`
 - **Scope & Isolation**:
   - Generates deterministic SQL test scripts validating forward migrations, rollback integrity, and soft-delete triggers.
-- **Automated Oracle**: Uses [`rollback-probe`](./catalog-skills.md#_17-rollback-probe-skills-rollback-probe) to mechanically certify the full roundtrip lifecycle (`Forward` $\rightarrow$ `Rollback` $\rightarrow$ `Forward Re-apply`).
+- **Automated Oracle**: Uses [`rollback-probe`](./catalog-skills.md#_13-rollback-probe-skills-rollback-probe) to mechanically certify the full roundtrip lifecycle (`Forward` $\rightarrow$ `Rollback` $\rightarrow$ `Forward Re-apply`).
 - **Falsifiable Done When**:
   - Migration applies cleanly to a temporary schema, verification assertions pass, and rollback returns the schema to pristine state (`rollback-probe.mjs` exits 0).
 
@@ -295,7 +281,7 @@ flowchart TD
 
 - **Trigger**: `/performance-tests [service-name]`
 - **Agent**: [`Performance Tester`](./catalog-agents.md#_8-performance-tester-performance-tests-agent-md)
-- **Scaffolding**: Employs [`k6-performance-examples`](./catalog-skills.md#_8-k6-performance-examples-skills-k6-performance-examples) containing Docker Compose runners and threshold templates.
+- **Scaffolding**: Employs [`k6-performance-tests`](./catalog-skills.md#_8-k6-performance-tests-skills-k6-performance-tests) containing normative rules, Docker Compose runners, and threshold templates.
 - **Falsifiable Done When**:
   - k6 scenario executes against the target endpoint asserting explicit SLA thresholds (e.g. `http_req_duration: ['p(95)<300']`, `http_req_failed: ['rate<0.01']`).
   - Outputs summary metrics in console and JSON formats.
@@ -304,14 +290,14 @@ flowchart TD
 
 - **Trigger**: `/fuzz-tests [openapi-path]`
 - **Agent**: [`Fuzz Tester`](./catalog-agents.md#_9-fuzz-tester-fuzz-tests-agent-md)
-- **Scaffolding**: Employs [`restler-fuzzing-examples`](./catalog-skills.md#_9-restler-fuzzing-examples-skills-restler-fuzzing-examples) containing compilation configurations, dictionary templates, and CI gating scripts.
+- **Scaffolding**: Employs [`restler-fuzzing-tests`](./catalog-skills.md#_9-restler-fuzzing-tests-skills-restler-fuzzing-tests) containing normative rules, compilation configurations, dictionary templates, and CI gating scripts.
 - **Falsifiable Done When**:
   - RESTler compiles grammar from OpenAPI specs, fuzz-lean phase passes with 0 unexpected 500 server crashes.
 
 ### 8. Anti-Tautology Falsifiability Verification
 
 - **Role**: Behavioral probe asserting tests are not vacuous or self-satisfying.
-- **Skill Engine**: [`test-probe`](./catalog-skills.md#_14-test-probe-skills-test-probe) (`skills/test-probe/scripts/test-probe.mjs`).
+- **Skill Engine**: [`prove`](./catalog-skills.md#_11-prove-skills-prove) (`skills/prove/scripts/test-probe.mjs`).
 - **Mechanism**:
   - Asserts that modified code passes tests initially.
   - Temporarily reverts the source code under test to baseline HEAD (or `--base <git-ref>`).

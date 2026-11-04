@@ -44,7 +44,7 @@ Treat a nonzero validator exit as invalid specification output and fix `plan.md`
 
 4. When running in a GitHub Action or automated CI workflow:
    - Post the validated `plan.md` as a non-destructive **Issue Comment** via `gh issue comment` per `references/plan-contract.md`.
-   - When the pipeline also persists specifications on a branch, commit `plan.md` to `specs/issue-<number>/plan.md` on branch `specs/issue-<number>` and apply the issue label `specs:ready`. The plan still needs the Developer's approval before Code starts.
+   - When the pipeline also persists specifications on a branch, commit `plan.md` to `specs/issue-<number>/plan.md` on branch `specs/issue-<number>` and apply the issue label `specs:ready`.
 
 ## Done When
 

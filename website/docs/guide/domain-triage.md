@@ -70,8 +70,8 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|---|
-| **Candidate Need to Backlog Issue** | [`/triage`](./catalog-prompts.md#_9-triage) or the [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) in CI | [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) | [`triage`](./catalog-instructions.md#triage-instructions) | [`triage`](./catalog-skills.md#_18-triage-skills-triage) | `specs/issue-<n>/triage.md` (evidence, system mapping, scorecard, proposed decision) |
-| **Weekly Review Pack** | [`/triage-review`](./catalog-prompts.md#_10-triage-review) | [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) (review mode) | [`triage`](./catalog-instructions.md#triage-instructions) | [`triage`](./catalog-skills.md#_18-triage-skills-triage) | Ranked backlog, unscored needs, ties, and `explore` follow-ups (no files written) |
+| **Candidate Need to Backlog Issue** | [`/triage`](./catalog-prompts.md#_9-triage) or the [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) in CI | [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) | [`triage`](./catalog-instructions.md#triage-instructions) | [`triage`](./catalog-skills.md#_14-triage-skills-triage) | `specs/issue-<n>/triage.md` (evidence, system mapping, scorecard, proposed decision) |
+| **Weekly Review Pack** | [`/triage-review`](./catalog-prompts.md#_10-triage-review) | [`Triage Analyst`](./catalog-agents.md#_11-triage-analyst-triage-agent-md) (review mode) | [`triage`](./catalog-instructions.md#triage-instructions) | [`triage`](./catalog-skills.md#_14-triage-skills-triage) | Ranked backlog, unscored needs, ties, and `explore` follow-ups (no files written) |
 
 ---
 

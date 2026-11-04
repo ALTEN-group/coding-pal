@@ -105,7 +105,7 @@ flowchart TD
      - **forge/gatelin@0.1.0-alpha.9:** Fronts the API for JWT sessions and RBAC
      - **forge/foxnox@0.1.0-alpha.3:** Stores credentials and TOTP behind Gatelin
      ```
-     A custom build states `- **None:** <reason>` and a `Custom Build Reason` that names what was searched.
+     When a repository maintains a Forge catalog, a custom build states `- **None:** <reason>` and a `Custom Build Reason` that names what was searched (when a repository does not maintain a Forge catalog, `## Forge Asset Bindings` and `Custom Build Reason` may be omitted).
   4. **Check**:
      ```bash
      node .agents/skills/forge/scripts/bindings-check.mjs --think specs/issue-42/think.md

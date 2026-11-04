@@ -15,4 +15,4 @@ Slash command for the **Demo Videos** agent.
 
 ## Run
 
-Hand the journeys, app folder and output folder to Demo Videos. Filming and encoding rules are owned by the installed Playwright demo-videos instruction — do not restate or override them.
+Hand the journeys, app folder and output folder to Demo Videos. Filming, encoding rules, and templates are owned by the installed `playwright-demo-videos` skill — do not restate or override them.

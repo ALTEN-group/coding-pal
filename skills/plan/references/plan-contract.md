@@ -21,7 +21,7 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 
 ## 2. `plan.md` Contract
 
-`plan.md` is authored strictly as the downstream result of a validated `think.md`. It reads the Forge bindings, constraints, and blast radius from Think. Like `think.md`, it **contains no source code** so code is never written twice.
+`plan.md` is authored strictly as the downstream result of a validated `think.md`. It reads the constraints, blast radius, and any Forge bindings from Think. Like `think.md`, it **contains no source code** so code is never written twice.
 
 ### Required Document Structure (In Exact Order)
 

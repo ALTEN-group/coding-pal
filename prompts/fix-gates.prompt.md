@@ -15,4 +15,4 @@ If no argument is given, use the active editor file when it holds gate output, o
 
 ## Run
 
-Hand the failing output and the work item to Gate Fixer. Verify with the failed control and the installed `control-guard` skill, per the installed `prove-controls` instructions. Gate Fixer stops at the fix-loop limit for the Developer.
+Hand the failing output and the work item to Gate Fixer. Verify with the failed control and `control-guard.mjs` from the installed `prove` skill, per the installed `prove` instruction. Gate Fixer stops at the fix-loop limit for the Developer.

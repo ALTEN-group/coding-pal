@@ -15,4 +15,4 @@ If no application root is named and the current workspace contains more than one
 
 ## Run
 
-Hand the resolved application root and optional scenario to Performance Tester. Implement the complete suite when no scenario is specified. Select the applicable tool-specific instruction and skill; the current k6 implementation uses `k6-performance-tests` and `k6-performance-examples`.
+Hand the resolved application root and optional scenario to Performance Tester. Implement the complete suite when no scenario is specified. Select the applicable tool-specific skill; the current k6 implementation uses `k6-performance-tests`.

@@ -1,10 +1,8 @@
 # Prove
 
-The **Prove** domain is stage 5 of the [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/stage-prove). It combines deterministic controls and independent agent assessment of intent, behaviour, and safety, without mandatory human sign-off.
+The **Prove** domain is stage 5 of the [Agentic Software Factory](https://alten-group.github.io/agentic-software-factory/guide/stage-prove). It combines 8 deterministic controls and independent agent assessment of intent, behaviour, and safety in `specs/issue-<n>/prove.md`, without mandatory human sign-off.
 
 Controls decide. Agents write tests, repair failures, and independently assess the implementation. All risk tiers can proceed automatically; High/Critical retain rollback evidence and Critical retains staged rollout requirements (see [Code](./domain-code.md)). People intervene on unresolved failures or exhausted retries. The same control scripts run locally and in CI.
-
-Verification gates (criteria, mutation, contract) read the report files that tools already produced. Safety, preview probes, the pipeline, the remediation loop, and the Platform Rails complete the domain. All of it is on this page.
 
 
 ## Domain Architecture
@@ -18,16 +16,15 @@ flowchart TD
 
     subgraph Rerun ["1. Clean CI Re-run"]
         direction TB
-        CLEAN["<b>clean-rerun job</b><br/>Build, types, lint, tests<br/><i>verification-pipeline</i>"]
+        CLEAN["<b>task-gate</b><br/>Build, types, lint, tests"]
         TESTS["<b>Generated test suites</b><br/>unit-test, api-test, fuzz-tests,<br/>e2e-test, postgres-liquibase-tests"]
     end
 
     subgraph Controls ["2. Deterministic Controls"]
         direction TB
-        INTEG["<b>Control integrity</b><br/>control-guard + bug rule"]
-        GUARDS["<b>Guards</b><br/>secret-guard, dependency-guard,<br/>scope-guard, task-gate"]
-        VERIF["<b>Verification</b><br/>criteria-verify, mutation-bar,<br/>contract-compat"]
-        SEC["<b>Security & Policy-as-Code</b><br/>security-gate"]
+        INTEG["<b>Control integrity</b><br/>control-guard + test-probe"]
+        GUARDS["<b>Guards</b><br/>secret-guard, dependency-guard,<br/>scope-guard"]
+        VERIF["<b>Verification</b><br/>criteria-verify"]
     end
 
     subgraph Preview ["3. Preview Probes"]
@@ -39,19 +36,19 @@ flowchart TD
     subgraph Fix ["Auto-Remediation"]
         direction TB
         GF["<b>Gate Fixer</b><br/>Diagnose, fix, re-run, control-guard"]
-        LIM["<b>Fix-loop limit 5</b><br/>code-loop fail, fix-loop label"]
+        LIM["<b>Fix-loop limit 5</b><br/>fix-loop label"]
     end
 
-    HUMAN["<b>Independent Prove assessment</b><br/>Client intent, behavior, safety<br/>Automated evidence recorded"]
+    HUMAN["<b>Independent Prove assessment</b><br/>specs/issue-N/prove.md<br/>validate-prove.mjs"]
     REL["<b>Release</b>"]
 
     PR --> CLEAN
     TESTS -.->|"run by"| CLEAN
-    CLEAN --> INTEG --> GUARDS --> VERIF --> SEC --> SMOKE --> PROBES --> HUMAN --> REL
+    CLEAN --> INTEG --> GUARDS --> VERIF --> SMOKE --> PROBES --> HUMAN --> REL
     CLEAN -.->|"fail"| GF
     INTEG -.->|"fail"| GF
+    GUARDS -.->|"fail"| GF
     VERIF -.->|"fail"| GF
-    SEC -.->|"fail"| GF
     SMOKE -.->|"fail"| GF
     GF -->|"push, verify runs again"| CLEAN
     GF --> LIM
@@ -65,7 +62,7 @@ flowchart TD
 
     class PR,REL input;
     class CLEAN,TESTS,PROBES stage;
-    class INTEG,GUARDS,VERIF,SEC,SMOKE control;
+    class INTEG,GUARDS,VERIF,SMOKE control;
     class GF,LIM fix;
     class HUMAN,DEV human;
 ```
@@ -74,25 +71,23 @@ flowchart TD
 
 ## The Controls and the Skills That Implement Them
 
-The table follows the [Prove stage](https://alten-group.github.io/agentic-software-factory/guide/stage-prove) of the factory. Skills marked **new** were added for Prove.
+The table follows the [Prove stage](https://alten-group.github.io/agentic-software-factory/guide/stage-prove) of the factory.
 
-| Control | Type | Coding Pal skill | What it proves |
+| Control | Type | Coding Pal skill / script | What it proves |
 |---|---|---|---|
-| **Clean CI Re-run** | Gate | `verification-pipeline` (**new**, `verify.yml` job `clean-rerun`) and `task-gate` | Build, type check, lint, and tests pass where the agent cannot influence the result |
-| **Criteria Test Verification** | Gate | `criteria-verify` (**new**, [details](#_1-criteria-test-verification)) | Every acceptance criterion has a passing test |
-| **Contract & Schema Compatibility** | Contract | `contract-compat` (**new**, [details](#_3-contract-schema-compatibility)) and `contract-validator` | Public interfaces do not break silently |
-| **Mutation Testing Bar** | Gate | `mutation-bar` (**new**, [details](#_2-mutation-testing-bar)) | The tests catch injected defects |
+| **Clean CI Re-run** | Gate | `prove` (`task-gate.mjs`) | Build, type check, lint, and tests pass where the agent cannot influence the result |
+| **Criteria Test Verification** | Gate | `prove` (`verify-criteria.mjs`, [details](#_1-criteria-test-verification)) | Every acceptance criterion has a passing test |
 | **API Tests** | Contract | `api-test` agent and `node-express-examples` | Each endpoint returns the agreed statuses and bodies |
-| **Fuzz Tests** | Probe | `fuzz-tests` agent and `restler-fuzzing-examples` | The API survives malformed input |
+| **Fuzz Tests** | Probe | `fuzz-tests` agent and `restler-fuzzing-tests` | The API survives malformed input |
 | **Database Tests** | Gate | `postgres-liquibase-examples` (`postgres-liquibase-tests` prompt) | Schema and migrations behave as specified |
 | **E2E Tests** | Probe | `e2e-test` agent | The main journeys work on the running application |
 | **Unit Tests** | Gate | `unit-test` agent | Generated code behaves as specified (run by the clean re-run) |
-| **Security & Policy-as-Code** | Guard | `security-gate` (**new**), `secret-guard`, `dependency-guard` | No known vulnerabilities, secrets, policy violations, or unapproved licenses |
-| **Control integrity** | Guard | `control-guard` (**new**) | No control was weakened to get a pass |
-| **The bug rule** | Guard | `test-probe` | The new check fails without the fix and passes with it |
-| **Preview Smoke Tests** | Probe | `preview-smoke` (**new**) | The application starts, routes traffic, and answers health checks |
-| **File scope** | Guard | `scope-guard` | The change stays inside the Plan's file scope |
-| **Platform Rails** | Rails | `verification-pipeline` (**new**, `rails-check.mjs`) | The repository has the pipeline, the remediation loop, and the controls installed |
+| **Secret & Dependency Guards** | Guard | `prove` (`secret-guard.mjs`, `dependency-guard.mjs`) | No leaked secrets or unapproved dependencies |
+| **Control integrity** | Guard | `prove` (`control-guard.mjs`, [details](#_2-control-integrity-and-the-bug-rule)) | No control was weakened to get a pass |
+| **The bug rule** | Guard | `prove` (`test-probe.mjs`, [details](#_2-control-integrity-and-the-bug-rule)) | The new check fails without the fix and passes with it |
+| **Preview Smoke Tests** | Probe | `prove` (`preview-smoke.mjs`, [details](#_3-preview-smoke-tests)) | The application starts, routes traffic, and answers health checks |
+| **File scope** | Guard | `prove` (`scope-guard.mjs`) | The change stays inside the Plan's file scope |
+| **Prove Record** | Protocol | `prove` (`validate-prove.mjs`) | All 8 controls, criteria traceability, semantic review, findings, and verdict are recorded |
 
 ---
 
@@ -100,75 +95,15 @@ The table follows the [Prove stage](https://alten-group.github.io/agentic-softwa
 
 | Capability | Invocation / Entry Point | Specialist Agent | Scoping Instruction | Supporting Skill | Output |
 |---|---|---|---|---|---|
-| **Criteria test verification** | `node .agents/skills/criteria-verify/scripts/verify-criteria.mjs` in the agent loop and CI | none (script) | [`prove-controls`](./catalog-instructions.md) | [`criteria-verify`](./catalog-skills.md) | Markdown table: criterion, tests, verdict. Exit 0 only when every criterion passes |
-| **Mutation testing bar** | `node .agents/skills/mutation-bar/scripts/mutation-bar.mjs` in the agent loop and CI | none (script) | [`prove-controls`](./catalog-instructions.md) | [`mutation-bar`](./catalog-skills.md) | Score, per-file table, survivors as `file:line mutator`. Exit 1 below the bar |
-| **Contract & schema compatibility** | `node .agents/skills/contract-compat/scripts/contract-compat.mjs` in the agent loop and CI | none (script) | [`prove-controls`](./catalog-instructions.md) | [`contract-compat`](./catalog-skills.md) | One `BREAKING` or `compatible` line per change. Exit 1 on any breaking change without an Accepted, signed record |
-| **Security & license gate** | CI, or `node .agents/skills/security-gate/scripts/security-gate.mjs` | none (script) | [`prove-controls`](./catalog-instructions.md) | [`security-gate`](./catalog-skills.md) | Pass or fail, with waived findings listed |
-| **Control integrity and bug rule** | CI, after every agent fix, or `control-guard.mjs` and `test-probe.mjs` | none (scripts) | [`prove-controls`](./catalog-instructions.md) | [`control-guard`](./catalog-skills.md), [`test-probe`](./catalog-skills.md) | `RULE file:line message` findings, test falsifiability |
-| **Preview smoke** | CI `preview` job, or `preview-smoke.mjs` | none (script) | [`prove-controls`](./catalog-instructions.md) | [`preview-smoke`](./catalog-skills.md) | Per-route pass or fail |
-| **Delivery pipeline and Platform Rails** | Copy the templates, then `rails-check.mjs` | none (templates and script) | [`prove-controls`](./catalog-instructions.md) | [`verification-pipeline`](./catalog-skills.md) | `verify.yml`, `remediate.yml`, missing rails |
+| **Criteria test verification** | `node .agents/skills/prove/scripts/verify-criteria.mjs` in the agent loop and CI | none (script) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | Markdown table: criterion, tests, verdict. Exit 0 only when every criterion passes |
+| **Control integrity and bug rule** | CI, after every agent fix, or `control-guard.mjs` and `test-probe.mjs` | none (scripts) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | `RULE file:line message` findings, test falsifiability |
+| **Preview smoke** | CI `preview` job, or `preview-smoke.mjs` | none (script) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | Per-route pass or fail |
 | **Pull request Prove validation** | [`/prove`](./catalog-prompts.md) or [`Prove Validator`](./catalog-agents.md) in CI, then `validate-prove.mjs` | [`Prove Validator`](./catalog-agents.md) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | Validated `specs/issue-<n>/prove.md` with control table, criteria traceability, semantic review, findings, and `PASS\|FAIL` verdict |
-| **Agent auto-remediation** | [`/fix-gates`](./catalog-prompts.md) or the [`Gate Fixer`](./catalog-agents.md) in CI | [`Gate Fixer`](./catalog-agents.md) | [`prove-controls`](./catalog-instructions.md) | `control-guard`, `code-loop` | A fix commit that passes the failed control, or a hand-over |
+| **Agent auto-remediation** | [`/fix-gates`](./catalog-prompts.md) or the [`Gate Fixer`](./catalog-agents.md) in CI | [`Gate Fixer`](./catalog-agents.md) | [`prove`](./catalog-instructions.md) | [`prove`](./catalog-skills.md) | A fix commit that passes the failed control, or a hand-over |
 
 ---
 
 ## Capability Workflows
-
-
-The three verification gates are zero-dependency Node scripts. They consume report files, run no third-party tool, and need no network. The agent writes the tests, so a model re-reading its own work proves nothing: these gates return the same verdict for the same input, whatever model wrote the code. The agent can run them but can never edit them, skip a test, or lower a bar to get a pass.
-
-```mermaid
----
-caption: From Test and Tool Reports to a Verification Verdict (Prove)
----
-flowchart TD
-    subgraph Inputs ["Records and Reports"]
-        direction TB
-        PLAN["<b>plan.md</b><br/>AC-n criteria + Test Plan"]
-        TEST["<b>Test reports</b><br/>JUnit XML, Jest / Vitest JSON, TAP / runner log"]
-        MUT["<b>Mutation report</b><br/>Stryker JSON or summary"]
-        API["<b>Contracts</b><br/>Base and head OpenAPI / JSON Schema"]
-    end
-
-    subgraph Gates ["Deterministic Gates (no AI)"]
-        direction TB
-        CV["<b>verify-criteria.mjs</b><br/>Every criterion has a passing test"]
-        MB["<b>mutation-bar.mjs</b><br/>Tests kill mutants: score at or above the bar"]
-        CC["<b>contract-compat.mjs</b><br/>No breaking change, or a signed record"]
-    end
-
-    subgraph Human ["Human Decision"]
-        direction TB
-        DR["<b>Decision record</b><br/>Accepted with explicit automation attribution"]
-    end
-
-    FIX["<b>Auto-remediation</b><br/>Agent fixes code and tests within the fix-loop limit"]
-    OUT["<b>Verified</b><br/>Exit code 0 on all three gates"]
-
-    PLAN --> CV
-    TEST --> CV
-    MUT --> MB
-    API --> CC
-    DR -.->|"--allow-breaking"| CC
-    CV --> OUT
-    MB --> OUT
-    CC --> OUT
-    CV -.->|"Exit 1"| FIX
-    MB -.->|"Exit 1: survivors"| FIX
-    CC -.->|"Exit 1: breaking lines"| FIX
-
-    classDef gate fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef artifact fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
-    classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
-    classDef human fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    classDef fix fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-
-    class PLAN,TEST,MUT,API input;
-    class CV,MB,CC gate;
-    class OUT artifact;
-    class DR human;
-    class FIX fix;
-```
 
 ### 1. Criteria Test Verification
 
@@ -179,7 +114,7 @@ flowchart TD
   2. **Report**: The test runner writes JUnit XML, Jest/Vitest JSON, or TAP / runner log output.
   3. **Verify**:
      ```bash
-     node .agents/skills/criteria-verify/scripts/verify-criteria.mjs \
+     node .agents/skills/prove/scripts/verify-criteria.mjs \
        --plan specs/issue-42/plan.md \
        --report reports/jest.json --report reports/api-junit.xml --require-test-files
      ```
@@ -197,158 +132,14 @@ flowchart TD
 | An empty or unrecognized report is an error | No report, no proof |
 | Unknown arguments are errors | A mistyped flag cannot silently weaken the gate |
 
-### 2. Mutation Testing Bar
-
-- **When to Run**: In the agent loop with `--changed` on the files of the current step. In CI on the whole report or on the pull request's changed files.
-- **Why a Gate**: Coverage tells which lines ran. A mutation tool injects small defects (a flipped condition, a removed statement) and re-runs the tests. A mutant that no test catches is a **survivor**, and proves a test that asserts too little.
-- **Workflow Steps**:
-  1. **Mutate**: The project's mutation tool writes a Stryker JSON report. A generic summary is also accepted for tools such as Mutmut.
-  2. **Gate**:
-     ```bash
-     node .agents/skills/mutation-bar/scripts/mutation-bar.mjs \
-       --report reports/mutation/mutation.json --changed changed.txt --per-file-min 60
-     ```
-  3. **Kill survivors**: The output lists each survivor as `src/routes/role.js:40 ConditionalExpression (Survived)`. The agent adds or strengthens assertions until they are killed.
-
-Score = `(killed + timeout) / (killed + timeout + survived + noCoverage) * 100`. `CompileError`, `RuntimeError`, and `Ignored` mutants are excluded, but their number is printed, so a survivor hidden with a `Stryker disable` comment stays visible. With `--changed`, a changed file with no mutants in the report prints `Warning: no mutants for <file>: not proven` (the exit code is unchanged).
-
-#### What the Gate Enforces
-
-| Check | Why |
-|---|---|
-| Score at or above the minimum (default 80) | Generated tests must be meaningful, not just present |
-| `mutation-bar.json` may set `minScore` and `perFileMin`; the command line can only **raise** them | `a control cannot be weakened`: the agent cannot lower the bar |
-| `--changed` scores only the changed files | A pull request is judged on its own code, not on the legacy |
-| `--per-file-min` fails a weak file even when the total passes | A strong file cannot hide a weak one |
-| Nothing scorable in the scope fails | A change that was not mutation tested cannot pass |
-| Unfinished runs (a `Pending` mutant) are an error | An incomplete run proves nothing |
-| `--changed` and a per-file minimum need a Stryker report | A summary carries no per-file data |
-
-### 3. Contract & Schema Compatibility
-
-- **When to Run**: Before committing a change to an API contract or schema, and in CI with the base taken from the target branch.
-- **Why a Gate**: A breaking public contract is Critical: it needs an accepted decision record with explicit automated or actual human attribution, and a staged rollout.
-- **Workflow Steps**:
-  1. **Export both sides as JSON**:
-     ```bash
-     git show origin/main:openapi.json > base.json
-     ```
-  2. **Compare**:
-     ```bash
-     node .agents/skills/contract-compat/scripts/contract-compat.mjs --base base.json --head openapi.json
-     ```
-  3. **Fix or escalate**: Restore compatibility or, for an intended break, validate an accepted, explicitly attributed decision record and rerun with `--allow-breaking docs/decisions/0007-remove-legacy-role.md`. Human approval is optional; the record and rollout evidence remain required.
-
-```
-BREAKING GET:/users/{id} response 200 application/json address.zip: property removed
-BREAKING POST:/users request body application/json role: property is now required
-compatible GET:/users new optional parameter query:q
-```
-
-#### What the Gate Enforces
-
-| Area | Breaking | Compatible |
-|---|---|---|
-| Operations and responses | A path, operation, or declared response status is removed | New paths, operations, response statuses |
-| Response schema | A property is removed or retyped, an enum value is added (clients never saw it), a property stops being guaranteed, a schema is dropped from a media type | New response properties, removed enum values |
-| Request | A new required parameter or body property, a parameter made required or moved, a retyped property, a removed enum value, tightened bounds, `additionalProperties: false` on an open schema | New optional parameters and properties, added enum values, relaxed bounds |
-| Security | A security requirement is added to an operation, or a used alternative is dropped | Another alternative, or security removed |
-| `--allow-breaking` | Existing Accepted record with `Automated by <identity> on YYYY-MM-DD` matching an Automation decider, or a genuine Architect signature | Drafted, unsigned, invalidly dated, or falsely attributed decisions release nothing |
-
-Local `$ref` is resolved, `allOf` is merged, and cyclic references are handled. YAML, Swagger 2.0, and external `$ref` are not supported: convert to JSON and bundle first. Pact consumer contracts are out of scope today and are a candidate for a future adapter.
-
-### 4. Verification Gates in CI
-
-The gates run in the same pull request workflow, after the clean CI re-run has produced the reports.
-
-```mermaid
----
-caption: Verification Gates in the Prove Workflow
----
-flowchart TD
-    RERUN["<b>1. Clean CI re-run</b><br/>Tests write JUnit / JSON, Stryker writes JSON"] --> CV["<b>2. verify-criteria.mjs</b><br/>plan.md + reports"]
-    RERUN --> MB["<b>3. mutation-bar.mjs</b><br/>Changed files, per-file floor"]
-    BASE["<b>Base contract</b><br/>git show origin/main"] --> CC["<b>4. contract-compat.mjs</b><br/>Base vs head, optional record"]
-    CV --> RES{"<b>All exit 0?</b>"}
-    MB --> RES
-    CC --> RES
-    RES -->|"Yes"| HUM["<b>5. Independent assessment</b><br/>Risk-weighted automated evidence"]
-    RES -->|"No"| FIX["<b>Auto-remediation</b><br/>Agent reads the gate output"]
-    FIX --> RERUN
-
-    classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
-    classDef runner fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
-    classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef git fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
-
-    class RERUN,BASE input;
-    class CV,MB,CC,RES runner;
-    class FIX agent;
-    class HUM git;
-```
-
-```yaml
-- name: Criteria Test Verification
-  run: >
-    node .agents/skills/criteria-verify/scripts/verify-criteria.mjs
-    --plan specs/issue-${{ env.ISSUE }}/plan.md
-    --report reports/jest.json --require-test-files
-- name: Mutation Testing Bar
-  run: |
-    git diff --name-only origin/main... > changed.txt
-    node .agents/skills/mutation-bar/scripts/mutation-bar.mjs \
-      --report reports/mutation/mutation.json --changed changed.txt
-- name: Contract & Schema Compatibility
-  run: >
-    node .agents/skills/contract-compat/scripts/contract-compat.mjs
-    --base base.json --head openapi.json
-```
-
-1. **Gate output feeds remediation**: the failing table, the survivor list, or the `BREAKING` lines are exactly what the agent reads.
-2. **Never weakened**: the agent does not edit these scripts, `mutation-bar.json`, the base contract, or the Test Plan to obtain a pass. Protect those paths with CODEOWNERS.
-3. **Fix-loop limit**: when remediation reaches the limit set in Code, the Developer steps in.
-
-- **Falsifiable Done When**:
-  - `verify-criteria.mjs` exits 0: every `AC-<n>` has a passing mapped test and no mapped test failed.
-  - `mutation-bar.mjs` exits 0: the score meets the minimum (80 or the configured value) and no survivor was excluded.
-  - `contract-compat.mjs` exits 0 with no BREAKING line, or each breaking change is covered by a valid Accepted decision record with automated attribution or an actual Architect signature.
-  - No control, report, or contract file was edited to obtain the verdict.
-
-### 5. Security & Policy-as-Code Gate
-
-- **When to Run**: In the agent's loop whenever scanner output exists, and in CI on every pull request.
-- **Why a Gate**: A scanner prints findings, a gate decides. The gate fixes the severity bar, the license policy, and the waiver rules, so an agent cannot reinterpret them.
-- **Workflow Steps**:
-  1. Run the scanners (Semgrep, Trivy, CodeQL with SARIF output, Conftest with JSON output, an SBOM generator for CycloneDX).
-  2. Run the gate:
-     ```bash
-     node .agents/skills/security-gate/scripts/security-gate.mjs \
-       --sarif reports/semgrep.sarif --conftest reports/conftest.json \
-       --sbom reports/sbom.json --allow-licenses "MIT,Apache-2.0,ISC,BSD-3-Clause" \
-       --waivers waivers.json
-     ```
-  3. Fix what failed. Never waive to get green.
-
-#### What the Gate Enforces
-
-| Check | Why |
-|---|---|
-| SARIF `error` results fail, and `warning` with `--min-severity warning` | One severity bar, set by the pipeline |
-| `security-severity` of 7.0 or more is an error | A high CVSS score cannot hide behind a `warning` level |
-| Any Conftest/OPA failure fails | Policy-as-code has no soft failures |
-| Every SBOM component has a known, allowed, non-denied license (SPDX expressions understood) | License risk is a gate, not a review |
-| A waiver needs `reason`, `expires`, and `approvedBy` as `<name> (<role>)`: a named human with a factory role, never an AI name or placeholder | A waiver is a human risk decision with an end date |
-| An expired or incomplete waiver fails | Decisions are revisited |
-| A valid waiver is listed in the output | Waived risk stays visible |
-
-### 6. Control Integrity and the Bug Rule
+### 2. Control Integrity and the Bug Rule
 
 - **When to Run**: After every agent change or fix, and in CI on the pull request diff.
 - **Workflow Steps**:
   ```bash
-  node .agents/skills/control-guard/scripts/control-guard.mjs --git origin/main
+  node .agents/skills/prove/scripts/control-guard.mjs --git origin/main
   ```
-  Then prove the new check fails without the fix with the [`test-probe`](./catalog-skills.md) skill (`test-probe.mjs`).
+  Then prove the new check fails without the fix with `test-probe.mjs` from the [`prove`](./catalog-skills.md) skill.
 
 #### What the Guard Enforces
 
@@ -358,7 +149,7 @@ flowchart TD
 | R2 | A skip or only marker is added (`.skip(`, `xit(`, `.only(`, `@Disabled`, ...) |
 | R3 | A threshold is lowered (`branches`, `minScore`, `fail_under`, `--min-score`, ...) |
 | R4 | A workflow is weakened: `continue-on-error: true`, `\|\| true`, `--no-verify`, `if: false`, a deleted workflow or job |
-| R5 | A protected path changes: installed skills, workflows, `control-guard.json`, `mutation-bar.json`, `waivers.json` |
+| R5 | A protected path changes: installed skills, workflows, `control-guard.json`, `waivers.json` |
 | R6 | A suppression is added (`eslint-disable`, `@ts-ignore`, `# noqa`, `biome-ignore`, `NOSONAR`) |
 | R7 | An agent or remediation workflow exposes production credentials |
 | R8 | A modified test file loses assertions |
@@ -368,41 +159,41 @@ flowchart TD
 
 Every production defect results in a new automated check that fails without the fix and passes with it. `test-probe` proves the check **fails without the fix** by temporarily reverting modified source files to the base branch and running the test command.
 
-### 7. Preview Smoke Tests
+### 3. Preview Smoke Tests
 
 - **When to Run**: In the CI `preview` job, after the stack is up and before fuzz and E2E tests.
 - **Workflow**:
   ```bash
-  node .agents/skills/preview-smoke/scripts/preview-smoke.mjs \
+  node .agents/skills/prove/scripts/preview-smoke.mjs \
     --url http://localhost:3000 --routes preview-routes.json
   ```
 - **Behavior**: It retries only while the app is not answering (connection errors, timeouts, unexpected 5xx), then evaluates each route's status, JSON field, and time limit once.
 
-### 8. Agent Auto-Remediation
+### 4. Agent Auto-Remediation
 
-- **When to Run**: Automatically when `verify` fails on a pull request, or interactively with `/fix-gates <gate output or PR number>`.
+- **When to Run**: Automatically when a Prove control fails on a pull request, or interactively with `/fix-gates <gate output or PR number>`.
 - **Workflow Steps**:
   1. **Read** the failing gate output.
   2. **Diagnose** the exact fault and reproduce it by re-running only that control.
   3. **Fix** the code within the Plan step's file scope.
   4. **Re-run** the failed control, then `control-guard`.
-  5. **Count the attempt.** While a Plan step is in progress, record it with `code-loop fail`. On a pull request whose steps are all done, the workflow counts it in the `fix-loop:<n>` label.
-  6. **Commit and push.** CI runs `verify` again.
+  5. **Count the attempt** against the 5-attempt fix-loop limit (for example in the `fix-loop:<n>` label on a pull request).
+  6. **Commit and push.** CI runs verification again.
   7. **Stop at the limit.** After 5 attempts the Developer steps in.
 
 ```mermaid
 ---
-caption: remediate.yml Fix-Loop
+caption: Auto-Remediation Fix-Loop
 ---
 flowchart TD
-    FAIL["<b>1. verify fails</b><br/>on a pull request"] --> CNT["<b>2. Read the label</b><br/>fix-loop:n"]
+    FAIL["<b>1. Control fails</b><br/>on a pull request"] --> CNT["<b>2. Read the label</b><br/>fix-loop:n"]
     CNT --> LIM{"n >= 5?"}
     LIM -->|"yes"| DEV["<b>Developer steps in</b><br/>Label needs:developer"]
     LIM -->|"no"| BUMP["<b>3. Count the attempt</b><br/>Relabel fix-loop:n+1"]
     BUMP --> GF["<b>4. Gate Fixer</b><br/>Fixes the code"]
     GF --> CG["<b>5. control-guard</b><br/>On the agent's commit"]
     CG -->|"weakened"| STOP["<b>Run fails, no push</b>"]
-    CG -->|"clean"| PUSH["<b>6. Push</b><br/>verify runs again"]
+    CG -->|"clean"| PUSH["<b>6. Push</b><br/>Prove runs again"]
     PUSH --> FAIL
 
     classDef input fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
@@ -418,42 +209,16 @@ flowchart TD
     class STOP fix;
 ```
 
-- **Boundary**: The Gate Fixer can never weaken, skip, edit, or waive a control, and never touches protected paths. `control-guard` enforces this on its commit, using the copy of the control taken from the base branch before the agent runs. The agent runner gets only its model credential: the `gh` token and the push token belong to the workflow steps, so the agent cannot reset the label or push on its own.
+- **Boundary**: The Gate Fixer can never weaken, skip, edit, or waive a control, and never touches protected paths. `control-guard` enforces this on its commit, using the copy of the control taken from the base branch before the agent runs.
 
-### 9. Platform Rails
+### 5. Independent Automated Assessment (`prove.md`)
 
-The [Platform Rails](https://alten-group.github.io/agentic-software-factory/guide/platform-rails) give every squad the same verification skeleton on day one. `verification-pipeline` ships the pieces:
-
-| Piece | What it is |
-|---|---|
-| `references/verify.yml` | Jobs `clean-rerun`, `controls`, and `preview`. Controls run from the base branch. `controls` starts with `code-loop check-history`, so deleting or rewriting `progress.json` cannot reset the fix-loop counter |
-| `references/remediate.yml` | Reacts to a failed `verify`, counts attempts in `fix-loop:<n>` labels before the agent runs, runs the Gate Fixer (a marked placeholder step), runs `control-guard`, pushes. No production secrets, minimal permissions |
-| `scripts/rails-check.mjs` | Verifies a project has the rails |
-
-```bash
-node .agents/skills/verification-pipeline/scripts/rails-check.mjs --root . [--config rails.json]
-```
-
-#### What `rails-check` Verifies
-
-| Check | Default |
-|---|---|
-| Workflows | `.github/workflows/verify.yml` and `remediate.yml` exist |
-| Controls in `verify.yml` | It runs `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `verify-criteria`, `mutation-bar`, `contract-compat`, `security-gate`, and `preview-smoke` (commented-out lines do not count) |
-| Remediation | `remediate.yml` triggers on `workflow_run`, counts `fix-loop:`, and runs `control-guard` |
-| Pull request template | `.github/pull_request_template.md` exists |
-| `apm.yml` | Lists the `code.agent.md` and `gate-fix.agent.md` agents and the skills `code-loop`, `pr-record`, `criteria-verify`, `mutation-bar`, `contract-compat`, `security-gate`, `control-guard`, `preview-smoke`, `task-gate`, `scope-guard`, `secret-guard`, `dependency-guard` |
-| Installed skills | Each skill has `.agents/skills/<name>/SKILL.md` |
-
-### 10. Independent Automated Assessment
-
-When controls pass, an independent Prove agent assesses intent, behaviour, and safety, recording evidence and a verdict as described in [Code](./domain-code.md). Every tier permits automatic continuation; rollback and rollout evidence remain mandatory where required. Human review is an explicitly requested checkpoint or escalation, not routine sign-off.
+When the 8 deterministic controls (`control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, `preview-smoke`) run, the [`Prove Validator`](./catalog-agents.md) assesses intent, behaviour, and safety against `think.md` and `plan.md`, recording the evidence and verdict in `specs/issue-<n>/prove.md` and validating it with `skills/prove/scripts/validate-prove.mjs`. Every tier permits automatic continuation; rollback and rollout evidence remain mandatory where required. Human review is an explicitly requested checkpoint or escalation, not routine sign-off.
 
 - **Falsifiable Done When**:
-  - `security-gate.mjs`, `control-guard.mjs`, and `preview-smoke.mjs` exit with code 0 on the pull request.
+  - All 8 deterministic controls pass (or `preview-smoke` is `SKIPPED` when no routes config exists) and `validate-prove.mjs` exits with code 0.
   - For a defect fix, `test-probe` shows the new check fails without the fix.
-  - `rails-check.mjs` exits with code 0 on the repository.
-  - No control, waiver, workflow, or installed skill was changed by an agent, and no fix-loop exceeded 5 attempts (`code-loop check-history` passes, so no counter was lowered in the branch history).
+  - No control, waiver, workflow, or installed skill was changed by an agent, and no fix-loop exceeded 5 attempts.
 
 ---
 

@@ -105,22 +105,22 @@ flowchart TD
   - `skills/think/references/think-contract.md` & `skills/plan/references/plan-contract.md` (specification headings, invariant sections, bootability checklists).
   - `skills/triage/references/triage-contract.md` (evidence table, scorecard scale, decision rules, ledger and weights).
   - `skills/meeting-pack/references/meeting-pack-contract.md` (transcript format, pack sections, confirmation stages, glossary).
-  - `skills/scope-guard/references/guard-contract.md` (path matching semantics, forbidden file lists).
+  - `skills/prove/references/guard-contract.md` (path matching semantics, forbidden file lists).
 
 ### 2. 🛡️ Guards (Blast-Radius & State Bounding)
 * **Where It Lives**: Guided by **Instructions**; executed by **Skill scripts** (`skills/<name>/scripts/`).
 * **Purpose**: Enforce mechanical boundaries on what an agent is permitted to touch during or after a code modification.
 * *Mechanisms*:
-  - **Scope Whitelisting**: Asserts that modified files match declared `allowedPaths` (`skills/scope-guard/scripts/scope-guard.mjs`).
-  - **Dependency Bloat Sentinel**: Mechanically prevents unprompted additions to `package.json` or banned packages (`skills/dependency-guard/scripts/dependency-guard.mjs`).
-  - **Secret & Credential Sentinel**: Scans diffs to prevent accidental hardcoding of AWS keys, private keys, or tokens (`skills/secret-guard/scripts/secret-guard.mjs`).
+  - **Scope Whitelisting**: Asserts that modified files match declared `allowedPaths` (`skills/prove/scripts/scope-guard.mjs`).
+  - **Dependency Bloat Sentinel**: Mechanically prevents unprompted additions to `package.json` or banned packages (`skills/prove/scripts/dependency-guard.mjs`).
+  - **Secret & Credential Sentinel**: Scans diffs to prevent accidental hardcoding of AWS keys, private keys, or tokens (`skills/prove/scripts/secret-guard.mjs`).
   - **Diff Churn Limiter**: Caps lines added and deleted to prevent unprompted mass refactorings.
 
 ### 3. 🚦 Gates & Verifiers (Falsifiable Completion Criteria)
 * **Where It Lives**: Defined in an **Agent's `Done When`**; executed by **Skill scripts** (`skills/<name>/scripts/`) and CI/harness hooks.
 * **Purpose**: Replaces subjective self-confidence ("I tested it and it works") with an executable verification command that yields 0 on success or structured diagnostics for agent self-repair.
 * *Mechanisms*:
-  - **Multi-Stage Verification Gate**: Runs linting, type checks, and narrowest tests sequentially with fail-fast semantics (`skills/task-gate/scripts/task-gate.mjs`).
+  - **Multi-Stage Verification Gate**: Runs linting, type checks, and narrowest tests sequentially with fail-fast semantics (`skills/prove/scripts/task-gate.mjs`).
   - **Specification Validators**: Check that `think.md` and `plan.md` are structurally complete, that every in-scope file and acceptance criterion is covered by a step with its code, and that the two records agree on blast radius, before build agents touch source code (`skills/think/scripts/validate-think.mjs` and `skills/plan/scripts/validate-plan.mjs`).
   - **Triage Validator**: Checks that `triage.md` carries real, verbatim evidence, a coarse scorecard, and a proposed (never final) AI decision before the Product Owner reviews it (`skills/triage/scripts/validate-triage.mjs`).
   - **Meeting Pack Validator**: Checks that a Meeting Pack matches its immutable transcript (SHA-256), that every quote is verbatim and client-attributed, that terminology agrees with the glossary, and that only named people confirm it (`skills/meeting-pack/scripts/validate-meeting.mjs`).
@@ -130,9 +130,9 @@ flowchart TD
 * **Where It Lives**: Inside a **Skill** under `scripts/` and `fixtures/`.
 * **Purpose**: Mechanically proves that a test or migration is genuinely falsifiable and non-vacuous.
 * *Mechanisms*:
-  - **Anti-Tautology Probe**: Stashes or reverts a code fix, runs the newly created test to assert it **fails** (proving it actually tests the bug), then restores the fix and asserts it passes (`skills/test-probe/scripts/test-probe.mjs`).
+  - **Anti-Tautology Probe**: Stashes or reverts a code fix, runs the newly created test to assert it **fails** (proving it actually tests the bug), then restores the fix and asserts it passes (`skills/prove/scripts/test-probe.mjs`).
   - **Rollback & Roundtrip Oracle**: For database migrations or stateful scripts, executes `forward` $\rightarrow$ `rollback` $\rightarrow$ `forward` to mechanically verify that schema changes can be cleanly undone (`skills/rollback-probe/scripts/rollback-probe.mjs`).
-  - **Performance Budget Gate**: Parses benchmark exports (e.g. `benchmark.json` from k6) and fails if latency or error thresholds are breached (`skills/k6-performance-examples/`).
+  - **Performance Budget Gate**: Parses benchmark exports (e.g. `benchmark.json` from k6) and fails if latency or error thresholds are breached (`skills/k6-performance-tests/`).
 
 ---
 
@@ -204,30 +204,25 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 
 | Mechanism | Example in Coding Pal | Owned By |
 |---|---|---|
-| **Blast-radius diff guard** | `skills/scope-guard/scripts/scope-guard.mjs` checks modified paths & churn | Guard (`skills/scope-guard`) |
-| **Dependency bloat sentinel** | `skills/dependency-guard/scripts/dependency-guard.mjs` checks package manifests | Guard (`skills/dependency-guard`) |
-| **Secret & credential guard** | `skills/secret-guard/scripts/secret-guard.mjs` scans diffs for keys & tokens | Guard (`skills/secret-guard`) |
-| **Multi-stage verification gate** | `skills/task-gate/scripts/task-gate.mjs` runs lint/build/tests with self-repair diagnostics | Gate (`skills/task-gate`) |
+| **Blast-radius diff guard** | `skills/prove/scripts/scope-guard.mjs` checks modified paths & churn | Guard (`skills/prove`) |
+| **Dependency bloat sentinel** | `skills/prove/scripts/dependency-guard.mjs` checks package manifests | Guard (`skills/prove`) |
+| **Secret & credential guard** | `skills/prove/scripts/secret-guard.mjs` scans diffs for keys & tokens | Guard (`skills/prove`) |
+| **Multi-stage verification gate** | `skills/prove/scripts/task-gate.mjs` runs lint/build/tests with self-repair diagnostics | Gate (`skills/prove`) |
 | **Declarative contract validator** | `skills/contract-validator/scripts/validate-contract.mjs` asserts artifact schema | Contract (`skills/contract-validator`) |
-| **Anti-tautology falsifiability probe** | `skills/test-probe/scripts/test-probe.mjs` verifies tests fail when fix is removed | Probe (`skills/test-probe`) |
+| **Anti-tautology falsifiability probe** | `skills/prove/scripts/test-probe.mjs` verifies tests fail when fix is removed | Probe (`skills/prove`) |
 | **Migration rollback probe** | `skills/rollback-probe/scripts/rollback-probe.mjs` verifies reversibility & idempotency | Probe (`skills/rollback-probe`) |
 | **Artifact validator script** | `skills/audit-reporting/scripts/audit-report.mjs` checks report structure | Gate (Skill) |
 | **Specification validators** | `skills/think/scripts/validate-think.mjs` & `skills/plan/scripts/validate-plan.mjs` check headings, scope and criteria coverage, bootability & blast radius | Gate (Skill) |
 | **Meeting Pack validator** | `skills/meeting-pack/scripts/validate-meeting.mjs` checks the transcript digest, verbatim client quotes, and named confirmations | Gate (Skill) |
-| **Criteria Test Verification** | `skills/criteria-verify/scripts/verify-criteria.mjs` proves every `AC-<n>` has a passing test | Gate (Skill) |
-| **Mutation Testing Bar** | `skills/mutation-bar/scripts/mutation-bar.mjs` scores mutation reports with raise-only thresholds | Gate (Skill) |
-| **Contract & Schema Compatibility** | `skills/contract-compat/scripts/contract-compat.mjs` detects breaking OpenAPI and JSON Schema changes | Contract (Skill) |
-| **Security & Policy-as-Code, licenses** | `skills/security-gate/scripts/security-gate.mjs` reads SARIF, Conftest, and CycloneDX with expiring waivers | Guard (Skill) |
-| **Control integrity and the bug rule** | `skills/control-guard/scripts/control-guard.mjs` refuses weakened controls and `skills/test-probe/scripts/test-probe.mjs` proves a defect test fails without the fix | Guard (Skill) |
-| **Preview Smoke Tests** | `skills/preview-smoke/scripts/preview-smoke.mjs` probes a running preview | Probe (Skill) |
-| **Fix-loop limit and branch guard** | `skills/code-loop/scripts/code-loop.mjs` and `branch-guard.mjs` | Gate (Skill) |
-| **Human validation by blast radius** | `skills/pr-record/scripts/validate-pr.mjs --stage prove` | Gate (Skill) |
+| **Criteria Test Verification** | `skills/prove/scripts/verify-criteria.mjs` proves every `AC-<n>` has a passing test | Gate (`skills/prove`) |
+| **Control integrity and the bug rule** | `skills/prove/scripts/control-guard.mjs` refuses weakened controls and `skills/prove/scripts/test-probe.mjs` proves a defect test fails without the fix | Guard (`skills/prove`) |
+| **Preview Smoke Tests** | `skills/prove/scripts/preview-smoke.mjs` probes a running preview | Probe (`skills/prove`) |
+| **Prove record validator** | `skills/prove/scripts/validate-prove.mjs` verifies all 8 controls, criteria traceability, semantic review, and verdict | Gate (Skill) |
+| **Human validation by blast radius** | `skills/code/scripts/validate-pr.mjs --stage prove` | Gate (Skill) |
 | **Rollout decision** | `skills/release-plan/scripts/evaluate-rollout.mjs` promotes, holds, or rolls back with no AI | Gate (Skill) |
 | **Predictive monitoring** | `skills/telemetry-scan/scripts/telemetry-scan.mjs` finds anomalies, trends, and breaches | Probe (Skill) |
 | **Forge bindings** | `skills/forge/scripts/bindings-check.mjs` checks Think bindings against the catalog | Contract (Skill) |
 | **Persistent Context lint** | `skills/context-health/scripts/context-lint.mjs` | Guard (Skill) |
-| **Platform Rails check** | `skills/verification-pipeline/scripts/rails-check.mjs` | Gate (Skill) |
-| **Clean CI re-run** | `skills/verification-pipeline/references/verify.yml` job `clean-rerun` repeats the checks on the pull request in a clean environment | Gate (Skill) |
 | **Triage validator** | `skills/triage/scripts/validate-triage.mjs` checks evidence, verbatim quotes, scorecard, decision rules & ledger | Gate (Skill) |
 | **Deterministic backlog ranking** | `skills/triage/scripts/rank-backlog.mjs` ranks scorecards with Product Owner weights | Gate (Skill) |
 | **Falsifiable Done When** | "Every file in scope has been reviewed" / "Narrowest test suite passes" | Agent |

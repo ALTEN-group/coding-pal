@@ -15,4 +15,4 @@ If this message has no argument and no explicit folder path, ask which folder to
 
 ## Run
 
-Hand that resolved path to VitePress Docs as the docs root. Site rules are owned by the installed VitePress docs instruction — do not restate or override them.
+Hand that resolved path to VitePress Docs as the docs root. Site rules and templates are owned by the installed `vitepress-docs` skill — do not restate or override them.

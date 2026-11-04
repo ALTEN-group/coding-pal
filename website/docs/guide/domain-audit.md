@@ -68,7 +68,7 @@ flowchart TD
 | Capability | Role | Specialist Agent | Scoping Instruction | Protocol & Skill Bundle | Gating Mechanism |
 |---|---|---|---|---|---|
 | **Codebase Audit** | Full codebase assessment | [`Code Auditor`](./catalog-agents.md#_1-code-auditor-code-audit-agent-md) | Matching domain instructions | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting) | CI schema validation script |
-| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) | [`sharp-agent`](./catalog-instructions.md#universal-remediation-instructions) | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting), [`scope-guard`](./catalog-skills.md#_11-scope-guard-skills-scope-guard), [`secret-guard`](./catalog-skills.md#_16-secret-guard-skills-secret-guard), [`dependency-guard`](./catalog-skills.md#_15-dependency-guard-skills-dependency-guard) | Narrowest test + `scope-guard.mjs` |
+| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) | [`sharp-agent`](./catalog-instructions.md#universal-remediation-instructions) | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting), [`prove`](./catalog-skills.md#_11-prove-skills-prove) (`scope-guard`, `secret-guard`, `dependency-guard`) | Narrowest test + `scope-guard.mjs` |
 
 ---
 
@@ -108,12 +108,12 @@ flowchart TD
   - The narrowest test suite passes.
   - Blast-radius and churn guard passes:
     ```bash
-    node .agents/skills/scope-guard/scripts/scope-guard.mjs --git
+    node .agents/skills/prove/scripts/scope-guard.mjs --git
     ```
   - Secret & dependency guards pass with zero violations:
     ```bash
-    node .agents/skills/secret-guard/scripts/secret-guard.mjs --git
-    node .agents/skills/dependency-guard/scripts/dependency-guard.mjs --git
+    node .agents/skills/prove/scripts/secret-guard.mjs --git
+    node .agents/skills/prove/scripts/dependency-guard.mjs --git
     ```
   - Untouched code and unrelated files remain completely unmodified.
 

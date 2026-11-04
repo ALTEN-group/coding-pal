@@ -26,11 +26,11 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 
 ### Required Document Structure (In Exact Order)
 
-1. `# Think: <Feature or Task Name>`, followed by these ten level-two headings, in order:
+1. `# Think: <Feature or Task Name>`, followed by these level-two headings, in order:
 2. `## Business Need & Outcome`
 3. `## Options Considered`
 4. `## Chosen Approach`
-5. `## Forge Asset Bindings`
+5. `## Forge Asset Bindings` *(optional — required only when the repository maintains a Forge catalog or when the selected option uses `Forge reuse` or `Hybrid`)*
 6. `## System Flow & Responsibilities`
 7. `## Constraints & Invariants`
 8. `## Blast Radius`
@@ -51,18 +51,19 @@ Fields are written as bullets: `- **<Label>:** <value>`. Continuation lines (sub
 - `Source`: exactly one of `Forge reuse`, `Custom build`, `Hybrid`
 - `Trade-offs`, `Cost`, `Risk`
 
-Include credible reuse from the Forge (or existing dependencies) versus custom build.
+Include credible reuse from the Forge (when a Forge catalog is configured) or existing dependencies versus custom build.
 
 #### `## Chosen Approach`
 - `Selected`: `Option <N>`, naming an existing option.
 - `Reasoning`: one short paragraph.
 - `Approved By`: after validation, `Automated by <agent identity> on YYYY-MM-DD`. Use `Pending` while incomplete. Human approval remains supported when explicitly requested, but is not mandatory (see Approval Stages).
-- `Custom Build Reason`: required when the selected option is a `Custom build`. Record why no Forge asset covers it, and what was searched.
+- `Custom Build Reason`: required when `## Forge Asset Bindings` is present and the selected option is a `Custom build`. Record why no Forge asset covers it, and what was searched. Omitted when the repository does not maintain a Forge catalog and `## Forge Asset Bindings` is omitted.
 
-#### `## Forge Asset Bindings`
-Pre-approved reusable services, libraries, templates, and API contracts composed into the approach, as `- **forge/<asset-id>@<version>:** <how it is composed>`, for example `- **forge/gatelin@0.1.0-alpha.9:** Fronts the API for JWT sessions and RBAC`. The id and version come from the Forge catalog (see the `forge` skill, which checks bindings with `bindings-check.mjs`).
-- A `Forge reuse` or `Hybrid` selection must list real bindings. A label that is not `forge/<asset-id>@<version>` (or `None`) is rejected.
-- A `Custom build` selection must state `- **None:** <reason>`.
+#### `## Forge Asset Bindings` *(optional)*
+Include this section when the repository maintains a Forge catalog (`catalog.json` / `FORGE_CATALOG`) or when the selected option uses `Forge reuse` or `Hybrid`. Omit it when the repository has no Forge catalog and the selected option is `Custom build`.
+When present, list pre-approved reusable services, libraries, templates, and API contracts composed into the approach, as `- **forge/<asset-id>@<version>:** <how it is composed>`, for example `- **forge/gatelin@0.1.0-alpha.9:** Fronts the API for JWT sessions and RBAC`. The id and version come from the Forge catalog (see the `forge` skill, which checks bindings with `bindings-check.mjs`).
+- A `Forge reuse` or `Hybrid` selection must include `## Forge Asset Bindings` and list real bindings. A label that is not `forge/<asset-id>@<version>` (or `None`) is rejected.
+- When `## Forge Asset Bindings` is included for a `Custom build` selection, it must state `- **None:** <reason>`.
 - `None` cannot be combined with real bindings.
 
 #### `## System Flow & Responsibilities`

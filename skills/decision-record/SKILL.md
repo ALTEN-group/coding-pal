@@ -43,7 +43,7 @@ node scripts/validate-decision.mjs --file docs/decisions/0007-rbac-via-forge.md 
 node scripts/escalations.mjs due --dir docs/decisions/escalations
 ```
 
-5. Hand the draft to the Architect. In CI, post the record for review as a pull request or issue comment; never push a status other than `Drafted`. The Architect edits Status and Signature (and updates `Status` in `think.md`), and CI re-validates.
+5. In autonomous mode, commit the validated record (`Status: Accepted`, `Deciders: <identity> (Automation)`, `Signature: Automated by <identity> on YYYY-MM-DD`) and update `think.md` `## Decision Record` `Status` accordingly. When interactive Architect review is requested, post the draft (`Status: Drafted`) for the Architect to sign and re-validate.
 
 ## Done When
 

@@ -27,7 +27,7 @@ concurrency:
 
 env:
   SKILL_DIR: .agents/skills/release-plan
-  PREVIEW_SMOKE: .agents/skills/preview-smoke/scripts/preview-smoke.mjs
+  PREVIEW_SMOKE: .agents/skills/prove/scripts/preview-smoke.mjs
   # PLACEHOLDER: poll every POLL_SECONDS while the decision is "hold"; give up (and roll back) after MAX_HOLD_POLLS polls.
   POLL_SECONDS: "60"
   MAX_HOLD_POLLS: "180"

@@ -92,32 +92,31 @@ Three things to read off this diagram:
 
 ## The Decision Tree
 
-When adding persistent guidance, start from the desired operational behavior rather than file format:
+When adding persistent guidance, branch first by **when it should load**, then by **what it owns**. Solid arrows select the primary primitive; dashed arrows show when to pair it rather than overloading one file:
 
 ```mermaid
 ---
 caption: Context Primitive Decision Tree
 ---
 flowchart TD
-    Start{"Guide an AI Assistant"}
-    Q1{"Applies automatically<br/>across a file pattern?"}
-    Q2{"Defines a named specialist<br/>with bounded scope & method?"}
-    Q3{"Multi-file workflow,<br/>contract, or validator script?"}
-    Q4{"Focused parameterized<br/>command for a user?"}
+    Q1{"When should it load?"}
+    Q2{"What does it own?"}
 
-    R1["<b>Instruction</b><br/>instructions/*.instructions.md"]
-    R2["<b>Agent</b><br/>agents/*.agent.md"]
-    R3["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md"]
-    R4["<b>Prompt</b><br/>prompts/*.prompt.md"]
+    R1["<b>Instruction</b><br/>instructions/*.instructions.md<br/><i>Short, imperative standards</i>"]
+    R4["<b>Prompt</b><br/>prompts/*.prompt.md<br/><i>/command + argument resolution</i>"]
+    R2["<b>Agent</b><br/>agents/*.agent.md<br/><i>Bounded scope, method & Done When</i>"]
+    R3["<b>Skill</b><br/>skills/&lt;name&gt;/SKILL.md<br/><i>Contracts, validator scripts & templates</i>"]
 
-    Start --> Q1
-    Q1 -->|Yes| R1
-    Q1 -->|No| Q2
-    Q2 -->|Yes| R2
-    Q2 -->|No| Q3
-    Q3 -->|Yes| R3
-    Q3 -->|No| Q4
-    Q4 -->|Yes| R4
+    Q1 -->|"Always-on<br/>(file glob or background rule)"| R1
+    Q1 -->|"On-demand<br/>(invoked per task)"| Q2
+
+    Q2 -->|"User slash command"| R4
+    Q2 -->|"Specialist persona"| R2
+    Q2 -->|"Reusable workflow or check"| R3
+
+    R4 -.->|"Always delegates to"| R2
+    R1 -.->|"Needs code scaffolds?"| R3
+    R2 -.->|"Needs output contract<br/>or validator?"| R3
 
     classDef decision fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#eef2ff;
     classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
@@ -125,7 +124,7 @@ flowchart TD
     classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
     classDef prompt fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;
 
-    class Start,Q1,Q2,Q3,Q4 decision;
+    class Q1,Q2 decision;
     class R1 instruction;
     class R2 agent;
     class R3 skill;
@@ -226,7 +225,7 @@ classDiagram
 | Target files and systems to examine | **Agent** | `code-audit.agent.md` defines which modules are in scope |
 | Method of investigation or repair | **Agent** | `audit-fix.agent.md` defines surgical one-finding repair |
 | Domain coding standards & security rules | **Instruction** | `node-express.instructions.md`, `docker.instructions.md` |
-| Blast-radius & file churn boundary | **Guard** (`skills/`) | `skills/scope-guard/scripts/scope-guard.mjs` prevents out-of-scope diffs |
+| Blast-radius & file churn boundary | **Guard** (`skills/prove/`) | `skills/prove/scripts/scope-guard.mjs` prevents out-of-scope diffs |
 | Reusable output schema and format | **Skill** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
 | Deterministic artifact validation | **Skill** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
 | Falsifiable execution certification | **Gate** | Narrowest test suite command + `validate-think.mjs` / `validate-plan.mjs` |
@@ -287,7 +286,7 @@ When an AI build agent implements functionality from `plan.md`:
 
 ### Downstream: Code, Prove, Release, Learn
 
-After Plan, the same discipline continues. `progress.json` (`skills/code-loop/`) records one step at a time and the fix-loop limit. The pull request record (`skills/pr-record/`) links the issue and the Plan, traces every acceptance criterion to a test, and records human validation at the level the blast radius requires. Controls such as `criteria-verify`, `mutation-bar`, `contract-compat`, `security-gate`, and `control-guard` run in the loop and in CI, and agents never change them. `release.md` (`skills/release-plan/`) declares thresholds and rollback before deployment. Learn keeps the hypothesis ledger and incident records, and its outputs become new Triage issues. Persistent Context itself is checked by `skills/context-health/`. See the [Code](./domain-code.md), [Prove](./domain-prove.md), [Release](./domain-release.md), and [Learn](./domain-learn.md) guides.
+After Plan, the same discipline continues. The Code Agent executes plan steps in dependency order within the fix-loop limit. The Code skill (`skills/code/`) guards short-lived agent branches and validates the pull request record—linking the issue and the Plan, tracing every acceptance criterion to a test, and recording human validation at the level the blast radius requires. Controls such as `control-guard`, `secret-guard`, `dependency-guard`, `scope-guard`, `task-gate`, `criteria-verify`, `test-probe`, and `preview-smoke` run in the loop and in Prove (`skills/prove/`), and agents never change them. `release.md` (`skills/release-plan/`) declares thresholds and rollback before deployment. Learn keeps the hypothesis ledger and incident records, and its outputs become new Triage issues. Persistent Context itself is checked by `skills/context-health/`. See the [Code](./domain-code.md), [Prove](./domain-prove.md), [Release](./domain-release.md), and [Learn](./domain-learn.md) guides.
 
 ### Upstream: Meeting Packs and the Glossary
 

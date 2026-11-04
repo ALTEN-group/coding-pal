@@ -25,8 +25,8 @@ How the service is structured is owned by the installed Node.js Express instruct
 - **Drive the Full Stack**: Test complete request flows over HTTP (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`). Do not invoke route handlers or middlewares directly as JS functions.
 - **Assert Envelopes & Headers**:
   - Assert HTTP status code (`expect(res.status).toBe(...)`).
-  - Assert Content-Type (`expect(res.headers["content-type"]).toMatch(/json/)`).
-  - Assert JSON response body envelopes: `{ data }` on success, `{ error }` on failures.
+  - Assert Content-Type (`expect(res.headers["content-type"]).toMatch(/json/)`) when a JSON body is returned.
+  - Assert JSON response body envelopes: `{ rows, total }` on standard `send` success responses (or empty body on `204`), and `{ statusCode, message }` on error responses (`@dwtechs/errandler-express`).
 - **Route Conventions**:
   - `POST /search` for query operations.
   - `POST /archive` for soft deletion.
