@@ -1,114 +1,65 @@
 # Prompt Markdown Schema
 
-A **Prompt** is an on-demand, user-invocable command (typically exposed as a slash command `/command` in AI chat interfaces). It acts as a bridge between human input and specialized agents, resolving arguments, active editor selections, and open files.
+A **Prompt** is a user-invocable slash command (`/command`). It is the entry point: it resolves the target from arguments, selection, or open file, then hands it to one [Agent](./schema-agents.md). It owns **input resolution only**; conventions, contracts, and method stay elsewhere.
 
-Prompt files live under `prompts/*.prompt.md`.
+Files live in `prompts/<name>.prompt.md`, and the slug equals the frontmatter `name`.
 
-## File Naming & Location
+| Family | Examples |
+|---|---|
+| **Stack test prompts** | `node-unit-tests`, `node-api-tests`, `angular-unit-tests`, `angular-e2e-tests`, `postgres-liquibase-tests` |
+| **Stage commands** | `triage`, `think`, `plan`, `code`, `prove`, `release-plan` |
+| **Meeting & Learn ceremonies** | `meet`, `meet-readback`, `triage-review`, `outcome-review`, `context-review`, `operating-retro`, `pre-read`, `incident` |
+| **Utilities** | `decision`, `fix-gates`, `migration-docs`, `fuzz-tests`, `performance-tests`, `demo-videos`, `vitepress-docs` |
 
-```text
-prompts/
-└── <kebab-case-name>.prompt.md
-```
-
-Examples:
-- `prompts/node-unit-tests.prompt.md`
-- `prompts/vitepress-docs.prompt.md`
-- `prompts/angular-unit-tests.prompt.md`
-- `prompts/fuzz-tests.prompt.md`
+Several prompts can share an agent (five use `Learn Analyst`); the prompt names the mode in `## Run`.
 
 ---
 
-## Frontmatter Schema
+## Frontmatter
 
-Every prompt file **must** begin with a YAML frontmatter block enclosed by triple dashes (`---`).
-
-```yaml
----
-name: string
-description: string
-agent: string
-argument-hint: string
----
-```
-
-### Fields
-
-| Field | Type | Required | Description | Constraints & Best Practices |
-|---|---|---|---|---|
-| `name` | `string` | **Yes** | The command identifier. | Lowercase kebab-case (e.g., `node-unit-tests`). In chat interfaces, this becomes the slash command (`/node-unit-tests`). |
-| `description` | `string` | **Yes** | Description of the command. | Explains what the command produces and when the user should type it. |
-| `agent` | `string` | **Optional** | Target agent to execute the operation. | Must match the `name` field of an agent in `agents/*.agent.md` (e.g., `Unit Tester`, `VitePress Docs`). |
-| `argument-hint` | `string` | **Optional** | Autocomplete hint displayed in IDE input. | Short placeholder describing expected argument (e.g., `optional src path, e.g. src/routes/application.js` or `docs root, e.g. website`). |
-
-### Example Frontmatter
-
-```yaml
----
-name: node-unit-tests
-description: "Generate or update a Jest unit test file for a Node.js module (services, utils, controllers, middlewares). Use when the user wants isolated unit tests for an open file, a selection, or a src/ path."
-agent: Unit Tester
-argument-hint: "optional src path, e.g. src/services/user.service.js"
----
-```
+| Field | Required | Rules |
+|---|---|---|
+| `name` | **Yes** | Kebab-case, equal to the file slug. Becomes `/name`. |
+| `description` | **Yes** | Double-quoted. What it produces, plus *"Use when the user wants ..."* for stack and docs prompts. |
+| `agent` | **Yes** | Exact `name` of an existing agent. The harness treats it as optional, but every Coding Pal prompt sets it. |
+| `argument-hint` | **Yes** | `"<what>, e.g. <example>"`. Prefix optional arguments with `optional`. Mode selectors list choices. |
 
 ---
 
-## Document Body Schema
+## Body
 
-The body of a prompt markdown file adheres to a standardized three-part schema:
+No H1. Three parts:
 
 ```markdown
-Slash command for the **<Target Agent>** agent on <subject scope>.
+Slash command for the **<Agent>** agent[ on <scope>].
 
-## Resolve <target / parameters>
+## Resolve The Target
 
-Use the first that is a valid target:
-
-1. <Argument from prompt message>
-2. <Current editor selection>
-3. <Currently open file in context>
-
-If none of those match, ask which file/resource to target. Do not guess.
-
-<Target-to-Artifact Mapping Rules>
+<Precedence for finding the target.>
+If the target is still unclear, ask. Do not guess.
 
 ## Run
 
-Hand the resolved target and parameters to <Target Agent>.
-Verify with the narrowest project command per the installed <domain> instructions.
+Hand the resolved <target> to <Agent>[ in <mode> mode].
+<Which skill or instruction owns the details. How to verify.>
 ```
 
-### Section 1: Command Mandate
-
-- **Format**: Opening sentence immediately following frontmatter.
-- **Requirement**: Explicitly names the target agent and describes the high-level operation.
-- **Example**: `Slash command for the **Unit Tester** agent on one Node.js src/ module.`
-
-### Section 2: `## Resolve <target>` (Parameter Precedence)
-
-Defines a strict fallback sequence for resolving inputs without guessing:
-
-1. **Positional Arguments**: An explicit path or parameter provided in the chat prompt.
-2. **Editor Selection**: Active code or path selected in the IDE.
-3. **Open File Context**: The file currently focused in the editor.
-4. **Fallback Guard**: If no valid target is found, the agent **must ask the user** rather than hallucinating or scanning the entire repository.
-
-This section also specifies **Target-to-Artifact Mapping**:
-- Translates source paths to destination paths (e.g., `src/<path>/<file>.js` → `tests/<path>/<file>.test.js`).
-- Creates missing directories automatically.
-- Detects domain flavors (e.g., routes vs general modules) to select appropriate testing patterns.
-
-### Section 3: `## Run`
-
-Instructs the harness on how to initiate the task:
-- Passes the resolved target and mapped destination to the bound agent.
-- Explicitly states that conventions, test runners, and assertions are owned by the relevant **domain instructions**, warning the agent not to restate or override them.
-- Mandates verifying the outcome using the **narrowest project command**.
+- **Resolve** has two shapes. Stack prompts use an ordered list: a path in the message, then the selection, then the open file. Stage and ceremony prompts use prose: first argument (`42`, `#42`, `specs/issue-42`), then the active editor file *only if it is of the right kind*. Both end with the **ask, don't guess** guard. It may also hold input collection (`meet` asks for consent and a speaker roster), redirects (`node-unit-tests` → `/node-api-tests` for routes), and path mapping (`src/<path>/<file>.js` → `tests/<path>/<file>.test.js`).
+- **Run** hands off, names the mode, points to the owning skill or instruction (*"do not restate or override them"*), and names the verification (the narrowest command, or the skill's validator). Read-only prompts such as `pre-read` may list the skill commands they run.
 
 ---
 
-## Annotated Reference Example
+## Anti-Patterns
+
+> [!WARNING]
+> 1. **Restating ownership**: do not copy conventions or runner flags; point to the instruction or skill.
+> 2. **Guessing the target**: ask instead of scanning the repository.
+> 3. **Unknown agent**: `agent` must match an existing `name` exactly.
+> 4. **Duplicate agents**: if prompts differ only by mode, keep one agent.
+
+---
+
+## Example
 
 ```markdown
 ---
@@ -130,11 +81,11 @@ Use the first that is a source module:
 
 If none of those is source under `src/`, ask which file to test. Do not guess.
 
-If the source is under `src/routes/`, use `/node-api-tests` instead (or hand off to **API Tester** following `node-api-tests.instructions.md`).
+If the source is under `src/routes/`, use `/node-api-tests` instead.
 
-Map `src/<path>/<file>.js` → `tests/<path>/<file>.test.js` (create missing directories). Follow the **Unit tests** section of the installed Node.js unit-test instructions. Path layout, runner, and execution are owned by those instructions — follow them; do not restate or override them.
+Map `src/<path>/<file>.js` → `tests/<path>/<file>.test.js` (create missing directories). Path layout, runner, and execution are owned by the installed Node.js unit-test instructions — do not restate or override them.
 
 ## Run
 
-Hand the resolved source and mapped test path to Unit Tester. Verify with the **narrowest** project test command, executed per the installed Node.js unit-test instructions.
+Hand the resolved source and mapped test path to Unit Tester. Verify with the **narrowest** project test command.
 ```

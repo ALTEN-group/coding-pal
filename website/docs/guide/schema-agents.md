@@ -1,157 +1,105 @@
 # Agent Markdown Schema
 
-An **Agent** is an on-demand specialist persona invoked explicitly by the user or an orchestration workflow. It defines the bounded scope, constraints, method, and falsifiable completion criteria for a specific role.
+An **Agent** is an on-demand specialist persona, invoked by the user (usually through a [Prompt](./schema-prompts.md)) or by a workflow. It owns *how a task is conducted*: scope, constraints, method, and falsifiable completion. Conventions belong to [Instructions](./schema-instructions.md) and artifact contracts to [Skills](./schema-skills.md); the agent only points to them.
 
-Agent files live under `agents/*.agent.md`.
+Files live in `agents/<slug>.agent.md`. The slug is not always the `name` (`gate-fix.agent.md` → `Gate Fixer`).
 
-## File Naming & Location
+| Family | Agents |
+|---|---|
+| **Test & build specialists** | `Unit Tester`, `API Tester`, `E2E Tester`, `Fuzz Tester`, `Performance Tester`, `VitePress Docs`, `Demo Videos`, `Spec from Code`, `Migration Documenter` |
+| **Audit & remediation** | `Code Auditor`, `Audit Finding Fixer` |
+| **Factory stage agents** | `Meeting Analyst`, `Triage Analyst`, `Thinker`, `Decision Scribe`, `Planner`, `Code Agent`, `Prove Validator`, `Gate Fixer`, `Release Planner`, `Learn Analyst` |
 
-```text
-agents/
-└── <kebab-case-name>.agent.md
-```
-
-Examples:
-- `agents/unit-test.agent.md`
-- `agents/e2e-test.agent.md`
-- `agents/code-audit.agent.md`
-- `agents/vitepress-docs.agent.md`
+Stage agents use the same schema but embed exact validator commands in `Approach` and anchor `Done When` on validator exit codes.
 
 ---
 
-## Frontmatter Schema
+## Frontmatter
 
-Every agent file **must** begin with a YAML frontmatter block enclosed by triple dashes (`---`).
+| Field | Required | Rules |
+|---|---|---|
+| `name` | **Yes** | Capitalized role noun phrase. **Unique**: a prompt's `agent:` must match it exactly. |
+| `description` | **Yes** | Double-quoted. Most start with *"Use when..."*; stage agents may open with an imperative outcome. State boundaries and handoffs (*"not for changing production code"*). |
 
-```yaml
----
-name: string
-description: string
----
-```
-
-### Fields
-
-| Field | Type | Required | Description | Constraints & Best Practices |
-|---|---|---|---|---|
-| `name` | `string` | **Yes** | Human-readable title of the specialist persona. | Capitalized words (e.g., `Unit Tester`, `Code Auditor`, `VitePress Docs`). Displayed in IDE agent selectors. |
-| `description` | `string` | **Yes** | Semantic discovery phrase explaining what the agent does and when to invoke it. | **Must include explicit trigger criteria.** Start with *"Use when..."*. State both capabilities and boundary conditions (e.g., *"not for changing production code"*). |
-
-### Example Frontmatter
-
-```yaml
----
-name: Unit Tester
-description: "Use when you need to create or update unit tests for a specific module. Prefer this specialist for coverage, isolation, and meaningful assertions — not for changing production code."
----
-```
+No other keys. Tools and skills are not declared in frontmatter; boundaries go in `## Constraints`.
 
 ---
 
-## Document Body Schema
+## Body
 
-The body of an agent markdown file adheres to a strict four-section schema:
+No H1. Fixed section order:
 
 ```markdown
-You are a specialist at <domain / responsibility>.
+You are a specialist at <responsibility>.
 
 ## Constraints
+- <Boundary>
+- DO NOT <prohibition>
 
-- <Constraint 1>
-- <Constraint 2>
+## Scope            <!-- optional -->
+- Default scope: <what the user named in the request>
+- If the user names none, ask for <a root path or glob>. Do not guess.
 
 ## Approach
-
-1. <Step 1: Resolve Target & Scope>
-2. <Step 2: Inspect Context & Evidence>
-3. <Step 3: Define Execution Contract>
-4. <Step 4: Execute Surgical Changes>
-5. <Step 5: Verify via Narrowest Command>
+1. <Resolve target> 2. <Inspect> 3. <List the contract> 4. <Execute> 5. <Verify>
 
 ## Done When
-
-- <Falsifiable Criterion 1>
-- <Falsifiable Criterion 2>
+- <Falsifiable criterion>
 ```
 
-### Section 1: Specialist Persona Statement
-
-- **Format**: Opening paragraph immediately following frontmatter.
-- **Requirement**: A single, declarative sentence stating the specialist identity and primary mandate.
-- **Example**: `You are a specialist at writing and maintaining unit tests.`
-
-### Section 2: `## Constraints`
-
-Defines hard boundaries that the agent **must not cross**.
-
-- **Scope boundary**: Limits work to one module, one finding, or explicitly named files.
-- **Modification permissions**: E.g., `Edit test files only. Do not change production source.`
-- **Tooling restrictions**: Forbids introducing unvetted frameworks, libraries, or global linters.
-- **Instruction adherence**: Mandates following installed domain instructions for conventions and patterns.
-
-### Section 3: `## Approach`
-
-A numbered, sequential execution pipeline that the LLM must execute in order:
-
-1. **Resolve**: Determine targets from arguments, open files, or active selections. Fail fast if ambiguous; ask rather than guess.
-2. **Inspect**: Read relevant manifests, source files, and tests *before* writing or modifying anything.
-3. **Plan / Contract**: List execution paths, finding items, or specific changes before applying them.
-4. **Execute**: Make surgical edits respecting the project's existing style and domain instructions.
-5. **Verify**: Run the **narrowest possible test command** (not the full monolithic test suite unless no other option exists). Fix introduced errors.
-
-### Section 4: `## Done When`
-
-A checklist of **falsifiable completion conditions**.
-
-- Must be objectively verifiable through tool output or file inspection.
-- Prevents the agent from prematurely exiting or claiming success without proof.
-- **Examples**:
-  - `Every execution path listed in step 3 has at least one meaningful assertion.`
-  - `The narrowest test command you ran passes with exit code 0.`
-  - `No production files were modified without user approval.`
+| Section | Content |
+|---|---|
+| Persona | One sentence. Stage agents may add a context paragraph or open in the first person (`You choose and record ...`). |
+| `## Constraints` | Hard limits, with prohibitions as `DO NOT`. Typical: one-module or one-finding scope, write permissions (*"Edit test files only"*), no new frameworks, *"Follow the installed `think` skill"* instead of restating its contract, never forge approval (`Automated by <Agent> on YYYY-MM-DD`). |
+| `## Scope` | Only on `Spec from Code`, `Fuzz Tester`, `Performance Tester`, `VitePress Docs`. |
+| `## Approach` | Numbered. Specialists: resolve, inspect, list the contract, execute, verify with the **narrowest** command. Stage agents: bold-labelled steps with commands such as `node .agents/skills/think/scripts/validate-think.mjs --think <path>`. |
+| `## Done When` | Checkable from tool output: *"`think.md` passes validation with exit code 0"*, *"Zero production files were modified"*. |
+| `## Output Format` | Only `Audit Finding Fixer`: a small `<!-- AUDIT-FIX:START -->` status block for automation. |
 
 ---
 
 ## Anti-Patterns
 
 > [!WARNING]
-> Avoid these common agent design mistakes:
-> 1. **Owning Report Formats**: Do not specify Markdown report headings, tables, or JSON schemas inside an agent. That leaks output contracts. Reference an installed **Skill** instead (e.g., `Follow the installed audit-reporting skill`).
-> 2. **Unbounded Scope**: Never allow an agent to "scan the whole repository" unless it is explicitly an auditor designed for that purpose.
-> 3. **Unfalsifiable Done When**: Criteria like *"The code looks good"* or *"All requirements are satisfied"* are unacceptable. Criteria must specify passing test commands or exact file verifications.
+> 1. **Owning report formats**: reference an installed skill instead. The `Audit Finding Fixer` status block is the only exception.
+> 2. **Unbounded scope**: only `Code Auditor` may scan broadly.
+> 3. **Unfalsifiable Done When**: *"The code looks good"* is not a criterion.
+> 4. **Restating conventions**: point to the installed instruction.
+> 5. **Forged approval**: stage agents record automation, never a human signature.
+
+> [!NOTE]
+> `agents/app-state-analyst.md` does not follow this schema (no `.agent.md` suffix, extra `tools` and `autoload-skills` keys, `skill://` references, product-specific). Do not copy it.
 
 ---
 
-## Annotated Reference Example
+## Example
 
 ```markdown
 ---
-name: Unit Tester
-description: "Use when you need to create or update unit tests for a specific module. Prefer this specialist for coverage, isolation, and meaningful assertions — not for changing production code."
+name: Spec from Code
+description: "Use when you need to generate specifications from existing code. Covers every file, class, function, and endpoint — nothing is left undocumented."
 ---
 
-You are a specialist at writing and maintaining unit tests.
+You are a specialist at extracting specifications from source code.
 
 ## Constraints
 
-- Scope is **one module** (and its existing test file) unless the user names more.
-- Edit **test files only**. Do not change production source. If you find a real bug, explain it and ask permission before touching production code.
-- DO NOT write shallow tests — every test must assert a meaningful outcome.
-- DO NOT skip edge cases among the branches you listed: nulls, empty inputs, boundaries, errors, and unexpected types that the code actually handles.
-- DO NOT introduce a new test framework, runner, or assertion library. Use what the project already uses.
-- Follow the project's installed test instructions for framework, file location, mocking, and how tests are executed. If none are installed, match existing tests in the repo.
+- DO NOT guess or assume behavior — only document what the code explicitly does.
+- DO NOT modify any code.
+
+## Scope
+
+- Default scope: paths or modules named in the user request.
+- If the user names none, ask for a root path or glob before writing files.
 
 ## Approach
 
-1. Resolve the target module from the request (path, selection, or open file). If none is clear, ask — do not guess and do not scan the whole tree.
-2. Read that module and any existing tests for it.
-3. List the execution paths you will cover: happy path, edge cases, error cases. That list is the coverage contract for this run.
-4. Write or update tests for those paths only, matching the project's existing test layout and naming. Keep tests isolated — no shared mutable state between cases.
-5. Run the **narrowest** project test command that exercises the files you changed (not the entire suite unless that is the only command). Fix failures you introduced.
+1. Read every relevant file in scope before writing anything.
+2. Describe **what** each component does and **how**, from the code only.
+3. Follow the installed `spec-from-code` skill to structure and validate the Markdown files.
 
 ## Done When
 
-- Every path listed in step 3 has at least one meaningful assertion.
-- The narrowest test command you ran passes.
-- No production files were changed, unless the user approved a bug fix.
+- Every component in scope has a specification entry.
+- A validated `spec-from-code` directory has been produced.
 ```

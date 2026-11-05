@@ -1,102 +1,71 @@
 # Instruction Markdown Schema
 
-An **Instruction** is an always-on standard that injects automatically into the AI assistant's context when open or edited files match a defined glob pattern.
+An **Instruction** is an always-on, normative standard injected into the AI's context when opened or edited files match its `applyTo` glob. It owns **rules**. Task steps belong to agents, output contracts and validators to skills, entry points to prompts.
 
-Instruction files live under `instructions/*.instructions.md`.
+Files live in `instructions/<name>.instructions.md`.
 
-## File Naming & Location
-
-```text
-instructions/
-└── <kebab-case-name>.instructions.md
-```
-
-Examples:
-- `instructions/sharp-agent.instructions.md`
-- `instructions/node-express.instructions.md`
-- `instructions/docker.instructions.md`
-- `instructions/angular-admin.instructions.md`
+| Family | Instructions | `applyTo` targets |
+|---|---|---|
+| **Stack patterns** | `node-express`, `postgres-liquibase`, `angular-admin`, `docker` | Stack source or config (`src/**/*.js`, `db/**/*.sql,...`) |
+| **Test conventions** | `node-unit-tests`, `node-api-tests`, `angular-unit-tests`, `angular-e2e-tests`, `postgres-liquibase-tests` | Test paths (`tests/routes/**/*.js,...`, `tests/db/**/*.sql`) |
+| **Artifact & stage standards** | `triage`, `think`, `plan`, `code`, `prove`, `release`, `learn`, `decision-record`, `meeting-pack`, `migration-docs` | The artifact (`**/think.md`, `**/docs/decisions/**`) |
+| **Universal** | `sharp-agent` | `**` |
 
 ---
 
-## Frontmatter Schema
+## Frontmatter
 
-Every instruction file **must** begin with a YAML frontmatter block enclosed by triple dashes (`---`).
+| Field | Required | Rules |
+|---|---|---|
+| `description` | **Yes** | Double-quoted. Missing is a lint **error**. Artifact standards read `Normative standards for <artifact> (<file>). Applies when authoring, reviewing, or consuming ...`. |
+| `applyTo` | **Yes** | Narrowest practical glob, one quoted string. Multiple globs are comma-separated; braces are allowed (`"tests/**/*.{js,mjs,ts}"`). `"**"` is reserved for `sharp-agent`. |
 
-```yaml
----
-description: string
-applyTo: string
----
-```
-
-### Fields
-
-| Field | Type | Required | Description | Constraints & Best Practices |
-|---|---|---|---|---|
-| `description` | `string` | **Yes** | What this instruction enforces and when it applies. | Clear, concise summary of the standard (e.g., conventions, structure, security). |
-| `applyTo` | `string` | **Yes** | Glob pattern matching relevant files. | **Use the narrowest practical glob.** E.g., `src/**/*.js` or `db/**/*.sql`. Glob `"**"` is reserved for universal rules (like `sharp-agent`). |
-
-### Example Frontmatter
-
-```yaml
----
-description: "Node.js + Express backend microservice conventions: structure, routing, middlewares, error envelopes, validation, security, and health checks. Use when creating or modifying backend JavaScript code."
-applyTo: "src/**/*.js"
----
-```
+`skills/context-health/scripts/context-lint.mjs` runs in CI. Errors: `missing-description`, `dangling-reference` (names a skill, agent, or prompt that doesn't exist), `secret`. Warnings: more than 120 lines, near-duplicates, older than 180 days, instruction count growing over 20%.
 
 ---
 
-## Document Body Schema
+## Body
 
-Instructions must be **imperative, concise, and normative**.
+Start with an `# H1` (except `sharp-agent`) and an **ownership statement**: what the file owns and what it delegates. Stay imperative and under 120 lines.
 
-```markdown
-# <Standard Title>
-
-When scaffolding or matching full files, follow the installed `<name>-examples` skill (read its `references/examples.md`).
-
-## <Area 1: Structure & Naming>
-
-- Rule 1
-- Rule 2
-
-## <Area 2: Security & Boundaries>
-
-- Rule 1
-
-## <Area 3: Architectural Checklist>
-
-- Rule 1
-```
-
-### Core Authoring Principles
-
-1. **Short & Imperative**: State clear rules, checklists, and prohibitions. Avoid conversational preamble.
-2. **Template Offloading**: Never put multi-page scaffolding templates directly inside an instruction. Point to an installed companion skill in `skills/<name>-examples/` instead.
-3. **No Task Scopes**: Do not define agent-specific execution steps (like "Step 1: Read files, Step 2: Output report"). Those belong in Agents and Skills.
-4. **No Fluff**: Every sentence must express an enforceable engineering constraint.
+| Family | Template |
+|---|---|
+| **Artifact & stage** | `When authoring or validating <artifact>, follow the installed <skill> skill (read its references/<x>-contract.md).` Then `## Roles` (most), normative sections, optional `## Scope`. |
+| **Stack pattern** | `Target: <path>.` Pointer to the `<stack>-examples` skill. Topical rule sections, ending in a checklist where useful. |
+| **Test conventions** | Ownership paragraph naming the sibling instructions. Then `Path convention`, `What to assert` (include the `AC-<n>` id in test names), `Execution`, `Isolation`. |
+| **Universal** | Tradeoff note, an output-contract override, then numbered principles. |
 
 ---
 
-## Annotated Reference Example
+## Anti-Patterns
+
+> [!WARNING]
+> 1. **Embedded templates**: point to the `*-examples` skill instead.
+> 2. **Copied contracts**: never repeat a record's headings or fields; point to the skill's contract.
+> 3. **Task steps**: "Step 1: read, Step 2: report" belongs in an agent.
+> 4. **Overlap**: delegate adjacent topics to the sibling instruction by name.
+
+---
+
+## Example
 
 ```markdown
 ---
-description: "Avoid overengineering and reduce token use. Prefer surgical changes and clear problem-solving."
-applyTo: "**"
+description: "Normative standards for the Think record (think.md) derived from backlog issues. Applies when authoring, reviewing, or exploring options in think.md."
+applyTo: "**/think.md"
 ---
 
-# Sharp Agent
+# Specification Standards: Think
 
-You are a pragmatic, surgical engineer. Optimize for clarity, simplicity, and low token use.
+When authoring or validating the Think record, follow the installed `think` skill (read its `references/think-contract.md`).
 
-## Core Directives
+## Phase Separation
 
-- DO NOT overengineer. Solve the immediate problem directly.
-- DO NOT add unrequested dependencies, abstractions, layers, or generic helpers.
-- DO NOT rewrite or reformat untouched code.
-- Prefer surgical edits over full-file replacements.
-- Make changes verifiable: run the narrowest test command that exercises the change.
+- **Strict sequence**: Never create `plan.md` without a validated `think.md`.
+- **Where code lives**: `think.md` and `plan.md` contain **no source code**.
+
+## `think.md` Standards
+
+- **Options, not conclusions**: Record 2 to 4 credible options with trade-offs, cost, and risk, then the chosen approach.
+- **Blast radius is set here, once**: Name the rollback mechanism for High and Critical.
 ```

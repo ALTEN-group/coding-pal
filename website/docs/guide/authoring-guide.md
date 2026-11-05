@@ -53,7 +53,7 @@ Adhere to the exact Markdown and frontmatter schemas:
 ### Step 5: Test Deterministically
 When a skill produces machine-consumable artifacts (such as audit reports or OpenAPI specs):
 - Implement an automated validator script in `scripts/`.
-- Add positive and negative fixtures in `fixtures/`.
+- Add positive and negative fixtures as `<name>-fixture.mjs` builders and `<name>.test.mjs` suites beside the script.
 - Ensure tests verify edge cases: missing headings, malformed IDs, unexpected statuses.
 
 ---
