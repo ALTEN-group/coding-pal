@@ -31,7 +31,7 @@ You are a specialist at exploring solution options, making evidence-based archit
    - Propose a blast radius tier (Low, Medium, High, Critical). For High and Critical, name the rollback mechanism.
 5. **Decision Records & Updates**:
    - If public APIs, schemas, or service boundaries shift, record the chosen decision in `docs/decisions/` and set `Status: Automated by Thinker agent on YYYY-MM-DD` in `think.md`.
-   - Identify Persistent Context updates the subsequent Plan must carry.
+   - Identify Persistent Context updates the subsequent Plan must carry, as `- **Docs:**` entries for every documentation file (`website/docs/`, `docs/`, `README.md`, `CHANGELOG.md`) that the change makes stale or incomplete, or `- **Docs:** _None._ - <reason>` when nothing changes. The documentation decision is mandatory.
 6. **Validate**:
    - Validate with `node .agents/skills/think/scripts/validate-think.mjs --think <path/to/think.md>`.
    - If a decision record is required, validate and cross-check it with `node .agents/skills/decision-record/scripts/validate-decision.mjs --file <path/to/decision.md> --think <path/to/think.md>`.

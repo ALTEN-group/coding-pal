@@ -89,7 +89,9 @@ Required when the approach alters a public API, changes a database schema, or sh
 - A `Critical` tier always requires a decision record.
 
 #### `## Persistent Context Updates`
-Updates to Persistent Context identified here and carried into the Plan, or `_None._`. Each is `- **Update:** \`path\` - what changes`. The downstream Plan must cover each path with a step.
+Updates to Persistent Context identified here and carried into the Plan. Each is `- **Update:** \`path\` - what changes` for instructions, specifications, and glossary, or `- **Docs:** \`path\` - what changes` for documentation (the path must be under `website/docs/` or `docs/`, or be `README` or `CHANGELOG`). The downstream Plan must cover each path with a step.
+
+Documentation uses the `Docs` label. List every documentation file the change makes stale or incomplete (for example `website/docs/`, `docs/`, `README.md`, `CHANGELOG.md`), including behavior, configuration, CLI, and workflow changes as well as public API changes. The section must always make an explicit documentation decision: at least one `Docs` entry, or `- **Docs:** _None._ - <reason>` stating why no documentation changes. A bare `_None._` section is rejected, as is listing both Docs paths and `Docs: _None._`.
 
 #### `## Ambiguities & Open Questions`
 Unresolved questions that need human clarification, or `_None._`.

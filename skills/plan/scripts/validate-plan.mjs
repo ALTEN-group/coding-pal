@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+	DOC_PATH,
 	NONE,
 	NO_ANSWER,
 	STAGES,
@@ -42,6 +43,7 @@ const PLAN_REQUIRED_H2 = [
 ];
 
 const STEP_REQUIRED_FIELDS = ["Files", "Action", "Verification", "Bootable Check", "Serves"];
+const TEST_PATH = /(^|\/)(tests?|__tests__|e2e)\/|\.(test|spec)\.[a-z]+$/i;
 const MIGRATION_PATH = /(migration|changelog|liquibase|\.sql$|(^|\/)db\/)/i;
 
 function parseTable(body, columns, where, filename) {
@@ -238,6 +240,14 @@ export function validatePlanContent(rawMarkdown, filename = "plan.md", options =
 		}
 		for (const path of options.think.contextUpdates) {
 			if (!touched.has(path)) fail(`${filename} Persistent Context update "${path}" from think.md is not covered by any implementation step`);
+		}
+		const isCode = (f) => !DOC_PATH.test(f) && !TEST_PATH.test(f);
+		const firstCodeStep = steps.find((s) => s.files.some(isCode))?.step;
+		for (const path of options.think.docUpdates) {
+			const docStep = steps.find((s) => s.files.includes(path)).step;
+			if (firstCodeStep && docStep <= firstCodeStep) {
+				fail(`${filename} documentation "${path}" is written in Step ${docStep}, which is not after the first code step (Step ${firstCodeStep}); document the change after implementing it`);
+			}
 		}
 	}
 

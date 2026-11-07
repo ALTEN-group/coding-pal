@@ -22,6 +22,7 @@ When authoring or validating the Plan record, follow the installed `plan` skill 
 - **Preserve bootability**: Every step leaves the application bootable.
 - **Step fields**: Every step carries the fields, in the order, that the contract requires (`Files`, `Action`, `Verification`, `Bootable Check`, `Serves`).
 - **No source code in `plan.md`**: Describe the step's responsibility and signatures in `Action`. Never write implementation or test code blocks in `plan.md`—code is written once, in the Code stage.
+- **Documentation steps**: Every `Docs` entry in think.md's `## Persistent Context Updates` is In Scope and covered by a step ordered after the first code step. The validator enforces coverage and order.
 - **Test plan**: Map each criterion to a test and to the step that creates it.
 - **Reversibility**: A change a revert cannot undo, such as a data migration, gets its own reverse step.
 - **Blast radius check**: Confirm the tier from Think still holds for the file scope, or raise it with a reason.

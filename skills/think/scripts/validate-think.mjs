@@ -32,6 +32,7 @@ export const STAGES = ["draft", "approved"];
 const PENDING = "Pending";
 
 export const NONE = "_None._";
+export const DOC_PATH = /^(website\/docs\/|docs\/|readme(\.[a-z]+)?$|changelog(\.[a-z]+)?$)/i;
 const PLACEHOLDER = /^(tbd|n\/a|\.\.\.|<[^>]*>)$/i;
 export const NO_ANSWER = /^(_none\._|none|n\/a|no|nothing|no rollback|not applicable|tbd)\.?$/i;
 export const THINK_FENCE_INFO = new Set(["", "text", "txt", "plaintext", "mermaid", "ascii", "diagram"]);
@@ -272,24 +273,39 @@ export function validateThinkContent(rawMarkdown, filename = "think.md", setting
 
 	const updatesBody = sections["Persistent Context Updates"];
 	const contextUpdates = [];
-	if (updatesBody !== NONE) {
-		const updates = parseFields(updatesBody);
-		if (!updates.length || updates.some(([label]) => label.toLowerCase() !== "update")) {
-			fail(`${filename} "## Persistent Context Updates" must be "${NONE}" or bullets formatted "- **Update:** \`path\` - what changes"`);
-		}
-		for (const [, value] of updates) {
-			const paths = extractPaths(value);
-			if (!paths.length) fail(`${filename} each Persistent Context update must name its file in backticks`);
-			paths.forEach((p) => checkPath(p, "Persistent Context update", filename));
-			contextUpdates.push(...paths);
-		}
+	const docUpdates = [];
+	const updates = updatesBody === NONE ? [] : parseFields(updatesBody);
+	if (updatesBody !== NONE && (!updates.length || updates.some(([label]) => !["update", "docs"].includes(label.toLowerCase())))) {
+		fail(`${filename} "## Persistent Context Updates" must hold bullets formatted "- **Update:** \`path\` - what changes" or "- **Docs:** \`path\` - what changes"`);
 	}
+	let docsDeclaredNone = false;
+	for (const [label, value] of updates) {
+		const isDocs = label.toLowerCase() === "docs";
+		const noDocs = isDocs && value.match(/^_None\._\s*-\s*(.+)$/);
+		if (noDocs) {
+			if (isPlaceholder(noDocs[1]) || NO_ANSWER.test(noDocs[1].trim())) fail(`${filename} "- **Docs:** ${NONE} - <reason>" needs a real reason why no documentation changes`);
+			docsDeclaredNone = true;
+			continue;
+		}
+		const paths = extractPaths(value);
+		if (!paths.length) fail(`${filename} each Persistent Context ${isDocs ? "docs entry" : "update"} must name its file in backticks`);
+		paths.forEach((p) => {
+			checkPath(p, "Persistent Context update", filename);
+			if (isDocs && !DOC_PATH.test(p)) fail(`${filename} Docs entry "${p}" must be under website/docs/ or docs/, or be README or CHANGELOG; use "- **Update:**" for other files`);
+		});
+		contextUpdates.push(...paths);
+		if (isDocs) docUpdates.push(...paths);
+	}
+	if (!docUpdates.length && !docsDeclaredNone) {
+		fail(`${filename} "## Persistent Context Updates" must make an explicit documentation decision: add "- **Docs:** \`path\` - what changes" for each affected page, or "- **Docs:** ${NONE} - <reason>"`);
+	}
+	if (docUpdates.length && docsDeclaredNone) fail(`${filename} "## Persistent Context Updates" declares both Docs paths and "Docs: ${NONE}"; keep one`);
 
 	if (isPlaceholder(sections["Ambiguities & Open Questions"])) {
 		fail(`${filename} "## Ambiguities & Open Questions" must list questions or contain "${NONE}"`);
 	}
 
-	return { title: h1[1].trim(), options, selected, tier, rollback, decisionRequired, contextUpdates, approval };
+	return { title: h1[1].trim(), options, selected, tier, rollback, decisionRequired, contextUpdates, docUpdates, approval };
 }
 
 export async function fileExists(path) {

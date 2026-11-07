@@ -26,6 +26,7 @@ test("validates compliant think.md and returns structured data", () => {
 	assert.equal(result.options.length, 2);
 	assert.equal(result.selected.name, "Compose the shared RBAC service");
 	assert.deepEqual(result.contextUpdates, ["docs/specs/roles.md"]);
+	assert.deepEqual(result.docUpdates, ["docs/specs/roles.md"]);
 });
 
 test("rejects empty, wrong heading, and missing or extra sections", () => {
@@ -96,9 +97,20 @@ test("decision record rules", () => {
 });
 
 test("persistent context updates must name files", () => {
-	badThink(think("- **Update:** `docs/specs/roles.md` - document", "- **Update:** the docs - document"), /name its file in backticks/);
-	badThink(think("- **Update:**", "- **Change:**"), /must be "_None._" or bullets/);
-	assert.deepEqual(validateThinkContent(think(/## Persistent Context Updates\n.*\n/.exec(validThink)[0], "## Persistent Context Updates\n_None._\n")).contextUpdates, []);
+	badThink(think("- **Docs:** `docs/specs/roles.md` - document", "- **Docs:** the docs - document"), /name its file in backticks/);
+	badThink(think("- **Docs:**", "- **Change:**"), /must hold bullets formatted/);
+	badThink(think("`docs/specs/roles.md`", "`src/app.js`"), /Docs entry "src\/app.js" must be under/);
+	const mixed = validateThinkContent(think("- **Docs:** `docs/specs/roles.md`", "- **Update:** `.github/instructions/api.instructions.md` - note the pattern\n- **Docs:** `README.md`"));
+	assert.deepEqual(mixed.docUpdates, ["README.md"]);
+	assert.deepEqual(mixed.contextUpdates, [".github/instructions/api.instructions.md", "README.md"]);
+	const noDocs = validateThinkContent(think(/## Persistent Context Updates\n.*\n/.exec(validThink)[0], "## Persistent Context Updates\n- **Docs:** _None._ - internal refactor, no public or user-visible change\n"));
+	assert.deepEqual([noDocs.contextUpdates, noDocs.docUpdates], [[], []]);
+	const section = /## Persistent Context Updates\n.*\n/.exec(validThink)[0];
+	badThink(think(section, "## Persistent Context Updates\n_None._\n"), /explicit documentation decision/);
+	badThink(think(section, "## Persistent Context Updates\n- **Update:** `.github/instructions/api.instructions.md` - note the pattern\n"), /explicit documentation decision/);
+	badThink(think(section, "## Persistent Context Updates\n- **Docs:** _None._ - TBD\n"), /real reason/);
+	badThink(think(section, "## Persistent Context Updates\n- **Docs:** _None._ - none\n"), /real reason/);
+	badThink(think(section, "## Persistent Context Updates\n- **Docs:** `README.md` - x\n- **Docs:** _None._ - nothing to add\n"), /declares both/);
 });
 
 const approved = { stage: "approved" };

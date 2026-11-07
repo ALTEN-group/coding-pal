@@ -128,6 +128,7 @@ For human approvals, role strings are exact, dates real, and multiple approvers 
 When `--dir <specs-dir>` or `--think <path/to/think.md>` is provided, `validate-plan.mjs` also validates `think.md` and enforces:
 - `Tier from Think` equals the `think.md` tier.
 - Every `Persistent Context Updates` path in `think.md` is covered by an implementation step.
+- Every `Docs` path in `think.md` is first written in a step after the first step that changes code (a file that is not documentation or a test).
 - `plan.md` without `think.md` in `--dir` is invalid.
 - An approved plan requires an approved Think record (automated or human), and no Plan approval date may precede the latest Think approval date.
 

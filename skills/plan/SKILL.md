@@ -25,6 +25,7 @@ Resolve `references/` and `scripts/` relative to **this skill's install director
    - Reference `think.md` in `## Prerequisites & Context` and add at least one more line (dependencies, environment variables, services, or `- None.`).
    - Write 3 to 8 observable `Given ..., then ...` acceptance criteria (`AC-1`, `AC-2`, ...).
    - Sequence ordered atomic steps (`### Step <N>: <Name>`), each with `Files`, `Action`, `Verification`, `Bootable Check`, and `Serves`. Never write source code or test code in `plan.md`—code is written once, in the Code stage.
+   - Give every documentation file listed as `Docs` in think.md's `## Persistent Context Updates` its own step after the code it documents.
    - Map every acceptance criterion in the `## Test Plan` table, record open questions/assumptions, verify the blast radius check against `think.md`, and record automated approval in `## Approval` after validation.
 3. Validate with the deterministic script from this skill's directory:
 

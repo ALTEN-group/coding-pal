@@ -48,7 +48,7 @@ export const validThink = `# Think: Add POST /roles endpoint
 - **Reason:** No public contract changes, schema changes, or boundary shifts. The new endpoint is additive.
 
 ## Persistent Context Updates
-- **Update:** \`docs/specs/roles.md\` - document the new endpoint and its error cases.
+- **Docs:** \`docs/specs/roles.md\` - document the new endpoint and its error cases.
 
 ## Ambiguities & Open Questions
 _None._

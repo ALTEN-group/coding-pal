@@ -134,6 +134,8 @@ test("cross-checks plan against think.md", () => {
 	badPlan(noDocsStep, /not covered/, { think: parsedThink });
 	const extra = validateThinkContent(think("`docs/specs/roles.md` - document", "`docs/specs/other.md` - document"));
 	badPlan(validPlan, /Persistent Context update "docs\/specs\/other.md"/, { think: extra });
+	const docsFirst = plan("- **Files:** `src/routes/role.js`", "- **Files:** `docs/specs/roles.md`, `src/routes/role.js`");
+	badPlan(docsFirst, /documentation "docs\/specs\/roles.md" is written in Step 1, which is not after the first code step/, { think: parsedThink });
 });
 
 const approved = { stage: "approved" };
