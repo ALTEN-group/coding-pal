@@ -16,8 +16,10 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 | **Decision Scribe** | `decision-scribe.agent.md` | Chooses and records attributed autonomous decisions, or escalations. | [Governance & Decisions](./domain-governance.md) | No source changes, fabricated human signatures, or waived controls. | `decision-record` skill |
 | **Meeting Analyst** | `meeting-pack.agent.md` | Turns a client meeting transcript into an immutable Meeting Pack with candidate business needs. | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | Zero code changes; verbatim client quotes only; transcript never edited; never confirms. | `meeting-pack` skill |
 | **Triage Analyst** | `triage.agent.md` | Turns a candidate business need into an evidence-linked `triage.md` with a scorecard and a proposed decision. | [Triage](./domain-triage.md#_1-candidate-need-to-backlog-issue) | Zero code changes; verbatim evidence only; never sets the final decision or a blast radius tier. | `triage` skill |
-| **Code Auditor** | `code-audit.agent.md` | Complete, evidence-based code audit of a repo, service, or schema. | [Audit & Remediation](./domain-audit.md#_1-codebase-audit) | Audit agreed scope only; read every file before reporting; no speculative findings. | `audit-reporting` skill |
-| **Audit Finding Fixer** | `audit-fix.agent.md` | Surgical remediation of a single finding from a validated audit report. | [Audit & Remediation](./domain-audit.md#_2-surgical-finding-remediation) | One finding only; no unrelated refactoring; verify with narrowest test command. | `audit-reporting` skill |
+| **Dead Code Auditor** | `dead-code.agent.md` | Audits a repository for unused exports, orphan files, dead branches, and redundant dependencies. | [Codebase Audits](./domain-audit.md#_1-dead-code-audit-dead-code-agent-md) | Read-only; verify dynamic references and public `package.json` entrypoints before flagging. | Structured `audit-findings.json` & `audit-report.md` |
+| **Test Gap Auditor** | `test-gap.agent.md` | Audits a repository for untested public APIs, missing edge-case coverage, and weak assertions. | [Codebase Audits](./domain-audit.md#_2-test-gap-audit-test-gap-agent-md) | Read-only; prioritize high-risk public contracts and error paths over line coverage. | Structured `audit-findings.json` & `audit-report.md` |
+| **Docs Sync Auditor** | `docs-sync.agent.md` | Audits documentation (`README.md`, `docs/`, JSDoc) against actual exported APIs and CLI flags. | [Codebase Audits](./domain-audit.md#_3-docs-sync-audit-docs-sync-agent-md) | Read-only; report concrete factual drift only, never stylistic preferences. | Structured `audit-findings.json` & `audit-report.md` |
+| **Dependency Leverage Auditor** | `dependency-leverage.agent.md` | Audits how effectively a repository leverages its installed dependencies and upstream ecosystem libraries. | [Codebase Audits](./domain-audit.md#_4-dependency-leverage-audit-dependency-leverage-agent-md) | Read-only; distinguishes `local` fixes from `upstream` library escalations. | Structured `audit-findings.json` & `audit-report.md` |
 | **Spec from Code** | `spec-from-code.agent.md` | Reverse-engineers technical specifications from existing code. | [Specs & Docs](./domain-docs.md#_1-reverse-engineering-specifications-spec-from-code) | Grounded strictly in source code; no fabricated features; comprehensive interfaces. | `spec-from-code` skill |
 | **Unit Tester** | `unit-test.agent.md` | Writes or updates isolated unit tests with full branch and edge-case coverage. | [Testing & Verification](./domain-testing.md#_1-node-js-module-unit-tests) | **One module scope; edit test files only; never change production code** without explicit consent. | Installed domain test instruction |
 | **API Tester** | `api-test.agent.md` | Authors or updates Supertest HTTP API route integration tests. | [Testing & Verification](./domain-testing.md#_2-node-js-http-api-route-tests) | **Route scope only; Supertest assertions; edit test files only; zero production code altered.** | `node-api-tests` instruction |
@@ -32,17 +34,17 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 
 ## Agent Deep Dives
 
-### 1. Code Auditor (`code-audit.agent.md`)
-- **Role**: Exhaustive code audit across an agreed boundary (microservice or module).
-- **Hard Boundaries**: Reads every file in scope before formulating findings. Prohibited from guessing or reporting hypothetical issues.
-- **Completion Gate**: Generated report passes the deterministic validation script `skills/audit-reporting/scripts/audit-report.mjs`.
-- **Full Workflow**: See [Codebase Audit Workflow](./domain-audit.md#_1-codebase-audit).
+### 1. Dead Code Auditor (`dead-code.agent.md`)
+- **Role**: Identifies unused exports, orphan modules, unreachable code paths, and redundant dependencies.
+- **Hard Boundaries**: Read-only; never flags public entrypoints declared in `package.json` (`main`, `module`, `exports`, `bin`).
+- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md` with file paths and line-level evidence.
+- **Full Workflow**: See [Codebase Audits](./domain-audit.md#_1-dead-code-audit-dead-code-agent-md).
 
-### 2. Audit Finding Fixer (`audit-fix.agent.md`)
-- **Role**: Surgical repair of a single finding from an approved audit report.
-- **Hard Boundaries**: Exactly one finding per turn. Zero speculative refactoring or adjacent code reorganization.
-- **Completion Gate**: Finding resolved, narrowest test passes, zero unrelated files modified.
-- **Full Workflow**: See [Surgical Remediation Workflow](./domain-audit.md#_2-surgical-finding-remediation).
+### 2. Test Gap Auditor (`test-gap.agent.md`, `docs-sync.agent.md`, `dependency-leverage.agent.md`)
+- **Role**: Focused read-only audits covering behavioral test gaps (`test-gap.agent.md`), documentation-to-code drift (`docs-sync.agent.md`), and underused or duplicated dependencies (`dependency-leverage.agent.md`).
+- **Hard Boundaries**: Read-only; zero source or test edits; capped at the highest-impact evidence-backed findings.
+- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md`.
+- **Full Workflow**: See [Codebase Audits](./domain-audit.md).
 
 ### 3. Spec from Code (`spec-from-code.agent.md`)
 - **Role**: Reverse-engineers technical specifications and data models directly from source code.

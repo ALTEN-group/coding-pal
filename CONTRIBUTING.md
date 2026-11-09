@@ -89,7 +89,7 @@ You are a specialist at ...
 - ...
 ```
 
-Keep the agent clean. It owns how the task is conducted, not a reusable artifact protocol. For example, the Code Auditor owns audit scope and review method; the `audit-reporting` skill owns the report contract and validator. The Spec from Code agent owns extraction scope and method; the `spec-from-code` skill owns the spec-file contract and validator.
+Keep the agent clean. It owns how the task is conducted, not a reusable artifact protocol. For example, the Spec from Code agent owns extraction scope and method; the `spec-from-code` skill owns the spec-file contract and validator.
 
 ### Skills Own Reusable Workflows and Artifacts
 
@@ -124,7 +124,7 @@ Use a skill when a workflow needs one or more of the following:
 - References that are too detailed for an agent body.
 - Templates that consumers copy and customize.
 
-Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `audit-reporting` accepts `--scope` arguments instead of hard-coding a service layout. A skill that owns a record contract (for example `triage`, `think`, `plan`, `decision-record`) may state the record's conventional location in its contract, such as `specs/issue-<n>/triage.md` or `docs/decisions/`, but every script must take that location as an argument and never default to it.
+Keep the skill portable. Avoid repository-specific paths and scopes unless they are command inputs. For example, `spec-from-code` accepts `--dir` arguments instead of hard-coding a service layout. A skill that owns a record contract (for example `triage`, `think`, `plan`, `decision-record`) may state the record's conventional location in its contract, such as `specs/issue-<n>/triage.md` or `docs/decisions/`, but every script must take that location as an argument and never default to it.
 
 ### Prompts Own Single Operations
 
@@ -163,7 +163,7 @@ When an agent uses a skill, divide responsibility this way:
 | Falsifiable execution certification & probes | Skill — Gate & Probe (narrow test command + `task-gate.mjs` / `test-probe.mjs` / validators) |
 | CI retries, artifacts, publication, and fallbacks | Consuming workflow |
 
-An agent may say “follow the installed `audit-reporting` skill.” It must not duplicate report headings, field definitions, finding IDs, or validator rules. A workflow must execute the validator; model compliance alone is not enforcement.
+An agent may say “follow the installed `spec-from-code` skill.” It must not duplicate report headings, field definitions, finding IDs, or validator rules. A workflow must execute the validator; model compliance alone is not enforcement.
 
 ## Quality Standard
 
@@ -222,7 +222,7 @@ node skills/context-health/scripts/context-lint.mjs --root .
 Install individual agents or instructions by path. Install a named skill from the package bundle:
 
 ```bash
-apm install ALTEN-group/coding-pal --skill audit-reporting --target copilot
+apm install ALTEN-group/coding-pal --skill spec-from-code --target copilot
 ```
 
 Run `apm update` after a shared package release, then commit the regenerated lockfile. Do not hand-edit generated APM hashes or lock entries.

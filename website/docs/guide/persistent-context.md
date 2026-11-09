@@ -209,19 +209,19 @@ flowchart TD
 
 | Concern | Authoritative Owner | Example in Coding Pal |
 |---|---|---|
-| Target files and systems to examine | **Agent** | `code-audit.agent.md` defines which modules are in scope |
-| Method of investigation or repair | **Agent** | `audit-fix.agent.md` defines surgical one-finding repair |
+| Target files and systems to examine | **Agent** | `spec-from-code.agent.md` defines which modules are in scope |
+| Method of investigation or repair | **Agent** | `gate-fix.agent.md` defines bounded gate failure repair |
 | Domain coding standards & security rules | **Instruction** | `node-express.instructions.md`, `docker.instructions.md` |
 | Task coverage completion | **Agent** (`Done When`) | "Every file in scope has been examined" |
-| Reusable output schema and format | **Skill — Contract** (`references/`) | `skills/audit-reporting/references/report-contract.md` |
-| Artifact validity completion | **Skill — Contract** (`Done When`) | "Report satisfies the validation contract" |
+| Reusable output schema and format | **Skill — Contract** (`references/`) | `skills/spec-from-code/references/spec-contract.md` |
+| Artifact validity completion | **Skill — Contract** (`Done When`) | "Specification files satisfy the validation contract" |
 | Blast-radius, secret & dependency boundaries | **Skill — Guard** (`skills/prove/scripts/`) | `scope-guard.mjs`, `secret-guard.mjs`, `dependency-guard.mjs` |
-| Deterministic artifact validation | **Skill — Gate** (`scripts/`) | `skills/audit-reporting/scripts/audit-report.mjs` |
+| Deterministic artifact validation | **Skill — Gate** (`scripts/`) | `skills/spec-from-code/scripts/spec-docs.mjs` |
 | Falsifiable execution certification & probes | **Skill — Gate & Probe** (`scripts/`) | `task-gate.mjs`, `test-probe.mjs`, `validate-think.mjs`, `validate-plan.mjs` |
 | CI publication, gating, and PR checks | **Consuming Workflow** | GitHub Actions workflow in consumer repo |
 
 > [!IMPORTANT]
-> An agent must say *"Follow the installed `audit-reporting` skill"*. It must **not** duplicate report headings, field names, or validation rules in its own body. Model compliance alone is not enforcement — workflows must run the deterministic skill script.
+> An agent must say *"Follow the installed `spec-from-code` skill"*. It must **not** duplicate report headings, field names, or validation rules in its own body. Model compliance alone is not enforcement — workflows must run the deterministic skill script.
 
 ---
 

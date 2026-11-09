@@ -7,7 +7,7 @@ Files live in `agents/<slug>.agent.md`. The slug is not always the `name` (`gate
 | Family | Agents |
 |---|---|
 | **Test & build specialists** | `Unit Tester`, `API Tester`, `E2E Tester`, `Fuzz Tester`, `Performance Tester`, `VitePress Docs`, `Demo Videos`, `Spec from Code`, `Migration Documenter` |
-| **Audit & remediation** | `Code Auditor`, `Audit Finding Fixer` |
+| **Codebase audit specialists** | `dead-code`, `test-gap`, `docs-sync`, `dependency-leverage` |
 | **Factory stage agents** | `Meeting Analyst`, `Triage Analyst`, `Thinker`, `Decision Scribe`, `Planner`, `Code Agent`, `Prove Validator`, `Gate Fixer`, `Release Planner`, `Learn Analyst` |
 
 Stage agents use the same schema but embed exact validator commands in `Approach` and anchor `Done When` on validator exit codes.
@@ -54,15 +54,15 @@ You are a specialist at <responsibility>.
 | `## Scope` | Only on `Spec from Code`, `Fuzz Tester`, `Performance Tester`, `VitePress Docs`. |
 | `## Approach` | Numbered. Specialists: resolve, inspect, list the contract, execute, verify with the **narrowest** command. Stage agents: bold-labelled steps with commands such as `node .agents/skills/think/scripts/validate-think.mjs --think <path>`. |
 | `## Done When` | Checkable from tool output: *"`think.md` passes validation with exit code 0"*, *"Zero production files were modified"*. |
-| `## Output Format` | Only `Audit Finding Fixer`: a small `<!-- AUDIT-FIX:START -->` status block for automation. |
+| `## Output Format` | Only on structured audit agents (`dead-code`, `test-gap`, `docs-sync`, `dependency-leverage`) that emit `audit-findings.json` and `audit-report.md` for automated runners. |
 
 ---
 
 ## Anti-Patterns
 
 > [!WARNING]
-> 1. **Owning report formats**: reference an installed skill instead. The `Audit Finding Fixer` status block is the only exception.
-> 2. **Unbounded scope**: only `Code Auditor` may scan broadly.
+> 1. **Owning report formats**: reference an installed skill instead (except structured audit agents emitting `audit-findings.json`).
+> 2. **Unbounded edits**: audit agents are strictly read-only; modification agents must bound their file scope.
 > 3. **Unfalsifiable Done When**: *"The code looks good"* is not a criterion.
 > 4. **Restating conventions**: point to the installed instruction.
 > 5. **Forged approval**: stage agents record automation, never a human signature.

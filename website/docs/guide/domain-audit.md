@@ -1,6 +1,6 @@
-# Audit & Remediation
+# Codebase Audits
 
-The **Audit & Remediation** domain provides automated, evidence-based code review and surgical vulnerability/defect remediation. It transforms subjective code reviews into reproducible, schema-validated artifacts backed by CI gating.
+The **Codebase Audits** domain provides read-only specialist audit agents that inspect a repository for dead code, test coverage gaps, documentation drift, and dependency leverage opportunities, emitting deterministic `audit-findings.json` and `audit-report.md` artifacts that feed directly into the issue backlog and factory pipeline.
 
 ---
 
@@ -8,152 +8,98 @@ The **Audit & Remediation** domain provides automated, evidence-based code revie
 
 ```mermaid
 ---
-caption: Code Audit & Surgical Remediation Lifecycle
+caption: Specialist Codebase Audit & Backlog Remediation Lifecycle
 ---
 flowchart TD
-    subgraph Phase1 ["1. Audit Phase"]
+    subgraph Phase1 ["1. Specialist Audit Phase (Read-Only)"]
         direction TB
-        AG_AUDIT["<b>Code Auditor Agent</b><br/>(code-audit.agent.md)"]
-        STANDARDS["<b>Domain Standards</b><br/>(Active Instructions)"]
-        REPORT["<b>Structured Audit Report</b><br/>docs/audits/*.md"]
+        AG_DEAD["<b>Dead Code Auditor</b><br/>(dead-code.agent.md)"]
+        AG_TEST["<b>Test Gap Auditor</b><br/>(test-gap.agent.md)"]
+        AG_DOCS["<b>Docs Sync Auditor</b><br/>(docs-sync.agent.md)"]
+        AG_DEPS["<b>Dependency Leverage Auditor</b><br/>(dependency-leverage.agent.md)"]
+        ARTIFACTS["<b>Structured Audit Artifacts</b><br/>audit-findings.json · audit-report.md"]
 
-        AG_AUDIT -.->|Applies| STANDARDS
-        AG_AUDIT -->|Generates| REPORT
+        AG_DEAD --> ARTIFACTS
+        AG_TEST --> ARTIFACTS
+        AG_DOCS --> ARTIFACTS
+        AG_DEPS --> ARTIFACTS
     end
 
-    subgraph Phase2 ["2. Automated Contract Gating"]
+    subgraph Phase2 ["2. Deduplicated Issue Filing & Factory Pipeline"]
         direction TB
-        VAL_SCRIPT["<b>skills/audit-reporting/</b><br/>scripts/audit-report.mjs"]
-        VERDICT{"Contract<br/>Valid?"}
-        FINDINGS["<b>Approved Findings Matrix</b><br/>(SEC-001, PERF-002, ...)"]
-        REJECT["<b>Reject PR</b><br/>Schema Mismatch"]
+        ISSUES["<b>Deduplicated GitHub Issues</b><br/>(local findings + upstream escalations)"]
+        FACTORY["<b>Factory Pipeline</b><br/>(Think → Plan → Code → Prove)"]
 
-        REPORT --> VAL_SCRIPT --> VERDICT
-        VERDICT -->|Pass| FINDINGS
-        VERDICT -->|Fail| REJECT
-    end
-
-    subgraph Phase3 ["3. Surgical Fix & Verification"]
-        direction TB
-        AG_FIX["<b>Audit Finding Fixer</b><br/>(audit-fix.agent.md)"]
-        SHARP["<b>sharp-agent.instructions.md</b><br/>Zero unrelated edits"]
-        DONE["<b>Verified Fix</b><br/>Narrowest test passes · No side-effects"]
-
-        FINDINGS -->|Select Finding ID| AG_FIX
-        AG_FIX -.->|Enforces| SHARP
-        AG_FIX -->|Surgical Patch & Test| DONE
+        ARTIFACTS --> ISSUES --> FACTORY
     end
 
     classDef agent fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#eff6ff;
-    classDef instruction fill:#082f49,stroke:#0ea5e9,stroke-width:2px,color:#f0f9ff;
-    classDef skill fill:#4c1d95,stroke:#8b5cf6,stroke-width:2px,color:#faf5ff;
-    classDef decision fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff;
-    classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
     classDef report fill:#1e293b,stroke:#64748b,stroke-width:2px,color:#f8fafc;
-    classDef reject fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#fee2e2;
+    classDef verify fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ecfdf5;
 
-    class AG_AUDIT,AG_FIX agent;
-    class STANDARDS,SHARP instruction;
-    class VAL_SCRIPT skill;
-    class VERDICT decision;
-    class REPORT,FINDINGS report;
-    class DONE verify;
-    class REJECT reject;
+    class AG_DEAD,AG_TEST,AG_DOCS,AG_DEPS agent;
+    class ARTIFACTS,ISSUES report;
+    class FACTORY verify;
 ```
 
 ---
 
 ## Capabilities Matrix
 
-| Capability | Role | Specialist Agent | Scoping Instruction | Protocol & Skill Bundle | Gating Mechanism |
-|---|---|---|---|---|---|
-| **Codebase Audit** | Full codebase assessment | [`Code Auditor`](./catalog-agents.md#_1-code-auditor-code-audit-agent-md) | Matching domain instructions | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting) | CI schema validation script |
-| **Surgical Defect Fix** | Remediation of single finding | [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) | [`sharp-agent`](./catalog-instructions.md#universal-remediation-instructions) | [`audit-reporting`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting), [`prove`](./catalog-skills.md#_11-prove-skills-prove) (`scope-guard`, `secret-guard`, `dependency-guard`) | Narrowest test + `scope-guard.mjs` |
+| Capability | Role | Specialist Agent | Constraints | Output Artifacts |
+|---|---|---|---|---|
+| **Dead Code Audit** | Unused exports, orphan files, unreachable branches, redundant dependencies | [`dead-code`](./catalog-agents.md#_1-dead-code-auditor-dead-code-agent-md) | Read-only; verify dynamic & public API usage before flagging | `audit-findings.json`, `audit-report.md` |
+| **Test Gap Audit** | Untested public APIs, missing edge-case/error-path tests, tautological assertions | [`test-gap`](./catalog-agents.md#_2-test-gap-auditor-test-gap-agent-md) | Read-only; prioritize high-risk public behavior over line coverage | `audit-findings.json`, `audit-report.md` |
+| **Docs Sync Audit** | Drift between `README.md` / `docs/` / JSDoc and actual exported code & CLI flags | [`docs-sync`](./catalog-agents.md#_3-docs-sync-auditor-docs-sync-agent-md) | Read-only; every claim verified against actual source files | `audit-findings.json`, `audit-report.md` |
+| **Dependency Leverage Audit** | Reimplemented utilities, outdated API usage, upstream ecosystem capability gaps | [`dependency-leverage`](./catalog-agents.md#_4-dependency-leverage-auditor-dependency-leverage-agent-md) | Read-only; distinguishes `local` fixes from `upstream` escalations | `audit-findings.json`, `audit-report.md` |
 
 ---
 
-## Capability Workflows
+## Specialist Audit Workflows
 
-### 1. Codebase Audit
+### 1. Dead Code Audit (`dead-code.agent.md`)
+- **Scope**: Unused exported functions/classes/constants, orphan internal modules, dead feature flags, unreachable branches, and unused dependencies in `package.json`.
+- **Hard Boundaries**: Read-only (`audit-report.md` and `audit-findings.json` only). Never flags public package exports declared in `package.json` (`main`, `module`, `exports`, `bin`) as dead code.
 
-- **When to Run**: Repository onboarding, architectural milestone reviews, security checks, and release gates.
-- **Agent**: [`Code Auditor`](./catalog-agents.md#_1-code-auditor-code-audit-agent-md) (`code-audit.agent.md`)
-- **Execution Methodology**:
-  1. **Scope Agreement**: Confines analysis strictly to the requested repository, microservice, or subdirectory.
-  2. **Stack Discovery**: Examines package manifests (`package.json`), Dockerfiles, and database changelogs.
-  3. **Standard Application**: Applies active Coding Pal instructions (e.g. `node-express.instructions.md`, `postgres-liquibase.instructions.md`) as the normative criteria.
-  4. **Exhaustive Reading**: Reads every source file within the agreed boundary before formulating findings (no speculative or hallucinated issues).
-  5. **Standardized Report**: Generates a structured markdown report under `docs/audits/` adhering to the contract defined in [`skills/audit-reporting/references/report-contract.md`](./catalog-skills.md#_1-audit-reporting-skills-audit-reporting).
-- **Falsifiable Done When**:
-  - Every file in scope has been reviewed.
-  - The audit report compiles and passes validation via the skill script:
-    ```bash
-    node .agents/skills/audit-reporting/scripts/audit-report.mjs --input docs/audits/code-audit.md --output docs/audits/code-audit.md
-    ```
+### 2. Test Gap Audit (`test-gap.agent.md`)
+- **Scope**: Public functions, methods, classes, CLI commands, and bug-prone edge cases (boundary values, malformed inputs, state transitions) lacking unit or integration test assertions.
+- **Hard Boundaries**: Read-only. Focuses on behavioral risk and public contracts rather than vanity line-coverage percentages.
 
-### 2. Surgical Finding Remediation
+### 3. Docs Sync Audit (`docs-sync.agent.md`)
+- **Scope**: Stale or inaccurate documentation across `README.md`, `docs/`, JSDoc comments, and usage examples compared against current exports, signatures, configuration keys, and scripts.
+- **Hard Boundaries**: Read-only. Never flags stylistic wording preferences—only concrete factual inaccuracies or missing public API documentation.
 
-- **When to Run**: Addressing a specific finding from an approved audit report.
-- **Agent**: [`Audit Finding Fixer`](./catalog-agents.md#_2-audit-finding-fixer-audit-fix-agent-md) (`audit-fix.agent.md`)
-- **Governing Constraints**:
-  - **One Finding Mandate**: Takes a single finding identifier (e.g., `SEC-001`, `PERF-003`, `MAINT-007`).
-  - **Zero Speculative Refactoring**: Prohibited from rewriting adjacent code, changing naming schemes, or introducing new third-party dependencies unless strictly required.
-  - **Governed by Sharp Agent**: Adheres to [`sharp-agent.instructions.md`](./catalog-instructions.md#universal-remediation-instructions) to prevent token waste and scope creep.
-- **Execution Methodology**:
-  1. Reads the finding description, file paths, line numbers, and recommended remediation from the audit report.
-  2. Applies the minimal, targeted modification directly to the affected lines.
-  3. Executes the project's narrowest test command covering that code (e.g. `npm test -- tests/auth.test.js`).
-- **Falsifiable Done When**:
-  - The finding condition is resolved.
-  - The narrowest test suite passes.
-  - Blast-radius and churn guard passes:
-    ```bash
-    node .agents/skills/prove/scripts/scope-guard.mjs --git
-    ```
-  - Secret & dependency guards pass with zero violations:
-    ```bash
-    node .agents/skills/prove/scripts/secret-guard.mjs --git
-    node .agents/skills/prove/scripts/dependency-guard.mjs --git
-    ```
-  - Untouched code and unrelated files remain completely unmodified.
+### 4. Dependency Leverage Audit (`dependency-leverage.agent.md`)
+- **Scope**: Local code that duplicates helpers already provided by installed dependencies, suboptimal or deprecated dependency calls, and reusable capabilities that should be extracted to an upstream ecosystem library (`scope: "upstream"`).
+- **Hard Boundaries**: Read-only. Never proposes adding new third-party dependencies when existing dependencies or standard platform APIs already cover the need.
 
 ---
 
-## The Audit Report Protocol
+## Structured Audit Output Contract
 
-The audit report protocol provided by `skills/audit-reporting/` enforces deterministic structure bounded by exact markers:
+Every specialist audit agent writes two files in the workspace root:
 
-```markdown
-<!-- AUDIT-REPORT:START -->
-# Code Audit Report: [Target]
+1. `audit-report.md` — Concise human-readable Markdown summary with an executive summary and a findings table (`#`, `Severity`, `Category`, `Location`, `Title`).
+2. `audit-findings.json` — Machine-readable JSON payload consumed by automated audit runners to file deduplicated issues:
 
-## Executive Summary
-Concise summary of risk and priority (1-3 short paragraphs, max 1,200 characters).
-
-## Critical
-### SQL concatenation in search query
-- **Location:** `src/services/user.js:42`
-- **Category:** Security
-- **Evidence:** Concrete query concatenates unescaped userInput directly into SQL string.
-- **Impact:** Unauthenticated SQL injection leading to arbitrary data exfiltration.
-- **Recommendation:** Use parameterized query bindings via pg-promise / knex query builder.
-
-## Important
-_No findings._
-
-## Suggestions
-_No findings._
-<!-- AUDIT-REPORT:END -->
+```json
+{
+  "summary": "Brief 1-2 sentence overview of the audit results.",
+  "findings": [
+    {
+      "title": "Short actionable title (under 80 chars)",
+      "severity": "high",
+      "category": "dead-code",
+      "scope": "local",
+      "target_repo": "",
+      "files": ["src/path/to/file.js"],
+      "evidence": "Exact symbol names, line numbers, and why this is a valid finding.",
+      "recommendation": "Concrete step-by-step fix instructions.",
+      "acceptance_criteria": [
+        "Falsifiable criterion 1",
+        "All existing tests continue to pass"
+      ]
+    }
+  ]
+}
 ```
-
-The script normalizes and sorts findings, assigns canonical `AUDIT-001` identifiers, and adds summary counts to each severity heading.
-
----
-
-## Related Catalogs & Schemas
-
-- [Agents Catalog](./catalog-agents.md)
-- [Instructions Catalog](./catalog-instructions.md)
-- [Skills Catalog](./catalog-skills.md)
-- [Agent Markdown Schema](./schema-agents.md)
-- [Skills Markdown Schema](./schema-skills.md)

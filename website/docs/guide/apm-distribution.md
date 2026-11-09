@@ -111,8 +111,10 @@ dependencies:
     - ALTEN-group/coding-pal/agents/demo-videos.agent.md
     - ALTEN-group/coding-pal/agents/performance-tests.agent.md
     - ALTEN-group/coding-pal/agents/fuzz-tests.agent.md
-    - ALTEN-group/coding-pal/agents/code-audit.agent.md
-    - ALTEN-group/coding-pal/agents/audit-fix.agent.md
+    - ALTEN-group/coding-pal/agents/dead-code.agent.md
+    - ALTEN-group/coding-pal/agents/test-gap.agent.md
+    - ALTEN-group/coding-pal/agents/docs-sync.agent.md
+    - ALTEN-group/coding-pal/agents/dependency-leverage.agent.md
     - ALTEN-group/coding-pal/agents/spec-from-code.agent.md
     - ALTEN-group/coding-pal/agents/think.agent.md
     - ALTEN-group/coding-pal/agents/plan.agent.md
@@ -193,7 +195,6 @@ dependencies:
         - playwright-demo-videos
         - k6-performance-tests
         - restler-fuzzing-tests
-        - audit-reporting
         - spec-from-code
         - think
         - plan
@@ -239,7 +240,7 @@ You can also install an individual primitive directly by path or skill name:
 apm install ALTEN-group/coding-pal/instructions/sharp-agent.instructions.md --target copilot
 
 # Install a single skill bundle
-apm install ALTEN-group/coding-pal --skill audit-reporting --target copilot,claude
+apm install ALTEN-group/coding-pal --skill spec-from-code --target copilot,claude
 ```
 
 ### Update Packages

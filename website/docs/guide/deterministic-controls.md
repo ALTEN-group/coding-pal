@@ -101,7 +101,7 @@ flowchart TD
 * **Purpose**: Authoritative machine-readable definition of markers, fields, and structures that downstream agents and CI workflows expect.
 * *Examples in Coding Pal*:
   - `skills/contract-validator/references/contract-schema.md` & `validate-contract.mjs` (generic declarative schema validation).
-  - `skills/audit-reporting/references/report-contract.md` (audit markers, finding categories, severity limits).
+  - `skills/spec-from-code/references/spec-contract.md` (area spec sections, component fields, line limits).
   - `skills/think/references/think-contract.md` & `skills/plan/references/plan-contract.md` (specification headings, invariant sections, bootability checklists).
   - `skills/triage/references/triage-contract.md` (evidence table, scorecard scale, decision rules, ledger and weights).
   - `skills/meeting-pack/references/meeting-pack-contract.md` (transcript format, pack sections, confirmation stages, glossary).
@@ -161,14 +161,14 @@ flowchart TD
     ENG["<b>AI Engineer / Orchestrator Agent</b>"]
 
     subgraph Fleet ["Specialist Agents (Run in Parallel or Pipeline)"]
-        AG1["Code Auditor"]
-        AG2["Audit Finding Fixer"]
+        AG1["Spec from Code"]
+        AG2["Gate Fixer"]
         AG3["Unit Test Generator"]
         AG4["Docs Generator"]
     end
 
     subgraph Gates ["Deterministic Gates & Guards"]
-        V1["audit-reporting<br/>audit-report.mjs"]
+        V1["spec-from-code<br/>spec-docs.mjs"]
         V2["scope-guard<br/>scope-guard.mjs"]
         V3["Narrowest Test Command<br/>Anti-Tautology Check"]
         V4["Schema / Link Validator<br/>validate-think.mjs / validate-plan.mjs"]
@@ -211,7 +211,7 @@ Without those gates, the orchestrator (human or agent) becomes the bottleneck ag
 | **Declarative contract validator** | `skills/contract-validator/scripts/validate-contract.mjs` asserts artifact schema | Contract (`skills/contract-validator`) |
 | **Anti-tautology falsifiability probe** | `skills/prove/scripts/test-probe.mjs` verifies tests fail when fix is removed | Probe (`skills/prove`) |
 | **Migration rollback probe** | `skills/rollback-probe/scripts/rollback-probe.mjs` verifies reversibility & idempotency | Probe (`skills/rollback-probe`) |
-| **Artifact validator script** | `skills/audit-reporting/scripts/audit-report.mjs` checks report structure | Gate (Skill) |
+| **Artifact validator script** | `skills/spec-from-code/scripts/spec-docs.mjs` checks spec file structure | Gate (Skill) |
 | **Specification validators** | `skills/think/scripts/validate-think.mjs` & `skills/plan/scripts/validate-plan.mjs` check headings, scope and criteria coverage, bootability & blast radius | Gate (Skill) |
 | **Meeting Pack validator** | `skills/meeting-pack/scripts/validate-meeting.mjs` checks the transcript digest, verbatim client quotes, and named confirmations | Gate (Skill) |
 | **Criteria Test Verification** | `skills/prove/scripts/verify-criteria.mjs` proves every `AC-<n>` has a passing test | Gate (`skills/prove`) |

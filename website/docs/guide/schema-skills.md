@@ -13,7 +13,7 @@ Only `SKILL.md` is required. No shipped skill uses separate `fixtures/` or `temp
 
 | Family | Skills | Shape |
 |---|---|---|
-| **Record contracts & validators** | `audit-reporting`, `think`, `plan`, `triage`, `decision-record`, `incident-record`, `hypothesis-ledger`, `meeting-pack`, `migration-docs`, `release-plan`, `spec-from-code`, `contract-validator`, `code`, `prove` | Contract plus validator scripts. `prove` has one contract per control and eight control scripts. |
+| **Record contracts & validators** | `think`, `plan`, `triage`, `decision-record`, `incident-record`, `hypothesis-ledger`, `meeting-pack`, `migration-docs`, `release-plan`, `spec-from-code`, `contract-validator`, `code`, `prove` | Contract plus validator scripts. `prove` has one contract per control and eight control scripts. |
 | **Probes, signals & metrics** | `rollback-probe`, `telemetry-scan`, `learn-signals`, `flow-metrics`, `context-health` | Scripts that compute or emit from evidence. |
 | **Scaffolding examples** | `node-express-examples`, `postgres-liquibase-examples`, `angular-admin-examples`, `docker-examples` | `SKILL.md` and `references/examples.md`. No scripts. |
 | **Suite & site patterns** | `k6-performance-tests`, `restler-fuzzing-tests`, `playwright-demo-videos`, `vitepress-docs` | Normative rules in `SKILL.md`, scaffolding in `references/`. No scripts. |

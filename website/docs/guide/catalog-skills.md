@@ -22,7 +22,6 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/flow-metrics/` | Metrics | `Learn Analyst`, retrospectives | The factory's metrics computed from a JSONL event log. |
 | `skills/meeting-pack/` | Protocol & Validator | `meeting-pack` instruction, `Meeting Analyst` agent | Meeting Pack contract, plain-text transcript normalizer, deterministic validator (verbatim quotes, glossary, confirmations), and Triage emission. |
 | `skills/triage/` | Protocol & Validator | `triage` instruction, `Triage Analyst` agent | Triage contract, deterministic validator (evidence, scorecard, decision rules, ledger), and backlog ranking for `triage.md` artifacts. |
-| `skills/audit-reporting/` | Protocol & Validator | `code-audit`, `audit-fix` | Deterministic Markdown audit report contract and validation scripts for CI gating. |
 | `skills/spec-from-code/` | Protocol & Validator | `spec-from-code` | Technical specification contract under `docs/specs/` with automated schema validation. |
 | `skills/vitepress-docs/` | Standards & Scaffolding | `VitePress Docs` agent | VitePress site rules and templates: `package.json`, `config.mjs`, dev Dockerfile, and Pages workflow. |
 | `skills/playwright-demo-videos/` | Standards & Scaffolding | `Demo Videos` agent | Demo recording rules and templates: Playwright config, Director (fake cursor, gestures), scenarios, ffmpeg encoder, VitePress video section. |
@@ -32,7 +31,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 | `skills/angular-admin-examples/` | Scaffolding Pack | `angular-admin` instruction | Angular entity slices: CRUD tables, PrimeNG dialogs, reactive form services, and ACL guards. |
 | `skills/k6-performance-tests/` | Standards & Scaffolding | `Performance Tester` agent | Modular k6 test architecture, thresholds, authentication, stages, and Docker runners. |
 | `skills/restler-fuzzing-tests/` | Standards & Scaffolding | `Fuzz Tester` agent | RESTler OpenAPI compiler rules, fuzzing modes, token refresh, and headless CI runner scripts. |
-| `skills/contract-validator/` | Schema Contract | `spec-from-code`, `audit-reporting` | Declarative schema validator for Markdown and structured artifacts without custom scripts. |
+| `skills/contract-validator/` | Schema Contract | `spec-from-code` | Declarative schema validator for Markdown and structured artifacts without custom scripts. |
 | `skills/rollback-probe/` | Behavioral Probe | `postgres-liquibase`, database migrations | Certifies migration reversibility (Forward $\rightarrow$ Rollback $\rightarrow$ Forward) and idempotency. |
 | `skills/migration-docs/` | Protocol & Validator | `migration-docs` instruction, `Migration Documenter` agent | Contract and deterministic validator for the infrastructure migration records (`assessment.md`, `migration-plan.md`, `runbook.md`) and their cross-checks. |
 
@@ -40,20 +39,7 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ## Skill Deep Dives
 
-### 1. Audit Reporting (`skills/audit-reporting/`)
-- **Category**: Protocol & Validator
-- **Contents**:
-  - `SKILL.md`: Procedural guide for generating and checking audit reports.
-  - `references/report-contract.md`: Formal human-readable specification of the audit report Markdown structure bounded by `<!-- AUDIT-REPORT:START -->` and `<!-- AUDIT-REPORT:END -->` markers, severity sections (`Critical`, `Important`, `Suggestions`), and strictly formatted finding fields.
-  - `scripts/audit-report.mjs`: Fast, deterministic Node.js script that validates reports against the contract rules and normalizes output (sorting findings, assigning `AUDIT-001` identifiers).
-  - `scripts/audit-report.test.mjs`: Node.js test suite proving validator correctness across valid and invalid inputs.
-- **Workflow**:
-  ```bash
-  # Validate and normalize an audit report in CI
-  node .agents/skills/audit-reporting/scripts/audit-report.mjs --input docs/audits/service-audit.md --output docs/audits/service-audit.md
-  ```
-
-### 2. Spec from Code (`skills/spec-from-code/`)
+### 1. Spec from Code (`skills/spec-from-code/`)
 - **Category**: Protocol & Validator
 - **Contents**:
   - `SKILL.md`: Step-by-step extraction workflow.
