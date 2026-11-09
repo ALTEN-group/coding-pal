@@ -65,7 +65,7 @@ flowchart TD
 
 | Capability | Invocation / Entry Point | Scoping Instruction | Supporting Skill | Output Artifact |
 |---|---|---|---|---|
-| **Migration Documentation** | [`/migration-docs`](./catalog-prompts.md#_22-migration-docs) | [`migration-docs`](./catalog-instructions.md#migration-instructions) | [`migration-docs`](./catalog-skills.md#_26-migration-docs-skills-migration-docs) | `docs/migration/<name>/assessment.md`, `migration-plan.md`, `runbook.md` |
+| **Migration Documentation** | [`/migration-docs`](./catalog-prompts.md#_22-migration-docs) | [`migration-docs`](./catalog-instructions.md#migration-instructions) | [`migration-docs`](./catalog-skills.md#_25-migration-docs-skills-migration-docs) | `docs/migration/<name>/assessment.md`, `migration-plan.md`, `runbook.md` |
 
 ---
 
@@ -75,7 +75,7 @@ flowchart TD
 
 - **When to Run**: A decision to move an application or platform has been made and the move must be assessed, planned, and rehearsed in writing.
 - **Trigger**: `/migration-docs [source to target] [docs-dir]`
-- **Agent**: [`Migration Documenter`](./catalog-agents.md#_19-migration-documenter-migration-docs-agent-md) (`migration-docs.agent.md`)
+- **Agent**: [`Migration Documenter`](./catalog-agents.md#_18-migration-documenter-migration-docs-agent-md) (`migration-docs.agent.md`)
 - **Execution Methodology**:
   1. Fixes the source, the target, the driver, and the Change Budget with the user.
   2. **Assessment**: inventories every component from the repository and manifests with evidence, maps each to a target and a strategy, and registers each application change.

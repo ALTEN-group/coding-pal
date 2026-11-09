@@ -33,7 +33,7 @@ flowchart TD
 ```
 
 ### Step 1: State the User Task
-Define the exact engineering task in one sentence (e.g., *"Scaffold a VitePress documentation website in a user-named folder"* or *"Remediate a single security finding from an audit report"*).
+Define the exact engineering task in one sentence (e.g., *"Scaffold a VitePress documentation website in a user-named folder"* or *"Audit a repository for dead code and emit structured findings"*).
 
 ### Step 2: Apply the Decision Tree
 Consult the authoritative [Persistent Context Decision Tree](./persistent-context.md#the-decision-tree) to select the correct primitive (**Instruction**, **Agent**, **Skill**, or **Prompt**) based on desired runtime activation and operational scope.

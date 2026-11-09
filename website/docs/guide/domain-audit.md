@@ -50,8 +50,8 @@ flowchart TD
 |---|---|---|---|---|
 | **Dead Code Audit** | Unused exports, orphan files, unreachable branches, redundant dependencies | [`dead-code`](./catalog-agents.md#_1-dead-code-auditor-dead-code-agent-md) | Read-only; verify dynamic & public API usage before flagging | `audit-findings.json`, `audit-report.md` |
 | **Test Gap Audit** | Untested public APIs, missing edge-case/error-path tests, tautological assertions | [`test-gap`](./catalog-agents.md#_2-test-gap-auditor-test-gap-agent-md) | Read-only; prioritize high-risk public behavior over line coverage | `audit-findings.json`, `audit-report.md` |
-| **Docs Sync Audit** | Drift between `README.md` / `docs/` / JSDoc and actual exported code & CLI flags | [`docs-sync`](./catalog-agents.md#_3-docs-sync-auditor-docs-sync-agent-md) | Read-only; every claim verified against actual source files | `audit-findings.json`, `audit-report.md` |
-| **Dependency Leverage Audit** | Reimplemented utilities, outdated API usage, upstream ecosystem capability gaps | [`dependency-leverage`](./catalog-agents.md#_4-dependency-leverage-auditor-dependency-leverage-agent-md) | Read-only; distinguishes `local` fixes from `upstream` escalations | `audit-findings.json`, `audit-report.md` |
+| **Docs Sync Audit** | Drift between `README.md` / `docs/` / JSDoc and actual exported code & CLI flags | [`docs-sync`](./catalog-agents.md#_21-docs-sync-auditor-docs-sync-agent-md) | Read-only; every claim verified against actual source files | `audit-findings.json`, `audit-report.md` |
+| **Dependency Leverage Audit** | Reimplemented utilities, outdated API usage, upstream ecosystem capability gaps | [`dependency-leverage`](./catalog-agents.md#_22-dependency-leverage-auditor-dependency-leverage-agent-md) | Read-only; distinguishes `local` fixes from `upstream` escalations | `audit-findings.json`, `audit-report.md` |
 
 ---
 

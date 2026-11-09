@@ -165,7 +165,7 @@ Slash commands live in `prompts/*.prompt.md`.
 
 ## The Golden Split
 
-When an agent executes a workflow that produces a structured artifact or code change (e.g., Code Audit producing an audit report, Audit Fix repairing a finding, or Spec from Code producing technical specifications), responsibilities are split strictly across canonical primitives and the deterministic control roles they own:
+When an agent executes a workflow that produces a structured artifact or code change (e.g., Thinker and Planner producing specification records, Code Agent implementing steps, or Spec from Code producing technical specifications), responsibilities are split strictly across canonical primitives and the deterministic control roles they own:
 
 ```mermaid
 ---

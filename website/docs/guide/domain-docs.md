@@ -76,7 +76,7 @@ flowchart TD
 |---|---|---|---|---|
 | **Spec from Code** | Explicit prompt / agent | Domain instructions | [`spec-from-code`](./catalog-skills.md#_2-spec-from-code-skills-spec-from-code) | `docs/specs/*.md` (OpenAPI, DB schemas, async jobs) |
 | **VitePress Docs Site** | [`/vitepress-docs`](./catalog-prompts.md#_6-vitepress-docs) | — | [`vitepress-docs`](./catalog-skills.md#_3-vitepress-docs-skills-vitepress-docs) | Full VitePress site (`website/docs/`, Docker, CI) |
-| **Product Demo Videos** | [`/demo-videos`](./catalog-prompts.md#_23-demo-videos) | — | [`playwright-demo-videos`](./catalog-skills.md#_27-playwright-demo-videos-skills-playwright-demo-videos) | `<docs-root>/docs/public/videos/<name>.mp4` + `.jpg` poster |
+| **Product Demo Videos** | [`/demo-videos`](./catalog-prompts.md#_23-demo-videos) | — | [`playwright-demo-videos`](./catalog-skills.md#_1-playwright-demo-videos-skills-playwright-demo-videos) | `<docs-root>/docs/public/videos/<name>.mp4` + `.jpg` poster |
 
 ---
 
@@ -117,8 +117,8 @@ flowchart TD
 
 - **When to Run**: Showing a product's key user journeys (sign-in, editing, table settings) on its website or in a release note.
 - **Trigger**: `/demo-videos [journeys] [output-dir]`
-- **Agent**: [`Demo Videos`](./catalog-agents.md#_21-demo-videos-demo-videos-agent-md) (`demo-videos.agent.md`)
-- **Scaffolding Bundle**: Uses [`skills/playwright-demo-videos`](./catalog-skills.md#_27-playwright-demo-videos-skills-playwright-demo-videos):
+- **Agent**: [`Demo Videos`](./catalog-agents.md#_20-demo-videos-demo-videos-agent-md) (`demo-videos.agent.md`)
+- **Scaffolding Bundle**: Uses [`skills/playwright-demo-videos`](./catalog-skills.md#_1-playwright-demo-videos-skills-playwright-demo-videos):
   - A dedicated `demos/playwright.config.ts` recording every scenario at a fixed 1440×900.
   - A `Director` injecting a visible cursor with click rings, moving and typing at human speed, and marking the edit point that cuts login and setup.
   - Scenario templates resetting their data off camera, so a video can be filmed again on the same database.

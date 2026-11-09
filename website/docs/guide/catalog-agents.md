@@ -40,11 +40,11 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md` with file paths and line-level evidence.
 - **Full Workflow**: See [Codebase Audits](./domain-audit.md#_1-dead-code-audit-dead-code-agent-md).
 
-### 2. Test Gap Auditor (`test-gap.agent.md`, `docs-sync.agent.md`, `dependency-leverage.agent.md`)
-- **Role**: Focused read-only audits covering behavioral test gaps (`test-gap.agent.md`), documentation-to-code drift (`docs-sync.agent.md`), and underused or duplicated dependencies (`dependency-leverage.agent.md`).
-- **Hard Boundaries**: Read-only; zero source or test edits; capped at the highest-impact evidence-backed findings.
-- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md`.
-- **Full Workflow**: See [Codebase Audits](./domain-audit.md).
+### 2. Test Gap Auditor (`test-gap.agent.md`)
+- **Role**: Audits public APIs, classes, CLI commands, and error/boundary paths for missing or tautological tests.
+- **Hard Boundaries**: Read-only; zero source or test edits; prioritizes behavioral risk over line-coverage percentages.
+- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md` with concrete test scenarios and acceptance criteria.
+- **Full Workflow**: See [Codebase Audits](./domain-audit.md#_2-test-gap-audit-test-gap-agent-md).
 
 ### 3. Spec from Code (`spec-from-code.agent.md`)
 - **Role**: Reverse-engineers technical specifications and data models directly from source code.
@@ -154,3 +154,15 @@ Agents are named specialists invoked explicitly for a bounded kind of work. Each
 - **Hard Boundaries**: Edits only `demos/**`, the app `demos` script and gitignore, and the encoded files in the user-named output folder; production code is read-only; runs against the local dev stack only.
 - **Completion Gate**: Each scenario passes twice in a row on the same database, and its MP4 + JPG poster are reviewed in the output folder.
 - **Full Workflow**: See [Product Demo Videos](./domain-docs.md#_3-product-demo-videos-demo-videos).
+
+### 21. Docs Sync Auditor (`docs-sync.agent.md`)
+- **Role**: Audits `README.md`, `docs/`, JSDoc comments, and usage examples against actual exported code, signatures, configuration keys, and CLI scripts.
+- **Hard Boundaries**: Read-only; reports only concrete factual inaccuracies or missing public API documentation, never stylistic preferences.
+- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md` citing both the documentation file and the source code file.
+- **Full Workflow**: See [Codebase Audits](./domain-audit.md#_3-docs-sync-audit-docs-sync-agent-md).
+
+### 22. Dependency Leverage Auditor (`dependency-leverage.agent.md`)
+- **Role**: Audits how effectively a repository leverages its installed dependencies and identifies hand-rolled duplicates or reusable capabilities that belong in an upstream ecosystem library.
+- **Hard Boundaries**: Read-only; never proposes new third-party dependencies; classifies each finding as `scope: "local"` or `scope: "upstream"`.
+- **Completion Gate**: Produces valid `audit-findings.json` and `audit-report.md`.
+- **Full Workflow**: See [Codebase Audits](./domain-audit.md#_4-dependency-leverage-audit-dependency-leverage-agent-md).

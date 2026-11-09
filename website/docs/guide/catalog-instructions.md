@@ -15,7 +15,7 @@ Instructions are persistent, always-on engineering standards. The harness automa
 | **Decision Record** | `decision-record.instructions.md` | `**/docs/decisions/**` | [Governance & Decisions](./domain-governance.md) | `decision-record` | Decision records and escalations: AI drafts, the Architect signs. |
 | **Meeting Pack** | `meeting-pack.instructions.md` | `**/meetings/**,**/docs/glossary.md` | [Meet](./domain-meet.md#_1-transcript-to-meeting-pack) | `meeting-pack` | Standards for client meeting records: immutable transcripts, verbatim client evidence, consent, glossary stewardship, human confirmation. |
 | **Triage** | `triage.instructions.md` | `**/triage.md,**/specs/triage/**` | [Triage](./domain-triage.md#_1-candidate-need-to-backlog-issue) | `triage` | Standards for triage artifacts: verbatim evidence, coarse scoring, AI proposes and the Product Owner decides, ledger memory. |
-| **Sharp Agent** | `sharp-agent.instructions.md` | `**` | [Audit & Remediation](./domain-audit.md#_2-surgical-finding-remediation) | — | Directives against overengineering, premature abstractions, and token waste. |
+| **Sharp Agent** | `sharp-agent.instructions.md` | `**` | [Code](./domain-code.md) | — | Directives against overengineering, premature abstractions, and token waste. |
 | **Node.js Express** | `node-express.instructions.md` | `src/**/*.js` | [Tech Stacks](./domain-stacks.md#_1-node-js-express-microservices) | `node-express-examples` | Layered microservice architecture, routing, middleware flow, and error envelopes. |
 | **Node Unit Tests** | `node-unit-tests.instructions.md` | `tests/**/*.js` | [Testing & Verification](./domain-testing.md#_1-node-js-module-unit-tests) | — | Jest test conventions: isolated module unit tests for services, utils, controllers, and middlewares. |
 | **Node HTTP API Tests** | `node-api-tests.instructions.md` | `tests/routes/**/*.js,tests/api/**/*.js` | [Testing & Verification](./domain-testing.md#_2-node-js-http-api-route-tests) | — | Supertest HTTP API route test conventions: endpoint contracts, request/response assertions, and boundary mocking. |
@@ -33,8 +33,8 @@ Instructions are persistent, always-on engineering standards. The harness automa
 
 Normative architectural rules and code examples are maintained in the respective domain guides to preserve single authoritative ownership.
 
-### Universal & Remediation Instructions
-- **Sharp Agent (`sharp-agent.instructions.md`)**: Injected across all files (`**`). Mandates minimal diffs, token efficiency, zero unrequested dependencies, and test verification before completion. See [Surgical Remediation](./domain-audit.md#_2-surgical-finding-remediation).
+### Universal Execution Instructions
+- **Sharp Agent (`sharp-agent.instructions.md`)**: Injected across all files (`**`). Mandates minimal diffs, token efficiency, zero unrequested dependencies, and test verification before completion. See [Code](./domain-code.md) and [Controls & Safeguards](./domain-controls.md).
 
 ### Tech Stack Instructions
 - **Node.js Express (`node-express.instructions.md`)**: Enforces strict separation between routes, mappers/middlewares, and services, standard `{ rows, total }` / `{ statusCode, message }` JSON envelopes, and security headers. Detailed in [Node.js & Express Microservices](./domain-stacks.md#_1-node-js-express-microservices).

@@ -65,7 +65,7 @@ export default withMermaid(defineConfig({
           { text: 'Governance & Decisions', link: '/guide/domain-governance' },
           { text: 'Flow Metrics', link: '/guide/domain-metrics' },
           { text: 'Automated Tests', link: '/guide/domain-testing' },
-          { text: 'Audit & Remediation', link: '/guide/domain-audit' },
+          { text: 'Codebase Audits', link: '/guide/domain-audit' },
           { text: 'Specs & Docs', link: '/guide/domain-docs' },
           { text: 'Tech Stacks', link: '/guide/domain-stacks' },
           { text: 'Controls & Safeguards', link: '/guide/domain-controls' },

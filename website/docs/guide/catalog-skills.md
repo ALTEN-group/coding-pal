@@ -39,7 +39,12 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 
 ## Skill Deep Dives
 
-### 1. Spec from Code (`skills/spec-from-code/`)
+### 1. Playwright Demo Videos (`skills/playwright-demo-videos/`)
+- **Category**: Standards & Scaffolding
+- **Contents**: `SKILL.md` (filming, reset, encoding, and embedding rules) and `references/examples.md` (demo `playwright.config.ts`, `support/director.ts` with fake cursor and human-speed gestures, login and editing scenario templates with off-camera reset, `to-mp4.mjs` ffmpeg encoder, VitePress `DemoVideos.vue` home section).
+- **Workflow**: `npm run demos` in the app, i.e. `playwright test --config=demos/playwright.config.ts && node demos/to-mp4.mjs <output-dir>`.
+
+### 2. Spec from Code (`skills/spec-from-code/`)
 - **Category**: Protocol & Validator
 - **Contents**:
   - `SKILL.md`: Step-by-step extraction workflow.
@@ -242,8 +247,3 @@ Installed via APM as directory bundles under `.agents/skills/<name>/` (Copilot a
 - **Category**: Protocol & Validator
 - **Contents**: `SKILL.md`, `references/migration-contract.md` (record structure, Application Change Policy, cross-checks), and `scripts/validate-migration.mjs` with its fixtures and tests.
 - **Workflow**: `node .agents/skills/migration-docs/scripts/validate-migration.mjs --dir docs/migration/<name>`.
-
-### 26. Playwright Demo Videos (`skills/playwright-demo-videos/`)
-- **Category**: Standards & Scaffolding
-- **Contents**: `SKILL.md` (filming, reset, encoding, and embedding rules) and `references/examples.md` (demo `playwright.config.ts`, `support/director.ts` with fake cursor and human-speed gestures, login and editing scenario templates with off-camera reset, `to-mp4.mjs` ffmpeg encoder, VitePress `DemoVideos.vue` home section).
-- **Workflow**: `npm run demos` in the app, i.e. `playwright test --config=demos/playwright.config.ts && node demos/to-mp4.mjs <output-dir>`.
