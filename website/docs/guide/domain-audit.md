@@ -1,6 +1,6 @@
 # Codebase Audits
 
-The **Codebase Audits** domain provides read-only specialist audit agents that inspect a repository for dead code, test coverage gaps, documentation drift, and dependency leverage opportunities, emitting deterministic `audit-findings.json` and `audit-report.md` artifacts that feed directly into the issue backlog and factory pipeline.
+The **Codebase Audits** domain provides read-only specialist audit agents that inspect a repository for dead code, test coverage gaps, documentation drift, and dependency leverage opportunities (Green IT audits live in [Green IT](./domain-green-it.md)), emitting deterministic `audit-findings.json` and `audit-report.md` artifacts that feed directly into the issue backlog and factory pipeline.
 
 ---
 
@@ -72,6 +72,9 @@ flowchart TD
 ### 4. Dependency Leverage Audit (`dependency-leverage.agent.md`)
 - **Scope**: Local code that duplicates helpers already provided by installed dependencies, suboptimal or deprecated dependency calls, and reusable capabilities that should be extracted to an upstream ecosystem library (`scope: "upstream"`).
 - **Hard Boundaries**: Read-only. Never proposes adding new third-party dependencies when existing dependencies or standard platform APIs already cover the need.
+
+### 5. Green IT Audits
+Token waste, accessibility, and web footprint audits have their own domain: see [Green IT](./domain-green-it.md).
 
 ---
 

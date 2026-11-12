@@ -1,0 +1,31 @@
+name: Harness audits
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      audit:
+        description: 'Audit to run'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - token-audit
+      scope:
+        description: 'Path to audit (e.g. . for the whole repository)'
+        type: string
+        default: '.'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  token-audit:
+    if: (github.event_name == 'workflow_dispatch' && (inputs.audit == 'all' || inputs.audit == 'token-audit')) || (github.event_name == 'schedule' && !github.event.repository.private && github.event.schedule == '0 6 * * 1')
+    uses: 1pizzateam/coding-pal/.github/workflows/audit-token.yml@main
+    with:
+      scope: ${{ inputs.scope || '.' }}
+    secrets: inherit
