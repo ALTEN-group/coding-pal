@@ -66,6 +66,7 @@ export default withMermaid(defineConfig({
           { text: 'Flow Metrics', link: '/guide/domain-metrics' },
           { text: 'Automated Tests', link: '/guide/domain-testing' },
           { text: 'Codebase Audits', link: '/guide/domain-audit' },
+          { text: 'Green IT', link: '/guide/domain-green-it' },
           { text: 'Specs & Docs', link: '/guide/domain-docs' },
           { text: 'Tech Stacks', link: '/guide/domain-stacks' },
           { text: 'Controls & Safeguards', link: '/guide/domain-controls' },
