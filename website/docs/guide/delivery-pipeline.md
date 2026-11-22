@@ -4,7 +4,7 @@ The delivery pipeline turns a GitHub issue into a merged, released change with A
 
 **Think → Plan → Code → Prove → Release**
 
-Application repositories (Megadex, Foxnox, Gatelin) call reusable workflows of this repository from thin caller files. The agents, instructions and skills the workflows use live in this same repository and are checked out at the **same ref as the running workflow**, so a pinned engine version always runs the matching validators and agents.
+Application repositories (Megadex, Foxnox, Gatelin) call reusable workflows of this repository from thin caller files. The agents, instructions and skills the workflows use live in this same repository and are checked out at the `engine_ref` each caller passes (the same tag as its `uses:` line), so a pinned engine version always runs the matching validators and agents.
 
 ## Architecture
 

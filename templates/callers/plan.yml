@@ -32,4 +32,5 @@ jobs:
       issue_number: ${{ inputs.issue_number || github.event.issue.number || '' }}
       workflow_run_id: ${{ inputs.workflow_run_id || '' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit

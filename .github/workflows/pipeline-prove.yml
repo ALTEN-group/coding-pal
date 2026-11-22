@@ -49,7 +49,7 @@ on:
         type: string
         default: 'ALTEN-group/coding-pal'
       engine_ref:
-        description: 'Engine ref (tag, branch or SHA). Empty uses the ref this workflow was loaded from.'
+        description: 'Engine ref (tag, branch or SHA) to check out; callers pass the same ref as in their uses: line. Empty uses main.'
         required: false
         type: string
         default: ''
@@ -571,7 +571,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
           ENGINE_REPO: ${{ inputs.engine_repo }}
-          ENGINE_REF: ${{ inputs.engine_ref || job.workflow_sha || 'main' }}
+          ENGINE_REF: ${{ inputs.engine_ref || 'main' }}
         run: |
           # Check out the engine (this repository) at the ref the running workflow was loaded from, so
           # workflows, skills, agents and validators always come from one consistent version.

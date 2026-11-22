@@ -28,4 +28,5 @@ jobs:
     with:
       issue_number: ${{ inputs.issue_number || github.event.issue.number }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit

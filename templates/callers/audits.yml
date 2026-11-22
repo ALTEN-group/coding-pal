@@ -45,6 +45,7 @@ jobs:
       scope: ${{ inputs.scope || 'src/' }}
       prompt: 'Dependency filter: ${{ inputs.dependency || ''all'' }}.'
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   dead-code-audit:
@@ -54,6 +55,7 @@ jobs:
       agent: dead-code
       scope: ${{ inputs.scope || 'src/' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   a11y-audit:
@@ -63,6 +65,7 @@ jobs:
       agent: a11y-audit
       scope: ${{ inputs.scope || 'admin/src/' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   test-gap-audit:
@@ -72,6 +75,7 @@ jobs:
       agent: test-gap
       scope: ${{ inputs.scope || 'src/' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   docs-sync-audit:
@@ -81,6 +85,7 @@ jobs:
       agent: docs-sync
       scope: ${{ inputs.scope || 'src/' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   token-audit:
@@ -90,4 +95,5 @@ jobs:
       agent: token-audit
       scope: ${{ inputs.scope || '.' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit

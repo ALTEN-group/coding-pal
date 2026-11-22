@@ -67,7 +67,6 @@ class WorkflowsTest < Minitest::Test
       'inputs.deployment_event' => 'push',
       'inputs.engine_repo' => 'ALTEN-group/coding-pal',
       'inputs.engine_ref' => '',
-      'job.workflow_sha' => '',
       'vars.FLEET_REPOS' => '',
       'inputs.agent' => 'dead-code',
       'inputs.scope' => 'src/',

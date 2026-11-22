@@ -41,6 +41,7 @@ jobs:
       issue_number: ${{ inputs.issue_number || github.event.issue.number || '' }}
       workflow_run_id: ${{ inputs.workflow_run_id || '' }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
     secrets: inherit
 
   prove:
@@ -50,6 +51,7 @@ jobs:
     with:
       workflow_run_id: ${{ github.run_id }}
       project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
       deployment_workflow: __DEPLOYMENT_WORKFLOW__
       deployment_paths: |
 __DEPLOYMENT_PATHS__
