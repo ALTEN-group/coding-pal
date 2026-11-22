@@ -23,13 +23,15 @@ Callers pin the engine by tag (`@v1`), never by `main`.
 
 Add a stage label to an open issue:
 
-| Label | Runs through | Stops at |
-|---|---|---|
-| `1-think` | Think | `# Think:` specification comment |
-| `2-plan` | Plan | `# Plan:` comment |
-| `3-code` | Code | Open or updated pull request |
-| `4-prove` | Prove | Validated and approved PR, **before merge** |
-| `5-release` | Think → … → Release | Merge, release, container images and docs published, then Done |
+| Label | Stops at |
+|---|---|
+| `1-think` | `# Think:` specification comment |
+| `2-plan` | `# Plan:` comment |
+| `3-code` | Open or updated pull request |
+| `4-prove` | Validated and approved PR, **before merge** |
+| `5-release` | Merge, release, container images and docs published, then Done |
+
+A label also runs every earlier stage whose result is missing, and reuses what already exists: `3-code` on an issue without a plan runs Think and Plan first, and on an issue that already has an open PR, `4-prove` and `5-release` go straight to Prove.
 
 - Add `pause:think|plan|code|prove` (or tick `Pause after …` in the issue body) to stop after a phase.
 - **Think and Plan run in parallel** across issues. **Code onward is single-flight per repository**: the `ready` label means "the pipeline may start this issue"; after a merge the chain starts the next `ready` issue (same milestone first, then lowest number).
