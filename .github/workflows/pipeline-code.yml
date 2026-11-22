@@ -21,7 +21,17 @@ on:
         description: 'GitHub Project V2 board title'
         required: false
         type: string
-        default: 'DoomR'
+        default: ''
+      engine_repo:
+        description: 'Repository holding the pipeline engine, agents and skills'
+        required: false
+        type: string
+        default: 'ALTEN-group/coding-pal'
+      engine_ref:
+        description: 'Engine ref (tag, branch or SHA). Empty uses the ref this workflow was loaded from.'
+        required: false
+        type: string
+        default: ''
       node_version:
         description: 'Node.js version'
         required: false
@@ -50,6 +60,19 @@ jobs:
     env:
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Check out pipeline engine
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || job.workflow_sha || 'main' }}
+        run: |
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
+          fi
+
       - name: Resolve issue number, base branch, and restore think.md and plan.md
         id: resolve
         env:
@@ -91,14 +114,13 @@ jobs:
           # issue is coded on a main that already contains the previous ones. If another issue already has an open
           # pipeline PR, park this one as `ready` (no AI call); the chain starts it after that PR merges.
           # See .agents/skills/release-bump/scripts/plan-chain.mjs.
-          rm -rf /tmp/chain-coding-pal
-          if git clone --depth 1 -q "https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/coding-pal.git" /tmp/chain-coding-pal 2>/dev/null; then
+          if [ -f /tmp/coding-pal-engine/skills/release-bump/scripts/plan-chain.mjs ]; then
             CHAIN=$(jq -n --arg mode intercept --argjson issue "$ISSUE_NUMBER" \
               --argjson issues "$(gh issue list --state open --limit 500 --json number,labels,milestone)" \
               --argjson merged "$(gh pr list --state merged --limit 500 --json headRefName)" \
               --argjson open "$(gh pr list --state open --limit 200 --json headRefName)" \
               '{mode: $mode, issueNumber: $issue, issues: $issues, mergedPrs: $merged, openPrs: $open}' \
-              | node /tmp/chain-coding-pal/skills/release-bump/scripts/plan-chain.mjs 2>/dev/null || echo '{"action":"proceed"}')
+              | node /tmp/coding-pal-engine/skills/release-bump/scripts/plan-chain.mjs 2>/dev/null || echo '{"action":"proceed"}')
             if [ "$(echo "$CHAIN" | jq -r '.action')" = "intercept" ]; then
               BLOCKERS=$(echo "$CHAIN" | jq -r '.blockers | map("#" + tostring) | join(", ")')
               gh label create ready --description "Eligible for automatic start by the chain" --color 0E8A16 >/dev/null 2>&1 || true
@@ -116,8 +138,6 @@ jobs:
           fi
 
           HAS_AUDIT_LABEL=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | any(startswith("audit:"))')
-          HAS_BLOCKED_UPSTREAM=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("blocked:upstream") != null')
-          HAS_UPSTREAM_RELEASED=$(echo "$ISSUE_VIEW" | jq -r '[.comments[].body | select(test("^## Upstream Library Released"; "m"))] | length > 0')
           HAS_CODE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("3-code") != null')
           HAS_PROVE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("4-prove") != null')
           HAS_RELEASE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("5-release") != null')
@@ -137,28 +157,6 @@ jobs:
           gh issue edit "$ISSUE_NUMBER" --remove-assignee "@me" 2>/dev/null || true
 
           if [ -z "$RUN_ID" ]; then
-            if [ "$HAS_BLOCKED_UPSTREAM" = "true" ] && [ "$HAS_UPSTREAM_RELEASED" != "true" ]; then
-              UPSTREAM_REF=$(echo "$ISSUE_VIEW" | jq -r '([ (.body // ""), (.comments[]?.body // "") ] | join("\n") | [ scan("(1pizzateam/[A-Za-z0-9_.-]+)#([0-9]+)") ] | last) | if type == "array" and length == 2 then (.[0] + "#" + .[1]) else "" end' 2>/dev/null || true)
-              if [ -n "$UPSTREAM_REF" ]; then
-                UPSTREAM_REPO="${UPSTREAM_REF%#*}"
-                UPSTREAM_NUM="${UPSTREAM_REF#*#}"
-                UPSTREAM_VIEW=$(gh issue view "$UPSTREAM_NUM" --repo "$UPSTREAM_REPO" --json state,labels 2>/dev/null || true)
-                UPSTREAM_STATE=$(echo "$UPSTREAM_VIEW" | jq -r '.state // ""' 2>/dev/null || true)
-                if [ "$UPSTREAM_STATE" = "OPEN" ]; then
-                  UPSTREAM_ACTIVE=$(echo "$UPSTREAM_VIEW" | jq -r '[.labels[]?.name] | any(. == "1-think" or . == "2-plan" or . == "3-code" or . == "4-prove" or . == "5-release")' 2>/dev/null || echo "false")
-                  if [ "$UPSTREAM_ACTIVE" != "true" ]; then
-                    echo "Triggering 5-release on open upstream issue ${UPSTREAM_REPO}#${UPSTREAM_NUM} before implementing #${ISSUE_NUMBER}..."
-                    gh issue edit "$UPSTREAM_NUM" --repo "$UPSTREAM_REPO" --remove-label "needs:developer" --add-label "5-release" 2>/dev/null || true
-                  fi
-                  echo "Issue #${ISSUE_NUMBER} is still blocked on open upstream issue ${UPSTREAM_REPO}#${UPSTREAM_NUM}; deferring Code until upstream release publishes and triggers upstream-resume."
-                  GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh issue edit "$ISSUE_NUMBER" --remove-label "3-code,4-prove,5-release,needs:developer" 2>/dev/null || true
-                  echo "skip=true" >> "$GITHUB_OUTPUT"
-                  exit 0
-                elif [ "$UPSTREAM_STATE" = "CLOSED" ]; then
-                  GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh issue edit "$ISSUE_NUMBER" --remove-label "blocked:upstream" 2>/dev/null || true
-                fi
-              fi
-            fi
             EXISTING_PR_JSON=$(gh pr list --state open --json number,headRefName,mergeable,labels \
               --jq "[.[] | select(.headRefName | test(\"^(feature|fix|chore)/issue-${ISSUE_NUMBER}-\"))][0] // empty" 2>/dev/null || true)
             EXISTING_PR=$(echo "$EXISTING_PR_JSON" | jq -r '.number // empty')
@@ -568,50 +566,22 @@ jobs:
           git fetch origin "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
           git checkout -B "$BRANCH_NAME" "refs/remotes/origin/${BASE_REF}"
 
-      - name: Install ALTEN-group/coding-pal code primitives
+      - name: Install coding-pal code primitives
         if: steps.resolve.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || job.workflow_sha || 'main' }}
         run: |
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/ALTEN-group/coding-pal.git /tmp/alten-coding-pal
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/coding-pal.git /tmp/1pizza-coding-pal
-          rm -rf .github/instructions .github/agents .github/prompts .github/skills .github/copilot-instructions.md .agents .claude .cursor .gemini CLAUDE.md GEMINI.md AGENTS.md .cursorrules .windsurfrules
-          git checkout -- .claude .cursor .gemini CLAUDE.md GEMINI.md AGENTS.md .cursorrules .windsurfrules 2>/dev/null || true
-          mkdir -p .github/instructions .github/agents .agents/skills
-          cp /tmp/1pizza-coding-pal/instructions/*.md .github/instructions/
-          cp -R /tmp/1pizza-coding-pal/skills/* .agents/skills/
-          cp /tmp/alten-coding-pal/instructions/code.instructions.md .github/instructions/
-          [ -d tests ] && [ -f /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md ] && cp /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md .github/instructions/
-          [ -d website ] && [ -f /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md ] && cp /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md .github/instructions/
-          [ -d website ] && [ -d /tmp/alten-coding-pal/skills/vitepress-docs ] && cp -R /tmp/alten-coding-pal/skills/vitepress-docs .agents/skills/vitepress-docs
-          if [ -s "specs/issue-${ISSUE_NUMBER}/think.md" ]; then
-            jq -Rsr 'sub("\\n+## Forge Asset Bindings\\r?\\n[\\s\\S]*?(?=\\n## |$)"; "")' "specs/issue-${ISSUE_NUMBER}/think.md" > "specs/issue-${ISSUE_NUMBER}/think.md.tmp" && mv "specs/issue-${ISSUE_NUMBER}/think.md.tmp" "specs/issue-${ISSUE_NUMBER}/think.md"
+          # Check out the engine (this repository) at the ref the running workflow was loaded from, so
+          # workflows, skills, agents and validators always come from one consistent version.
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
           fi
-          cp /tmp/alten-coding-pal/agents/code.agent.md .github/agents/
-          for skill in think plan code prove; do
-            cp -R "/tmp/alten-coding-pal/skills/${skill}" ".agents/skills/${skill}"
-          done
-          mkdir -p .agents/skills/forge
-          cp /tmp/1pizza-coding-pal/forge-catalog.json .agents/skills/forge/catalog.json
-          for repo_cat in docs/forge/catalog.json .github/forge-catalog.json forge-catalog.json; do
-            if [ -f "$repo_cat" ]; then
-              jq -s '.[0] as $base | .[1] as $ext | ($base * $ext) | .assets = (((($base.assets // []) + ($ext.assets // [])) | group_by(.id) | map(reduce .[] as $item ({}; . * $item))))' \
-                .agents/skills/forge/catalog.json "$repo_cat" > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-            fi
-          done
-          if [ -f package.json ]; then
-            jq --slurpfile pkg package.json '
-              (($pkg[0].dependencies // {}) + ($pkg[0].devDependencies // {})) as $deps |
-              .assets |= map(
-                . as $a |
-                ($deps["@1pizzateam/" + $a.id] // $deps["@dwtechs/" + $a.id] // $deps[$a.id] // "") |
-                sub("^[~^>=<v]+"; "") as $v |
-                if ($v | test("^[0-9]+\\.[0-9]+\\.[0-9]+")) then ($a | .version = $v) else $a end
-              )
-            ' .agents/skills/forge/catalog.json > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-          fi
-          rm -rf /tmp/alten-coding-pal /tmp/1pizza-coding-pal
-
+          bash "$ENGINE_DIR/scripts/factory/install-primitives.sh" --stage code --engine "$ENGINE_DIR" --keep-tracked-clean
           printf "%s\n" \
             ".github/instructions/" \
             ".github/agents/" \
@@ -627,23 +597,6 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
-
-      - name: Clone sibling DoomR.js workspace for companion game editors
-        if: steps.resolve.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
-        run: |
-          case "$REPO_NAME" in
-            Cadenza|FaceGun|MappR|PixelGun|PolyGun|ShaderGun)
-              if [ ! -d ../DoomR.js ]; then
-                git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/DoomR.js.git ../DoomR.js
-              fi
-              if [ "$REPO_NAME" = "FaceGun" ] && [ ! -d ../FaceR.js ]; then
-                git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/FaceR.js.git ../FaceR.js
-              fi
-              ;;
-          esac
 
       - if: steps.resolve.outputs.skip != 'true'
         run: npm ci --prefer-offline --no-audit
@@ -755,9 +708,9 @@ jobs:
           ${FEEDBACK_CONTEXT}
 
           Follow .agents/skills/code/SKILL.md.
-          1. Always deliver a working implementation and commit within ${PLAN_FILE}'s In Scope files: if your codebase investigation or visual reproduction refines the diagnosis in ${THINK_FILE} or ${PLAN_FILE} (for example, the root cause of the reported bug or visual artifact resides in a different shader, function, or branch within the In Scope files than the one hypothesized in Think/Plan), do NOT stop with zero commits. Instead, adapt and implement the actual root-cause fix inside the allowed In Scope files while satisfying all Acceptance Criteria (AC-1..AC-N) and Test Plan requirements in ${PLAN_FILE}.
+          1. Always deliver a working implementation and commit within ${PLAN_FILE}'s In Scope files: if your codebase investigation or visual reproduction refines the diagnosis in ${THINK_FILE} or ${PLAN_FILE} (for example, the root cause of the reported bug or visual artifact resides in a different function, module, or branch within the In Scope files than the one hypothesized in Think/Plan), do NOT stop with zero commits. Instead, adapt and implement the actual root-cause fix inside the allowed In Scope files while satisfying all Acceptance Criteria (AC-1..AC-N) and Test Plan requirements in ${PLAN_FILE}.
           2. Implement all steps in ${PLAN_FILE} across the in-scope files (writing only files listed in ${PLAN_FILE}'s In Scope; if an in-scope test file has an existing assertion superseded by a behavior change, update that assertion without reducing the file's total assertion count so control-guard rule R8 passes; ensure every acceptance criterion test includes its AC-<n> token in the test name and prints '# file: <relative-path>' plus 'ok   AC-<n> ...' or 'ok <num> - AC-<n> ...' so it passes criteria-verify in Prove).
-          3. Once all steps are implemented, run the full verification and build checks once ('npm test' and 'npm run build'; if this is a published @1pizzateam/* library, also follow .agents/skills/release-readiness/SKILL.md and run 'node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr' so library documentation and package exports are already in sync; when ${PLAN_FILE} puts CHANGELOG.md in scope, record entries only under a top 'Version X.Y.Z (unreleased)' section followed by the '-----------------------------' underline and ' * ' bullets, creating it above the latest section when missing, with X.Y.Z being the issue milestone name when it is a version (gh issue view ${ISSUE_NUMBER} --json milestone) and otherwise the package.json version bumped by the level the issue implies (feat = minor, breaking = major, anything else = patch), and never edit an already released 'Version X.Y.Z (Month Dayth Year)' section), fix any failures, and stage and commit all modified in-scope files in a single clean commit referencing #${ISSUE_NUMBER} (do not stage or commit files under ${SPEC_DIR}).
+          3. Once all steps are implemented, run the full verification and build checks once ('npm test' and 'npm run build'; also follow .agents/skills/release-readiness/SKILL.md and run 'node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr' so the version files, changelog and OpenAPI/migration files are already in sync; when ${PLAN_FILE} puts CHANGELOG.md in scope, record entries only under a top 'Version X.Y.Z (unreleased)' section followed by the '-----------------------------' underline and ' * ' bullets, creating it above the latest section when missing, with X.Y.Z being the issue milestone name when it is a version (gh issue view ${ISSUE_NUMBER} --json milestone) and otherwise the package.json version bumped by the level the issue implies (feat = minor, breaking = major, anything else = patch), and never edit an already released 'Version X.Y.Z (Month Dayth Year)' section), fix any failures, and stage and commit all modified in-scope files in a single clean commit referencing #${ISSUE_NUMBER} (do not stage or commit files under ${SPEC_DIR}).
           4. Author the pull request body at pr.md following .agents/skills/code/references/code-contract.md (with ## Links including - **Closes:** #${ISSUE_NUMBER}, ## Acceptance Criteria Traceability, ## Dependencies, ## Blast Radius, and ## Human Validation with Client Intent, Behavioral Experience, and Safety & Blast Radius set to Pending)." \
             > "$RUNNER_TEMP/copilot-code.log" 2>&1 || COPILOT_EXIT=$?
           [ -f "$RUNNER_TEMP/copilot-code.log" ] && cat "$RUNNER_TEMP/copilot-code.log" || true
@@ -1134,7 +1087,6 @@ jobs:
             specs/pr_number.txt
             specs/issue-${{ env.ISSUE_NUMBER }}/think.md
             specs/issue-${{ env.ISSUE_NUMBER }}/plan.md
-            specs/issue-${{ env.ISSUE_NUMBER }}/editor-requests.json
           retention-days: 7
 
       - name: Mark issue needs:developer if Code fails

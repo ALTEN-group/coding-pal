@@ -22,17 +22,37 @@ on:
         description: 'GitHub Project V2 board title'
         required: false
         type: string
-        default: 'DoomR'
+        default: ''
       fix_loop_limit:
         description: 'Maximum automatic remediation attempts before developer handoff'
         required: false
         type: string
         default: '5'
-      auto_release_npm:
-        description: 'Automatically bump package.json version and publish a GitHub Release after PR merge for @1pizzateam/* libraries'
+      auto_release:
+        description: 'Prepare a release PR, tag and GitHub Release after the PR merge (milestone trains hold the release until the last issue merges)'
         required: false
         type: boolean
         default: true
+      deployment_event:
+        description: 'Event that triggers deployment_workflow: push (path-filtered push to the base branch) or release (runs when the GitHub Release is published)'
+        required: false
+        type: string
+        default: 'push'
+      publish_workflow:
+        description: 'Workflow file triggered by the published GitHub Release that builds the container images (awaited before Done; empty to skip)'
+        required: false
+        type: string
+        default: 'publish.yml'
+      engine_repo:
+        description: 'Repository holding the pipeline engine, agents and skills'
+        required: false
+        type: string
+        default: 'ALTEN-group/coding-pal'
+      engine_ref:
+        description: 'Engine ref (tag, branch or SHA). Empty uses the ref this workflow was loaded from.'
+        required: false
+        type: string
+        default: ''
       deployment_workflow:
         description: 'Push-triggered deployment workflow to await before Done (empty when no deployment is configured)'
         required: false
@@ -546,78 +566,22 @@ jobs:
 
           gh pr view "$PR_NUMBER" --json body --jq '.body // ""' > pr.md
 
-      - name: Install ALTEN-group/coding-pal Prove and Remediation primitives
+      - name: Install coding-pal prove primitives
         if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true'
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || job.workflow_sha || 'main' }}
         run: |
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/ALTEN-group/coding-pal.git /tmp/alten-coding-pal
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/coding-pal.git /tmp/1pizza-coding-pal
-          rm -rf .github/instructions .github/agents .github/prompts .github/skills .github/copilot-instructions.md .agents .claude .cursor .gemini CLAUDE.md GEMINI.md AGENTS.md .cursorrules .windsurfrules
-          git checkout -- .claude .cursor .gemini CLAUDE.md GEMINI.md AGENTS.md .cursorrules .windsurfrules 2>/dev/null || true
-          mkdir -p .github/instructions .github/agents .agents/skills
-          cp /tmp/1pizza-coding-pal/instructions/*.md .github/instructions/
-          cp -R /tmp/1pizza-coding-pal/skills/* .agents/skills/
-          cp /tmp/alten-coding-pal/instructions/prove.instructions.md .github/instructions/
-          [ -d tests ] && [ -f /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md ] && cp /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md .github/instructions/
-          [ -d website ] && [ -f /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md ] && cp /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md .github/instructions/
-          [ -d website ] && [ -d /tmp/alten-coding-pal/skills/vitepress-docs ] && cp -R /tmp/alten-coding-pal/skills/vitepress-docs .agents/skills/vitepress-docs
-          if [ -s "specs/issue-${ISSUE_NUMBER}/think.md" ]; then
-            jq -Rsr 'sub("\\n+## Forge Asset Bindings\\r?\\n[\\s\\S]*?(?=\\n## |$)"; "")' "specs/issue-${ISSUE_NUMBER}/think.md" > "specs/issue-${ISSUE_NUMBER}/think.md.tmp" && mv "specs/issue-${ISSUE_NUMBER}/think.md.tmp" "specs/issue-${ISSUE_NUMBER}/think.md"
+          # Check out the engine (this repository) at the ref the running workflow was loaded from, so
+          # workflows, skills, agents and validators always come from one consistent version.
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
           fi
-          cp /tmp/alten-coding-pal/agents/prove.agent.md .github/agents/
-          cp /tmp/alten-coding-pal/agents/gate-fix.agent.md .github/agents/
-          for skill in think plan code prove; do
-            cp -R "/tmp/alten-coding-pal/skills/${skill}" ".agents/skills/${skill}"
-          done
-          if [ -f .agents/skills/prove/scripts/secret-guard.mjs ]; then
-            node -e '
-              const fs = require("fs");
-              const p = ".agents/skills/prove/scripts/secret-guard.mjs";
-              let src = fs.readFileSync(p, "utf8");
-              src = src.replace(
-                /spawnSync\("git",\s*\["diff",\s*"-U0",\s*diffBase\],\s*\{\s*cwd,\s*encoding:\s*"utf-8",?\s*\}\)/,
-                "spawnSync(\"git\", [\"diff\", \"-U0\", \"--diff-filter=AM\", diffBase], { cwd, encoding: \"utf-8\", maxBuffer: 64 * 1024 * 1024 })"
-              );
-              fs.writeFileSync(p, src);
-            '
-          fi
-          if [ -f .agents/skills/prove/scripts/verify-criteria.mjs ]; then
-            node -e '
-              const fs = require("fs");
-              const p = ".agents/skills/prove/scripts/verify-criteria.mjs";
-              let src = fs.readFileSync(p, "utf8");
-              src = src.replace(
-                "raw.match(/^(ok|not ok)\\s+\\d+\\s*(?:-\\s*)?(.*?)(?:\\s+#\\s*(SKIP|TODO)\\b.*)?$/i)",
-                "raw.match(/^(ok|not ok)\\s+(?:\\d+\\s*(?:-\\s*)?|-\\s+)(.*?)(?:\\s+#\\s*(SKIP|TODO)\\b.*)?$/i)"
-              );
-              src = src.replace(
-                "const hits = criteriaInText(test.match).filter((id) => ids.has(id));",
-                "const hits = criteriaInText(test.match).filter((id) => {\n\t\t\tif (!ids.has(id)) return false;\n\t\t\tconst planned = rows.filter((r) => r.criterion === id && r.path).map((r) => r.path);\n\t\t\treturn !planned.length || !test.file || planned.some((fp) => reportsFile([test.file], fp));\n\t\t});"
-              );
-              fs.writeFileSync(p, src);
-            '
-          fi
-          mkdir -p .agents/skills/forge
-          cp /tmp/1pizza-coding-pal/forge-catalog.json .agents/skills/forge/catalog.json
-          for repo_cat in docs/forge/catalog.json .github/forge-catalog.json forge-catalog.json; do
-            if [ -f "$repo_cat" ]; then
-              jq -s '.[0] as $base | .[1] as $ext | ($base * $ext) | .assets = (((($base.assets // []) + ($ext.assets // [])) | group_by(.id) | map(reduce .[] as $item ({}; . * $item))))' \
-                .agents/skills/forge/catalog.json "$repo_cat" > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-            fi
-          done
-          if [ -f package.json ]; then
-            jq --slurpfile pkg package.json '
-              (($pkg[0].dependencies // {}) + ($pkg[0].devDependencies // {})) as $deps |
-              .assets |= map(
-                . as $a |
-                ($deps["@1pizzateam/" + $a.id] // $deps["@dwtechs/" + $a.id] // $deps[$a.id] // "") |
-                sub("^[~^>=<v]+"; "") as $v |
-                if ($v | test("^[0-9]+\\.[0-9]+\\.[0-9]+")) then ($a | .version = $v) else $a end
-              )
-            ' .agents/skills/forge/catalog.json > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-          fi
-          rm -rf /tmp/alten-coding-pal /tmp/1pizza-coding-pal
+          bash "$ENGINE_DIR/scripts/factory/install-primitives.sh" --stage prove --engine "$ENGINE_DIR" --keep-tracked-clean
           printf "%s\n" \
             ".github/instructions/" \
             ".github/agents/" \
@@ -635,23 +599,6 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
-
-      - name: Clone sibling DoomR.js workspace for companion game editors
-        if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
-        run: |
-          case "$REPO_NAME" in
-            Cadenza|FaceGun|MappR|PixelGun|PolyGun|ShaderGun)
-              if [ ! -d ../DoomR.js ]; then
-                git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/DoomR.js.git ../DoomR.js
-              fi
-              if [ "$REPO_NAME" = "FaceGun" ] && [ ! -d ../FaceR.js ]; then
-                git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/FaceR.js.git ../FaceR.js
-              fi
-              ;;
-          esac
 
       - if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true'
         run: npm ci --prefer-offline --no-audit
@@ -951,13 +898,17 @@ jobs:
             done < <(git diff --name-only "origin/${BASE_REF}..HEAD" -- 'tests/**' 2>/dev/null || true)
             run_check "scope-guard" node .agents/skills/prove/scripts/scope-guard.mjs --git --base "origin/${BASE_REF}" "${SCOPE_ARGS[@]}"
 
-            BUILD_CMD="npm run build"
+            # Services often have no build script (they run from source in a container): only gate a build when one exists.
+            BUILD_CMD=""
             if [ -f package.json ] && [ "$(node -p "const p=require('./package.json'); Boolean(p.scripts && p.scripts['build:lib'])")" = "true" ]; then
               BUILD_CMD="npm run build:lib"
+            elif [ -f package.json ] && [ "$(node -p "const p=require('./package.json'); Boolean(p.scripts && p.scripts.build)")" = "true" ]; then
+              BUILD_CMD="npm run build"
             fi
-            TASK_STAGES=(--stage "test:bash $RUNNER_TEMP/run-tests.sh" --stage "build:${BUILD_CMD}")
-            if [ -f package.json ] && [ "$(node -p "const p=require('./package.json'); Boolean(p.name && p.name.startsWith('@1pizzateam/') && !p.private)")" = "true" ]; then
-              TASK_STAGES+=(--stage "release-readiness:node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr --require-dist")
+            TASK_STAGES=(--stage "test:bash $RUNNER_TEMP/run-tests.sh")
+            [ -n "$BUILD_CMD" ] && TASK_STAGES+=(--stage "build:${BUILD_CMD}")
+            if [ -f .agents/skills/release-readiness/scripts/verify-release-readiness.mjs ]; then
+              TASK_STAGES+=(--stage "release-readiness:node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr")
             fi
             run_check "task-gate" node .agents/skills/prove/scripts/task-gate.mjs "${TASK_STAGES[@]}"
 
@@ -1281,7 +1232,8 @@ jobs:
             exit 1
           fi
           echo "RELEASE_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-          gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$VALIDATED_HEAD"
+          gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$VALIDATED_HEAD" \
+            || gh pr merge "$PR_NUMBER" --squash --delete-branch --match-head-commit "$VALIDATED_HEAD" --admin
           MERGE_SHA=$(gh pr view "$PR_NUMBER" --json mergeCommit --jq '.mergeCommit.oid // empty')
           if [ -z "$MERGE_SHA" ]; then
             echo "::error::PR merge did not produce a merge commit; release cannot proceed."
@@ -1290,106 +1242,21 @@ jobs:
           echo "RELEASE_MERGE_SHA=${MERGE_SHA}" >> "$GITHUB_ENV"
           GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh issue edit "$ISSUE_NUMBER" --remove-label "1-think,2-plan,3-code,4-prove,5-release" || true
 
-      - name: Dispatch companion game editor updates after PR merge
-        if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true' && steps.checkpoint.outputs.paused != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
-          REPO_FULL_NAME: ${{ github.repository }}
-          REPO_NAME: ${{ github.event.repository.name }}
-        run: |
-          EDITOR_REQ_FILE="specs/issue-${ISSUE_NUMBER}/editor-requests.json"
-          if [ -s "$EDITOR_REQ_FILE" ] && jq -e 'type == "array" and length > 0' "$EDITOR_REQ_FILE" >/dev/null 2>&1; then
-            map_editor_repo() {
-              case "$1" in
-                cadenza|1pizzateam/cadenza) echo "1pizzateam/Cadenza" ;;
-                facegun|1pizzateam/facegun) echo "1pizzateam/FaceGun" ;;
-                mappr|1pizzateam/mappr) echo "1pizzateam/MappR" ;;
-                pixelgun|1pizzateam/pixelgun) echo "1pizzateam/PixelGun" ;;
-                polygun|1pizzateam/polygun) echo "1pizzateam/PolyGun" ;;
-                shadergun|1pizzateam/shadergun) echo "1pizzateam/ShaderGun" ;;
-                *) echo "" ;;
-              esac
-            }
-
-            DISPATCHED_LINKS=()
-            while IFS= read -r item; do
-              ED_KEY=$(echo "$item" | jq -r '(.editor // .repo // "") | ascii_downcase')
-              ED_TITLE=$(echo "$item" | jq -r '.title // empty')
-              ED_BODY=$(echo "$item" | jq -r '
-                if (.body // "") != "" then
-                  .body
-                elif (.problem // "") != "" then
-                  "## Problem\n" + .problem
-                  + (if (.suggestedDirection // "") != "" then "\n\n## Suggested Direction\n" + .suggestedDirection else "" end)
-                  + (if ((.affectedFiles // []) | length) > 0 then "\n\n## Affected Files\n" + ((.affectedFiles | map("- `" + tostring + "`")) | join("\n")) else "" end)
-                else
-                  ""
-                end
-              ')
-              TARGET_REPO=$(map_editor_repo "$ED_KEY")
-              if [ -z "$TARGET_REPO" ] || [ -z "$ED_TITLE" ] || [ -z "$ED_BODY" ]; then
-                continue
-              fi
-
-              gh label create "5-release" --repo "$TARGET_REPO" --force --description "Run the autonomous Think -> Plan -> Code -> Prove -> Release pipeline" || true
-              gh label create "upstream:doomr" --repo "$TARGET_REPO" --force --description "Triggered by a merged DoomR.js feature update" || true
-
-              EXISTING=$(gh issue list --repo "$TARGET_REPO" --state open --limit 100 --json number,title \
-                --jq ".[] | select((.title | ascii_downcase) == ($(echo "$ED_TITLE" | jq -Rs 'ascii_downcase'))) | .number" | head -n 1)
-
-              if [ -n "$EXISTING" ]; then
-                ED_URL="https://github.com/${TARGET_REPO}/issues/${EXISTING}"
-                echo "Reusing open companion editor issue ${ED_URL}"
-              else
-                FULL_BODY="${ED_BODY}
-
-          ---
-          _Triggered automatically by merged ${REPO_FULL_NAME}#${ISSUE_NUMBER} (PR #${PR_NUMBER})._"
-                ED_URL=$(gh issue create \
-                  --repo "$TARGET_REPO" \
-                  --title "$ED_TITLE" \
-                  --body "$FULL_BODY" \
-                  --label "5-release,upstream:doomr")
-                echo "Created companion editor issue ${ED_URL}"
-              fi
-              DISPATCHED_LINKS+=("- **${TARGET_REPO}**: ${ED_URL}")
-            done < <(jq -c '.[]' "$EDITOR_REQ_FILE")
-
-            if [ "${#DISPATCHED_LINKS[@]}" -gt 0 ]; then
-              COMMENT_BODY=$(printf "### Companion Game Editor Updates Dispatched\n\n%s\n" \
-                "$(printf '%s\n' "${DISPATCHED_LINKS[@]}")")
-              gh issue comment "$ISSUE_NUMBER" --body "$COMMENT_BODY"
-            fi
-          fi
-
-          case "$REPO_NAME" in
-            Cadenza|FaceGun|MappR|PixelGun|PolyGun|ShaderGun)
-              HEAD_SHA=$(git rev-parse HEAD)
-              gh api repos/1pizzateam/DoomR.js/dispatches \
-                -f event_type="upstream-library-released" \
-                -f "client_payload[package]=1pizzateam/${REPO_NAME}" \
-                -f "client_payload[version]=${HEAD_SHA}" \
-                -f "client_payload[upstream_repo]=${REPO_FULL_NAME}" \
-                -f "client_payload[repository]=${REPO_FULL_NAME}" || true
-              ;;
-          esac
-
-      - name: Auto-release merged @1pizzateam/* library version
+      - name: Release merged service version (release PR, tag and GitHub Release)
         id: release
-        if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true' && steps.checkpoint.outputs.paused != 'true' && inputs.auto_release_npm
+        if: steps.resolve.outputs.skip != 'true' && steps.freshness.outputs.conflict != 'true' && steps.checkpoint.outputs.paused != 'true' && inputs.auto_release
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
-          if [ ! -f package.json ]; then exit 0; fi
-          IS_PUBLISHABLE=$(node -p '
-            const pkg = require("./package.json");
-            Boolean(pkg.name && pkg.name.startsWith("@1pizzateam/") && !pkg.private)
-          ')
-          if [ "$IS_PUBLISHABLE" != "true" ]; then
-            echo "Not a publishable @1pizzateam/* library; skipping automatic release."
+          set -eo pipefail
+          if [ ! -f package.json ]; then
+            echo "No package.json at the repository root; skipping automatic release."
             exit 0
           fi
+          ENGINE_SKILLS=/tmp/coding-pal-engine/skills
+          for needed in release-bump/scripts/classify-bump.mjs release-bump/scripts/prepare-release.mjs release-readiness/scripts/verify-release-readiness.mjs; do
+            [ -f "${ENGINE_SKILLS}/${needed}" ] || { echo "::error::Engine is missing ${needed}"; exit 1; }
+          done
 
           git fetch origin "$BASE_REF"
           git checkout "$BASE_REF"
@@ -1397,17 +1264,13 @@ jobs:
 
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title // ""')
-
-          # Decide the bump from what actually ships: build the candidate, then compare its npm
-          # tarball with the currently published one (see .agents/skills/release-bump/SKILL.md).
-          PKG_NAME=$(node -p "require('./package.json').name")
           ISSUE_LABELS=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '[.labels[].name] | join(",")' 2>/dev/null || true)
           PR_LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name] | join(",")' 2>/dev/null || true)
           ALL_LABELS="${ISSUE_LABELS},${PR_LABELS}"
 
           # Release train: issues sharing a milestone release together. Each merged issue waits in
           # Release until the last open issue of the milestone has merged (or `release:now` is set).
-          # See .agents/skills/release-bump/scripts/plan-batch.mjs. No milestone = release on its own.
+          # See skills/release-bump/scripts/plan-batch.mjs. No milestone = release on its own.
           MILESTONE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json milestone --jq '.milestone.title // ""' 2>/dev/null || true)
           MILESTONE_NUMBER=$(gh issue view "$ISSUE_NUMBER" --json milestone --jq '.milestone.number // ""' 2>/dev/null || true)
           TRAIN_COMPLETE=false
@@ -1418,7 +1281,7 @@ jobs:
             MERGED_PRS=$(gh pr list --state merged --limit 500 --json number,headRefName)
             BATCH_PLAN=$(jq -n --argjson issue "$ISSUE_NUMBER" --argjson issues "$MILESTONE_ISSUES" --argjson prs "$MERGED_PRS" --arg labels "$ALL_LABELS" \
               '{issueNumber: $issue, issues: $issues, mergedPrs: $prs, labels: ($labels | split(",") | map(select(length > 0)))}' \
-              | node .agents/skills/release-bump/scripts/plan-batch.mjs)
+              | node "${ENGINE_SKILLS}/release-bump/scripts/plan-batch.mjs")
             echo "$BATCH_PLAN"
             if [ "$(echo "$BATCH_PLAN" | jq -r '.hold')" = "true" ]; then
               PENDING=$(echo "$BATCH_PLAN" | jq -r '.pending | map("#" + tostring) | join(", ")')
@@ -1436,11 +1299,11 @@ jobs:
           fi
 
           # A PR that touches no shipped code (tests, docs, CI, housekeeping) never triggers a release by
-          # itself: master may carry earlier unreleased changes that would otherwise be blamed on it.
+          # itself: the base branch may carry earlier unreleased changes that would otherwise be blamed on it.
           # A milestone train release is exempt (its last member may be a test-only issue); `release:now` forces.
           if [ -z "$MILESTONE_TITLE" ] && ! echo ",${ALL_LABELS}," | grep -qi ',release:now,'; then
             PR_FILES=$(gh pr view "$PR_NUMBER" --json files --jq '.files[].path' 2>/dev/null || true)
-            if [ "$(printf '%s\n' "$PR_FILES" | node .agents/skills/release-bump/scripts/pr-ships.mjs)" = "false" ]; then
+            if [ "$(printf '%s\n' "$PR_FILES" | node "${ENGINE_SKILLS}/release-bump/scripts/pr-ships.mjs")" = "false" ]; then
               gh issue comment "$ISSUE_NUMBER" --body "$(printf '# No release\nPR #%s only changes tests, docs, CI or other non-shipping files, so it does not trigger a release. Any earlier unreleased change on `%s` ships with the next PR that changes shipped code.\n\nAdd the `release:now` label to force a release.' "$PR_NUMBER" "$BASE_REF")" || true
               echo "PR #${PR_NUMBER} touches no shipped files; skipping release."
               exit 0
@@ -1452,50 +1315,26 @@ jobs:
           done <<< "$BATCH_TITLES"
           export BATCH_TITLES
 
-          if node -p "Boolean(require('./package.json').scripts?.['build:lib'])" | grep -q true; then
-            npm run build:lib
-          else
-            npm run build
-          fi
-
-          # The post-bump rebuild below is only needed when the built output embeds the version.
-          REBUILD_AFTER_BUMP=false
-          if [ ! -d dist ] || grep -rqF -- "$CURRENT_VERSION" dist; then
-            REBUILD_AFTER_BUMP=true
-          fi
-
-          BUMP_DIR=$(mktemp -d)
-          mkdir -p "${BUMP_DIR}/next" "${BUMP_DIR}/prev" "${BUMP_DIR}/next-tgz" "${BUMP_DIR}/prev-tgz"
-          npm pack --ignore-scripts --silent --pack-destination "${BUMP_DIR}/next-tgz" >/dev/null
-          tar -xzf "${BUMP_DIR}"/next-tgz/*.tgz -C "${BUMP_DIR}/next" --strip-components=1
-
-          PREV_ARGS=()
-          if npm pack "${PKG_NAME}@${CURRENT_VERSION}" --ignore-scripts --silent --pack-destination "${BUMP_DIR}/prev-tgz" >/dev/null 2>"${BUMP_DIR}/prev-pack.err"; then
-            tar -xzf "${BUMP_DIR}"/prev-tgz/*.tgz -C "${BUMP_DIR}/prev" --strip-components=1
-            PREV_ARGS=(--prev "${BUMP_DIR}/prev")
-          elif grep -qE 'E404|404 Not Found' "${BUMP_DIR}/prev-pack.err"; then
-            echo "No published ${PKG_NAME}@${CURRENT_VERSION} found; classifying without a baseline."
-          else
-            cat "${BUMP_DIR}/prev-pack.err" >&2
-            echo "::error::Could not fetch the published baseline ${PKG_NAME}@${CURRENT_VERSION} from the registry; refusing to guess the version bump."
-            exit 1
-          fi
-
-          DECISION=$(node .agents/skills/release-bump/scripts/classify-bump.mjs \
-            --next "${BUMP_DIR}/next" ${PREV_ARGS[@]+"${PREV_ARGS[@]}"} \
+          # Decide the bump from what actually ships: intent (labels, titles, milestone name) sets the floor and
+          # the OpenAPI / Liquibase / env-template diff against the previous release tag can only raise it.
+          # See skills/release-bump/SKILL.md.
+          PREV_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          DECISION=$(node "${ENGINE_SKILLS}/release-bump/scripts/classify-bump.mjs" \
+            --repo-root "$PWD" \
+            --prev-ref "${PREV_TAG:-}" \
             --current-version "$CURRENT_VERSION" \
             "${TITLE_ARGS[@]}" \
             ${MILESTONE_TITLE:+--milestone "$MILESTONE_TITLE"} \
-            --labels "$ALL_LABELS" \
-            --ts-from "$PWD")
+            --labels "$ALL_LABELS")
           echo "$DECISION"
           BUMP_TYPE=$(echo "$DECISION" | jq -r '.bump')
           BUMP_REASON=$(echo "$DECISION" | jq -r '.reason')
+          NEW_VERSION=$(echo "$DECISION" | jq -r '.targetVersion // empty')
           SHIPPED_SUMMARY=$(echo "$DECISION" | jq -r '(.shippedChanges | map("- " + .) | join("\n"))')
 
           if [ "$(echo "$DECISION" | jq -r '.needsConfirmation')" = "true" ]; then
-            gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release blocked: breaking API change needs confirmation\nThe shipped API diff for `%s` is **major**, but nothing in the ticket declares it breaking.\n\n`%s`\n\nAdd the `breaking` label (or `release:major`) to this issue or PR, then re-run the release.' "$PKG_NAME" "$BUMP_REASON")" || true
-            echo "::error::Major API change detected without a breaking label/title marker. Add the 'breaking' label and re-run."
+            gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release blocked: breaking change needs confirmation\nThe shipped diff (OpenAPI, database migrations or environment variables) is **major**, but nothing in the ticket declares it breaking.\n\n`%s`\n\nAdd the `breaking` label (or `release:major`) to this issue or PR, then re-run the release.' "$BUMP_REASON")" || true
+            echo "::error::Major change detected without a breaking label/title marker. Add the 'breaking' label and re-run."
             exit 1
           fi
 
@@ -1507,197 +1346,81 @@ jobs:
             fi
           }
 
-          if [ "$BUMP_TYPE" = "none" ]; then
+          if [ "$BUMP_TYPE" = "none" ] || [ -z "$NEW_VERSION" ]; then
             close_finished_milestone
-            gh issue comment "$ISSUE_NUMBER" --body "$(printf '# No release\nNothing shipped in `%s` changed versus the published `%s` (docs, CI or test-only changes), so no new version was released.\n\n`%s`' "$PKG_NAME" "$CURRENT_VERSION" "$BUMP_REASON")" || true
-            echo "No shipped change versus ${PKG_NAME}@${CURRENT_VERSION}; skipping release."
+            gh issue comment "$ISSUE_NUMBER" --body "$(printf '# No release\nNothing shipped changed versus `%s`, so no new version was released.\n\n`%s`' "${PREV_TAG:-the previous release}" "$BUMP_REASON")" || true
+            echo "No shipped change versus ${PREV_TAG:-the previous release}; skipping release."
             exit 0
           fi
-
-          gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release decision: %s\n`%s`\n\nShipped changes versus `%s@%s`:\n%s' "$BUMP_TYPE" "$BUMP_REASON" "$PKG_NAME" "$CURRENT_VERSION" "$SHIPPED_SUMMARY")" || true
-
-          npm version "$BUMP_TYPE" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
           TAG_NAME="v${NEW_VERSION}"
-
-          if [ -f website/package.json ]; then
-            node -e '
-              const fs = require("fs");
-              const v = process.argv[1];
-              for (const f of ["website/package.json", "website/package-lock.json"]) {
-                if (!fs.existsSync(f)) continue;
-                const j = JSON.parse(fs.readFileSync(f, "utf8"));
-                j.version = v;
-                if (j.packages && j.packages[""]) j.packages[""].version = v;
-                fs.writeFileSync(f, JSON.stringify(j, null, 2) + "\n");
-              }
-            ' "$NEW_VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG_NAME}" >/dev/null 2>&1; then
+            echo "::error::Tag ${TAG_NAME} already exists on origin; refusing to release the same version twice."
+            exit 1
           fi
 
-          RELEASE_DATE=$(node -p '
-            const d = new Date();
-            const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-            const day = d.getUTCDate();
-            const suffix = (day % 10 === 1 && day !== 11) ? "st" : (day % 10 === 2 && day !== 12) ? "nd" : (day % 10 === 3 && day !== 13) ? "rd" : "th";
-            `${months[d.getUTCMonth()]} ${day}${suffix} ${d.getUTCFullYear()}`;
-          ')
+          gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release decision: %s\n`%s`\n\nNext version: `%s` (current `%s`).\n\nShipped changes since `%s`:\n%s' "$BUMP_TYPE" "$BUMP_REASON" "$NEW_VERSION" "$CURRENT_VERSION" "${PREV_TAG:-the beginning}" "$SHIPPED_SUMMARY")" || true
 
           # Everything shipping since the previous tag, not just this issue: earlier merges may be unreleased.
-          PREV_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
           CHANGE_SUBJECTS=$(git log --no-merges --format=%s ${PREV_TAG:+"${PREV_TAG}..HEAD"} \
             | grep -Eiv '^(chore\(release\)|test|docs|ci|style|build)(\(|:|!)' || true)
           export CHANGE_SUBJECTS
-
+          RELEASE_DATE=$(date -u +%Y-%m-%d)
           SPEC_DIR="specs/issue-${ISSUE_NUMBER}"
-          node -e '
-            const fs = require("fs");
-            const newVersion = process.argv[1];
-            const releaseDate = process.argv[2];
-            const specDir = process.argv[3];
-            const issueTitle = process.argv[4];
-            let bullets = [];
-            const strip = (t) => t.replace(/^(?:feat|fix|chore|refactor|perf|docs|test)(?:\([^)]+\))?!?:\s*/i, "");
-            const batch = (process.env.BATCH_TITLES || "").split("\n").map((t) => t.trim()).filter(Boolean);
-            const planPath = `${specDir}/plan.md`;
-            const subjects = [...new Set((process.env.CHANGE_SUBJECTS || "").split("\n")
-              .map((t) => strip(t.replace(/(\s+\(#\d+\))+$/, "").trim())).filter(Boolean))];
-            if (batch.length > 1) {
-              bullets = batch.map(strip);
-            } else if (subjects.length > 1) {
-              bullets = subjects.slice(0, 10);
-            } else if (fs.existsSync(planPath)) {
-              const plan = fs.readFileSync(planPath, "utf8");
-              const steps = [...plan.matchAll(/^### Step \d+:\s*(.+)$/gm)].map(m => m[1].trim());
-              if (steps.length) bullets = steps.slice(0, 5);
-            }
-            if (!bullets.length && issueTitle) {
-              bullets = [issueTitle.replace(/^(?:feat|fix|chore|refactor|perf|docs)(?:\([^)]+\))?:\s*/i, "")];
-            }
-            if (!bullets.length) bullets = [`Release v${newVersion}`];
-            const section = [
-              `Version ${newVersion} (${releaseDate})`,
-              "-----------------------------",
-              ...bullets.map(b => ` * ${b}`),
-              ""
-            ].join("\n");
-            const existing = fs.existsSync("CHANGELOG.md") ? fs.readFileSync("CHANGELOG.md", "utf8").trimStart() : "";
-            const unreleasedHeader = /^Version\s+(\S+)\s+\(unreleased\)[ \t]*\r?\n/i;
-            const unreleased = existing.match(unreleasedHeader);
-            if (unreleased) {
-              // Entries recorded by the Code agent while the release was pending: date them instead of regenerating.
-              if (unreleased[1] !== newVersion) {
-                console.warn(`Unreleased changelog section was ${unreleased[1]}, releasing as ${newVersion}`);
-              }
-              fs.writeFileSync("CHANGELOG.md", existing.replace(unreleasedHeader, `Version ${newVersion} (${releaseDate})\n`));
-            } else if (!existing.startsWith(`Version ${newVersion} `)) {
-              fs.writeFileSync("CHANGELOG.md", existing ? `${section}\n${existing}` : `${section}\n`);
-            }
-          ' "$NEW_VERSION" "$RELEASE_DATE" "$SPEC_DIR" "$ISSUE_TITLE"
 
-          if [ "$REBUILD_AFTER_BUMP" = "true" ]; then
-            if node -p "Boolean(require('./package.json').scripts?.['build:lib'])" | grep -q true; then
-              npm run build:lib
-            else
-              npm run build
-            fi
-          else
-            echo "Built output does not embed ${CURRENT_VERSION}; reusing the pre-bump build."
-          fi
+          # `main` is protected, so the version bump travels in a release PR instead of a direct push.
+          RELEASE_BRANCH="release/${TAG_NAME}"
+          git checkout -b "$RELEASE_BRANCH"
+          node "${ENGINE_SKILLS}/release-bump/scripts/prepare-release.mjs" \
+            --version "$NEW_VERSION" \
+            --date "$RELEASE_DATE" \
+            "${TITLE_ARGS[@]}" \
+            --specs-dir "$SPEC_DIR"
 
-          if ! node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs \
+          node "${ENGINE_SKILLS}/release-readiness/scripts/verify-release-readiness.mjs" \
             --mode release \
             --expected-version "$NEW_VERSION" \
-            --previous-version "$CURRENT_VERSION" \
-            --require-dist; then
-            export COPILOT_OTEL_ENABLED="true"
-            export COPILOT_OTEL_FILE_EXPORTER_PATH="${RUNNER_TEMP}/copilot-otel.jsonl"
-            rm -rf "${COPILOT_HOME:-$HOME/.copilot}/session-state" "$COPILOT_OTEL_FILE_EXPORTER_PATH" 2>/dev/null || true
+            --previous-version "$CURRENT_VERSION"
 
-            copilot --model="gpt-6-luna" --allow-all-tools \
-              --prompt "Repair release readiness for ${TAG_NAME} (bumped from ${CURRENT_VERSION}) for merged PR #${PR_NUMBER} / Issue #${ISSUE_NUMBER} (${ISSUE_TITLE}) following .agents/skills/release-readiness/SKILL.md.
-            1. Check that CHANGELOG.md starts with Version ${NEW_VERSION} (${RELEASE_DATE}) and all public runtime symbols exported from src/ are documented in website/docs/** (if website/docs exists) or README.md.
-            2. Run:
-               node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode release --expected-version ${NEW_VERSION} --previous-version ${CURRENT_VERSION} --require-dist
-               Fix any reported CHANGELOG.md, README.md, website/docs, or package.json issues until it exits 0. Do NOT create git commits or tags."
+          git add -- package.json CHANGELOG.md
+          for f in package-lock.json admin/package.json admin/package-lock.json web/package.json web/package-lock.json; do
+            [ -f "$f" ] && git add -- "$f"
+          done
+          git commit -m "chore(release): ${TAG_NAME} (for #${ISSUE_NUMBER}${BATCH_MEMBERS:+; milestone ${MILESTONE_TITLE}: ${BATCH_MEMBERS}})" -m "Version bump: ${BUMP_REASON}"
+          git push origin "$RELEASE_BRANCH"
 
-            STEP_COST_JSON=$(
-              {
-                for f in "${COPILOT_HOME:-$HOME/.copilot}"/session-state/*/events.jsonl "$COPILOT_OTEL_FILE_EXPORTER_PATH"; do
-                  [ -f "$f" ] && cat "$f" || true
-                done
-              } | jq -sc --arg step "Release Prep" '
-                def num(x): if (x | type) == "number" then x elif (x | type) == "string" then (x | tonumber? // 0) else 0 end;
-                ([.[] | select(.type? == "session.usage_record") | .data.usage | select(type == "object")]) as $urec |
-                ([.[] | select(.type? == "assistant.usage")]) as $ausg |
-                ([.[] | select(.type? == null and (."gen_ai.usage.input_tokens"? != null or .input_tokens? != null or .prompt_tokens? != null))]) as $otel |
-                (if ($urec | length) > 0 then $urec elif ($ausg | length) > 0 then $ausg else $otel end) as $recs |
-                def tok_in: [$recs[] | (.inputTokens? // .input_tokens? // .promptTokens? // .prompt_tokens? // ."gen_ai.usage.input_tokens"? // 0) | num(.)] | add // 0;
-                def tok_out: [$recs[] | (.outputTokens? // .output_tokens? // .completionTokens? // .completion_tokens? // ."gen_ai.usage.output_tokens"? // 0) | num(.)] | add // 0;
-                def tok_cache: [$recs[] | (.cacheReadTokens? // .cache_read_tokens? // .cached_tokens? // ."gen_ai.usage.cache_read.input_tokens"? // 0) | num(.)] | add // 0;
-                def tok_cache_write: [$recs[] | (.cacheWriteTokens? // .cache_write_tokens? // ."gen_ai.usage.cache_creation.input_tokens"? // 0) | num(.)] | add // 0;
-                def nano_aiu: [$recs[] | (.copilotUsage.totalNanoAiu? // .copilotUsage.total_nano_aiu? // .totalNanoAiu? // 0) | num(.)] | add // 0;
-                def explicit_cost: [$recs[] | (.cost_usd? // .total_cost_usd? // .costUsd? // .totalCostUsd? // ."gen_ai.usage.cost"? // 0) | num(.)] | add // 0;
-                def models: [$recs[] | (.model? // ."gen_ai.response.model"? // ."gen_ai.request.model"? // empty) | select(type == "string" and length > 0 and . != "auto")] | unique;
-                def model_str: (models | if length == 0 then "auto" else join(", ") end);
-                def rate_in(m): if (m | test("opus"; "i")) then 15.0 elif (m | test("haiku|mini|flash|nano|luna"; "i")) then 0.25 else 3.0 end;
-                def rate_out(m): if (m | test("opus"; "i")) then 75.0 elif (m | test("haiku|mini|flash|nano|luna"; "i")) then 1.25 else 15.0 end;
-                (tok_in) as $in | (tok_out) as $out | (tok_cache) as $cache | (tok_cache_write) as $cwrite | (nano_aiu) as $naiu | (model_str) as $m |
-                ([($in - $cache - $cwrite), 0] | max) as $uncached_in |
-                (if explicit_cost > 0 then explicit_cost
-                 elif $naiu > 0 then (($naiu / 1000000000.0) * 0.01)
-                 else (($uncached_in * rate_in($m) + $cwrite * (rate_in($m) * 1.25) + $cache * (rate_in($m) * 0.1) + $out * rate_out($m)) / 1000000.0)
-                 end) as $cost |
-                {
-                  step: $step,
-                  model: $m,
-                  input_tokens: $in,
-                  output_tokens: $out,
-                  cached_tokens: $cache,
-                  requests: (if ($recs | length) > 0 then ($recs | length) else 1 end),
-                  cost_usd: (($cost * 10000 | round) / 10000)
-                }
-              ' 2>/dev/null || echo '{"step":"Release Prep","model":"auto","input_tokens":0,"output_tokens":0,"cached_tokens":0,"requests":1,"cost_usd":0}'
-            )
-            rm -rf "${COPILOT_HOME:-$HOME/.copilot}"/session-state/* "${COPILOT_OTEL_FILE_EXPORTER_PATH}"
-            mkdir -p "$SPEC_DIR"
-            echo "$STEP_COST_JSON" >> "${SPEC_DIR}/ai-cost.jsonl"
-            echo "$STEP_COST_JSON" > "${SPEC_DIR}/ai-cost-pending.jsonl"
-            PRIOR_COST=$(gh issue view "$ISSUE_NUMBER" --json comments --jq '.comments[].body // empty' 2>/dev/null | sed -n 's/.*<!-- ai-cost-step:\({.*}\) -->.*/\1/p' | jq -sr '([.[].cost_usd // 0] | add // 0)' 2>/dev/null || echo "0")
-            echo "$STEP_COST_JSON" | jq -r --argjson prior "${PRIOR_COST:-0}" '
-              def fmt_usd(x): (x * 10000 | round / 10000) | tostring | if test("\\.") then (split(".") | .[0] + "." + ((.[1] + "0000")[0:4])) else . + ".0000" end;
-              ((.cost_usd // 0) + $prior) as $cum |
-              "\n\n---\n<!-- ai-cost-step:" + (. | tojson) + " -->\n💰 **AI Cost (" + .step + "):** `$" + fmt_usd(.cost_usd) + "` (`" + .model + "` · " + (.input_tokens | tostring) + " in / " + (.output_tokens | tostring) + " out tokens · " + (.requests | tostring) + (if .requests == 1 then " request" else " requests" end) + (if $prior > 0 then " · **Cumulative:** `$" + fmt_usd($cum) + "`" else "" end) + ")"
-            ' > "${SPEC_DIR}/ai-cost-step.md"
+          RELEASE_PR_URL=$(gh pr create --base "$BASE_REF" --head "$RELEASE_BRANCH" \
+            --title "chore(release): ${TAG_NAME}" \
+            --body "$(printf 'Automated release PR for %s (issue #%s%s).\n\nVersion bump: %s\n\nMerged by the delivery pipeline; the tag and the GitHub Release are created on the merge commit.' "$TAG_NAME" "$ISSUE_NUMBER" "${BATCH_MEMBERS:+, milestone ${MILESTONE_TITLE}: ${BATCH_MEMBERS}}" "$BUMP_REASON")")
+          RELEASE_PR="${RELEASE_PR_URL##*/}"
+          echo "Opened release PR #${RELEASE_PR}: ${RELEASE_PR_URL}"
 
-            node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs \
-              --mode release \
-              --expected-version "$NEW_VERSION" \
-              --previous-version "$CURRENT_VERSION" \
-              --require-dist
+          # A pipeline PR has no independent reviewer, so the pipeline identity merges through its branch-protection bypass.
+          gh pr merge "$RELEASE_PR" --squash --delete-branch || gh pr merge "$RELEASE_PR" --squash --delete-branch --admin
+
+          RELEASE_COMMIT=""
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            RELEASE_COMMIT=$(gh pr view "$RELEASE_PR" --json mergeCommit --jq '.mergeCommit.oid // empty')
+            [ -n "$RELEASE_COMMIT" ] && break
+            sleep 6
+          done
+          if [ -z "$RELEASE_COMMIT" ]; then
+            echo "::error::Release PR #${RELEASE_PR} did not produce a merge commit."
+            exit 1
           fi
 
-          npm publish --dry-run --access public
-
-          git add package.json CHANGELOG.md README.md
-          [ -f package-lock.json ] && git add package-lock.json
-          [ -d website ] && git add website
-          git commit -m "chore(release): ${TAG_NAME} (for #${ISSUE_NUMBER}${BATCH_MEMBERS:+; milestone ${MILESTONE_TITLE}: ${BATCH_MEMBERS}})" -m "Version bump: ${BUMP_REASON}"
-          git tag "$TAG_NAME"
-          git push origin "$BASE_REF" --follow-tags
-
-          RELEASE_COMMIT=$(git rev-parse HEAD)
-          echo "release_sha=${RELEASE_COMMIT}" >> "$GITHUB_OUTPUT"
-          echo "release_tag=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          PRERELEASE_FLAG=()
+          case "$NEW_VERSION" in *-*) PRERELEASE_FLAG=(--prerelease) ;; esac
           gh release create "$TAG_NAME" \
             --target "$RELEASE_COMMIT" \
             --title "$TAG_NAME" \
-            --generate-notes
+            --generate-notes \
+            ${PRERELEASE_FLAG[@]+"${PRERELEASE_FLAG[@]}"}
+
+          echo "release_sha=${RELEASE_COMMIT}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${TAG_NAME}" >> "$GITHUB_OUTPUT"
           close_finished_milestone
-          if [ -s "${SPEC_DIR}/ai-cost-step.md" ]; then
-            gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release: %s\nPrepared release commit `%s` for #%s.%s' "$TAG_NAME" "$RELEASE_COMMIT" "$ISSUE_NUMBER" "$(cat "${SPEC_DIR}/ai-cost-step.md")")"
-            rm -f "${SPEC_DIR}/ai-cost-pending.jsonl" "${SPEC_DIR}/ai-cost-step.md"
-          fi
-          echo "Created verified GitHub Release ${TAG_NAME} on ${BASE_REF} to trigger publish-npm.yml."
+          gh issue comment "$ISSUE_NUMBER" --body "$(printf '# Release: %s\nRelease PR #%s merged as `%s`; GitHub Release %s created. The repository publish workflow builds the container images.' "$TAG_NAME" "$RELEASE_PR" "$RELEASE_COMMIT" "$TAG_NAME")"
+          echo "Created GitHub Release ${TAG_NAME} on ${BASE_REF}; the publish workflow runs on release publication."
 
       - name: Start Release
         id: start_release
@@ -1712,6 +1435,8 @@ jobs:
           BATCH_MEMBERS: ${{ steps.release.outputs.batch_members }}
           DEPLOYMENT_WORKFLOW: ${{ inputs.deployment_workflow }}
           DEPLOYMENT_PATHS: ${{ inputs.deployment_paths }}
+          PUBLISH_WORKFLOW: ${{ inputs.publish_workflow }}
+          DEPLOYMENT_EVENT: ${{ inputs.deployment_event }}
           PROJECT_TITLE: ${{ inputs.project_title }}
         run: |
           if [ "$RELEASE_HELD" = "true" ]; then
@@ -1739,6 +1464,8 @@ jobs:
               -f release_tag="${RELEASE_TAG:-}" \
               -f project_title="$PROJECT_TITLE" \
               -f deployment_workflow="$DEPLOYMENT_WORKFLOW" \
+              -f publish_workflow="$PUBLISH_WORKFLOW" \
+              -f deployment_event="$DEPLOYMENT_EVENT" \
               -f deployment_paths="$DEPLOYMENT_PATHS" \
               ${BATCH_OTHERS:+-f batch_issues="$BATCH_OTHERS"}
             echo "dispatched=true" >> "$GITHUB_OUTPUT"
@@ -1776,7 +1503,7 @@ jobs:
             cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
             TARGET_STATUS=Done bash -eo pipefail "$RUNNER_TEMP/prove-project-status.sh"
             for member in $BATCH_OTHERS; do
-              gh issue comment "$member" --body "Milestone train complete (no new npm version was needed). Closed out together with #${ISSUE_NUMBER}." || true
+              gh issue comment "$member" --body "Milestone train complete (no new version was needed). Closed out together with #${ISSUE_NUMBER}." || true
               ISSUE_NUMBER="$member" TARGET_STATUS=Done bash -eo pipefail "$RUNNER_TEMP/prove-project-status.sh" || true
             done
             echo "dispatched=false" >> "$GITHUB_OUTPUT"

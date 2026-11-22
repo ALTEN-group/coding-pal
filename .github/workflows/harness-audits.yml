@@ -1,18 +1,12 @@
 name: Harness audits
 
+# Audits the automation of this repository itself (agent, skill and workflow token waste) with the shared audit engine.
+
 on:
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
-      audit:
-        description: 'Audit to run'
-        type: choice
-        required: true
-        default: all
-        options:
-          - all
-          - token-audit
       scope:
         description: 'Path to audit (e.g. . for the whole repository)'
         type: string
@@ -24,8 +18,11 @@ permissions:
 
 jobs:
   token-audit:
-    if: (github.event_name == 'workflow_dispatch' && (inputs.audit == 'all' || inputs.audit == 'token-audit')) || (github.event_name == 'schedule' && !github.event.repository.private && github.event.schedule == '0 6 * * 1')
-    uses: 1pizzateam/coding-pal/.github/workflows/audit-token.yml@main
+    if: github.event_name == 'workflow_dispatch' || !github.event.repository.private
+    uses: ./.github/workflows/audit-runner.yml
     with:
+      agent: token-audit
       scope: ${{ inputs.scope || '.' }}
+      engine_repo: ${{ github.repository }}
+      engine_ref: ${{ github.sha }}
     secrets: inherit

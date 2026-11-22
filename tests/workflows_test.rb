@@ -63,13 +63,16 @@ class WorkflowsTest < Minitest::Test
       'inputs.release_tag' => '',
       'inputs.deployment_workflow' => '',
       'inputs.deployment_paths' => '',
-      'inputs.package' => '@1pizzateam/spock',
-      'inputs.version' => '1.2.3',
-      'inputs.upstream_repo' => '1pizzateam/Spock.js',
+      'inputs.publish_workflow' => 'publish.yml',
+      'inputs.deployment_event' => 'push',
+      'inputs.engine_repo' => 'ALTEN-group/coding-pal',
+      'inputs.engine_ref' => '',
+      'job.workflow_sha' => '',
+      'vars.FLEET_REPOS' => '',
       'inputs.agent' => 'dead-code',
       'inputs.scope' => 'src/',
       'inputs.prompt' => '',
-      'inputs.target' => 'libraries',
+      'inputs.target' => 'all',
       'inputs.audit' => 'all',
       'inputs.dependency' => 'all',
       'env.ISSUE_NUMBER' => '42',
@@ -187,7 +190,7 @@ class WorkflowsTest < Minitest::Test
   end
 
   def test_copilot_and_github_credentials_are_separate
-    workflows = (PHASES + %w[release publish-npm upstream-resume]).map { |phase| workflow(phase) }
+    workflows = (PHASES + %w[release]).map { |phase| workflow(phase) }
     workflows << YAML.load_file(File.join(ROOT, '.github/workflows/audit-runner.yml'))
     workflows.each do |current|
       triggers = current['on'] || current.fetch(true)
@@ -215,7 +218,7 @@ class WorkflowsTest < Minitest::Test
         end
       end
     end
-    (PHASES + %w[release upstream-resume]).each do |phase|
+    (PHASES + %w[release]).each do |phase|
       current = workflow(phase)
       triggers = current['on'] || current.fetch(true)
       assert triggers.dig('workflow_call', 'secrets', 'PIPELINE_GITHUB_TOKEN', 'required')
@@ -237,7 +240,6 @@ class WorkflowsTest < Minitest::Test
       'pipeline-plan.yml: Fetch issue context and run Planner agent' => ['${ISSUE_AI_MODEL:-claude-sonnet-5.5}', '${ISSUE_AI_MODEL:-claude-sonnet-5.5}'],
       'pipeline-code.yml: Run Code Agent to implement plan.md and prepare pr.md' => ['${ISSUE_AI_MODEL:-claude-sonnet-5.5}', '${ISSUE_AI_MODEL:-claude-sonnet-5.5}'],
       'pipeline-prove.yml: Run Prove validation and auto-remediation loop' => ['${ISSUE_AI_MODEL:-claude-sonnet-5.5}', '${ISSUE_AI_MODEL:-claude-sonnet-5.5}'],
-      'pipeline-prove.yml: Auto-release merged @1pizzateam/* library version' => ['gpt-6-luna'],
       'audit-runner.yml: Run ${{ inputs.agent }} agent' => ['gemini-3.8-flash']
     }
     actual_models = Hash.new { |h, k| h[k] = [] }
@@ -262,20 +264,8 @@ class WorkflowsTest < Minitest::Test
         end
       end
     end
-    assert_equal 10, calls.length
+    assert_equal 9, calls.length
     assert_equal expected_models, actual_models
-  end
-
-  def test_publish_checks_pipeline_credentials_before_publishing
-    entries = workflow('publish-npm').fetch('jobs').fetch('publish').fetch('steps')
-    check = entries.find { |entry| entry['name'] == 'Check downstream notification credentials' }
-    assert_equal 'inputs.dry_run != true', check.fetch('if')
-    assert_operator entries.index(check), :<, entries.index { |entry| entry['name'] == 'Publish package to npm' }
-    run_step(check, scenario, { 'GH_TOKEN' => '' }, success: false)
-    assert_includes @stdout, '::error::PIPELINE_GITHUB_TOKEN'
-    assert_empty @calls
-    run_step(check, scenario)
-    assert_empty @calls
   end
 
   def test_shared_workflow_references_resolve_to_existing_files
@@ -286,9 +276,9 @@ class WorkflowsTest < Minitest::Test
     paths.uniq.each do |path|
       YAML.load_file(path).fetch('jobs').each_value do |job|
         reference = job['uses'].to_s
-        prefix = '1pizzateam/coding-pal/'
-        next unless reference.start_with?(prefix)
-        relative = reference.delete_prefix(prefix).split('@').first
+        prefix = 'ALTEN-group/coding-pal/'
+        next unless reference.start_with?(prefix, './')
+        relative = reference.delete_prefix(prefix).delete_prefix('./').split('@').first
         assert File.file?(File.join(ROOT, relative)), "#{path}: missing reusable workflow #{reference}"
       end
     end
@@ -450,7 +440,7 @@ class WorkflowsTest < Minitest::Test
     [
       "# Queued\nIssue(s) #67 are already in flight, so this issue is marked `ready` instead of being coded on a stale main.",
       'Started by the chain (5.0.0) after #41 merged.',
-      'Milestone train complete (no new npm version was needed). Closed out together with #41.',
+      'Milestone train complete (no new version was needed). Closed out together with #41.',
       'Released together with #41 in v5.0.0: milestone train published.'
     ].each do |own_comment|
       comments = base + [own_comment]
@@ -882,7 +872,7 @@ class WorkflowsTest < Minitest::Test
   def test_done_is_success_gated_and_after_release_preparation
     prove_entries = steps('prove')
     start_release = prove_entries.find { |entry| entry['id'] == 'start_release' }
-    assert_operator prove_entries.index(start_release), :>, prove_entries.index { |entry| entry['name'].to_s.start_with?('Auto-release merged') }
+    assert_operator prove_entries.index(start_release), :>, prove_entries.index { |entry| entry['name'].to_s.start_with?('Release merged service version') }
     entries = steps('release')
     done = status_step('release', 'Done')
     refute_match(/always\(|failure\(/, done.fetch('if'))
@@ -1023,7 +1013,7 @@ class WorkflowsTest < Minitest::Test
     File.read(File.join(@directory, 'reports/release.md'))
   end
 
-  def test_doomr_waits_for_exact_merge_deployment_not_an_unrelated_success
+  def test_deployment_waits_for_exact_merge_push_not_an_unrelated_success
     wrong_sha = release_run('older-sha', 'push')
     wrong_event = release_run('merge-sha', 'workflow_dispatch', id: 102)
     stale = release_run('merge-sha', 'push', id: 103, created: '2026-01-01T00:00:00Z')
@@ -1044,13 +1034,13 @@ class WorkflowsTest < Minitest::Test
     end
   end
 
-  def test_library_waits_for_npm_and_documentation_at_release_revision
+  def test_service_waits_for_publish_workflow_and_documentation_at_release_revision
     report = run_release_completion({
-      'publish-npm.yml' => [[release_run('release-sha', 'release')]],
+      'publish.yml' => [[release_run('release-sha', 'release')]],
       'deploy-docs.yml' => [[release_run('release-sha', 'push', id: 102)]]
     }, { 'RELEASE_SHA' => 'release-sha', 'RELEASE_TAG' => 'v1.2.3', 'DEPLOYMENT_WORKFLOW' => 'deploy-docs.yml' })
     assert_includes report, 'GitHub Release: v1.2.3'
-    assert_includes report, 'publish-npm.yml'
+    assert_includes report, 'publish.yml'
     assert_includes report, 'deploy-docs.yml'
     assert_includes report, 'All required release workflows succeeded'
     assert_equal 2, @calls.count { |args| args.first == 'api' }
@@ -1059,7 +1049,7 @@ class WorkflowsTest < Minitest::Test
   def test_failed_cancelled_or_skipped_release_does_not_pass
     %w[failure cancelled skipped timed_out action_required].each do |conclusion|
       report = run_release_completion(
-        { 'publish-npm.yml' => [[release_run('release-sha', 'release', conclusion: conclusion)]] },
+        { 'publish.yml' => [[release_run('release-sha', 'release', conclusion: conclusion)]] },
         { 'RELEASE_SHA' => 'release-sha', 'RELEASE_TAG' => 'v1.2.3' }, success: false
       )
       assert_includes report, conclusion
@@ -1069,15 +1059,185 @@ class WorkflowsTest < Minitest::Test
     end
   end
 
-  def test_successful_npm_publish_does_not_hide_failed_documentation_deployment
+  def test_successful_image_publish_does_not_hide_failed_documentation_deployment
     report = run_release_completion({
-      'publish-npm.yml' => [[release_run('release-sha', 'release')]],
+      'publish.yml' => [[release_run('release-sha', 'release')]],
       'deploy-docs.yml' => [[release_run('release-sha', 'push', id: 102, conclusion: 'failure')]]
     }, { 'RELEASE_SHA' => 'release-sha', 'RELEASE_TAG' => 'v1.2.3', 'DEPLOYMENT_WORKFLOW' => 'deploy-docs.yml' },
                                        success: false)
-    assert_includes report, 'publish-npm.yml, run 101: https://example.test/actions/runs/101 — success'
+    assert_includes report, 'publish.yml, run 101: https://example.test/actions/runs/101 — success'
     assert_includes report, 'deploy-docs.yml, run 102: https://example.test/actions/runs/102 — failure'
     assert_includes report, 'Issue stays in Release'
+  end
+
+  # Fakes for the commands the release step runs besides gh: git, node (the engine's release-bump scripts), date.
+  def install_release_fakes
+    bin = File.join(@directory, 'bin')
+    date = ENV.fetch('PATH').split(File::PATH_SEPARATOR).map { |dir| File.join(dir, 'date') }.find { |path| File.executable?(path) }
+    File.symlink(date, File.join(bin, 'date')) unless File.exist?(File.join(bin, 'date'))
+    log = "require 'json'\nFile.open(ENV.fetch('TEST_CALLS'), 'a') { |f| f.puts(JSON.generate([File.basename($0)] + ARGV)) }\n"
+    {
+      'git' => <<~RUBY,
+        case ARGV.first
+        when 'describe' then puts ENV.fetch('FAKE_PREV_TAG', 'v1.2.2')
+        when 'ls-remote' then exit 2
+        when 'log' then puts 'feat: ship something'
+        end
+      RUBY
+      'node' => <<~RUBY
+        script = File.basename(ARGV[0].to_s)
+        $stdin.read if %w[plan-batch.mjs pr-ships.mjs].include?(script) # piped input; elsewhere stdin is the step script itself
+        if ARGV[0] == '-p' then puts '1.2.2'
+        elsif script == 'plan-batch.mjs' then puts ENV.fetch('FAKE_BATCH')
+        elsif script == 'classify-bump.mjs' then puts ENV.fetch('FAKE_DECISION')
+        elsif script == 'pr-ships.mjs' then puts 'true'
+        end
+      RUBY
+    }.each do |name, body|
+      path = File.join(bin, name)
+      File.write(path, "#!#{RbConfig.ruby}\n#{log}#{body}")
+      File.chmod(0o755, path)
+    end
+    engine = File.join(@directory, 'engine/skills')
+    %w[release-bump/scripts/classify-bump.mjs release-bump/scripts/prepare-release.mjs
+       release-readiness/scripts/verify-release-readiness.mjs].each do |relative|
+      FileUtils.mkdir_p(File.dirname(File.join(engine, relative)))
+      File.write(File.join(engine, relative), '')
+    end
+    File.write(File.join(@directory, 'package.json'), '{"name":"@alten-group/megadex","version":"1.2.2"}')
+    engine
+  end
+
+  def run_service_release(decision:, batch: nil, milestone: true, success: true)
+    engine = install_release_fakes
+    entry = step('prove', 'release')
+    assert_includes entry.fetch('run'), 'ENGINE_SKILLS=/tmp/coding-pal-engine/skills'
+    script = entry.fetch('run').sub('ENGINE_SKILLS=/tmp/coding-pal-engine/skills', "ENGINE_SKILLS=#{engine}")
+    issue = { 'title' => 'feat: add export endpoint', 'labels' => [], 'comments' => [] }
+    issue['milestone'] = { 'title' => 'Train 1.3', 'number' => 7 } if milestone
+    data = scenario([], prs: [], issues: [{ 'number' => 41, 'title' => 'feat: a', 'state' => 'CLOSED', 'labels' => [] }],
+                        pr: { 'labels' => [], 'files' => [{ 'path' => 'src/export.js' }], 'mergeCommit' => { 'oid' => 'release-merge-sha' } })
+    data['issue'] = issue
+    environment = { 'BASE_REF' => 'main', 'FAKE_DECISION' => JSON.generate(decision), 'FAKE_BATCH' => JSON.generate(batch || {}) }
+    output = run_step(entry.merge('run' => script), data, environment, success: success)
+    @gh = @calls.reject { |args| %w[git node].include?(args.first) }
+    @commands = @calls.map { |args| args.first(2).join(' ') }
+    output
+  end
+
+  def release_decision(version, bump: 'minor', confirmation: false)
+    { 'bump' => bump, 'reason' => 'feature added', 'targetVersion' => version, 'needsConfirmation' => confirmation,
+      'shippedChanges' => ['GET /export'] }
+  end
+
+  def test_release_step_opens_release_pr_merges_it_and_creates_the_github_release_on_the_merge_commit
+    batch = { 'hold' => false, 'pending' => [], 'members' => [41, 42], 'labels' => ['feature'], 'titles' => ['feat: a', 'feat: b'] }
+    output = run_service_release(decision: release_decision('1.3.0'), batch: batch)
+    assert_equal 'v1.3.0', output.fetch('release_tag')
+    assert_equal 'release-merge-sha', output.fetch('release_sha')
+    assert_equal '41 42', output.fetch('batch_members')
+    refute output.key?('held')
+    order = [
+      'node -', 'git checkout', 'git push', 'pr create', 'pr merge', 'release create'
+    ].map { |prefix| @commands.rindex { |command| command.start_with?(prefix) } }
+    refute_includes order, nil
+    assert_equal order.sort, order, 'classify/branch -> push -> release PR -> merge -> GitHub Release'
+    prepare = @calls.find { |args| args.first == 'node' && args[1].to_s.end_with?('prepare-release.mjs') }
+    assert_includes prepare, '1.3.0'
+    assert_operator @calls.index { |args| args[1].to_s.end_with?('classify-bump.mjs') }, :<, @calls.index(prepare)
+    assert_includes @calls, ['git', 'checkout', '-b', 'release/v1.3.0']
+    assert_includes @calls, ['git', 'push', 'origin', 'release/v1.3.0']
+    create = @gh.find { |args| args.first(2) == %w[pr create] }
+    assert_equal 'release/v1.3.0', create[create.index('--head') + 1]
+    assert_equal 'main', create[create.index('--base') + 1]
+    assert_equal 'chore(release): v1.3.0', create[create.index('--title') + 1]
+    merges = @gh.select { |args| args.first(2) == %w[pr merge] }
+    assert_equal [['pr', 'merge', '99', '--squash', '--delete-branch']], merges, 'Plain merge first; --admin only as the fallback'
+    release = @gh.find { |args| args.first(2) == %w[release create] }
+    assert_equal ['release', 'create', 'v1.3.0', '--target', 'release-merge-sha', '--title', 'v1.3.0', '--generate-notes'], release
+    assert @gh.any? { |args| args.first == 'api' && args.include?('PATCH') && args.join(' ').include?('milestones/7') && args.include?('state=closed') },
+           'A finished train closes its milestone'
+  end
+
+  def test_release_step_marks_versions_with_a_prerelease_suffix_as_prerelease
+    run_service_release(decision: release_decision('2.0.0-rc.1', bump: 'major'), milestone: false)
+    release = @gh.find { |args| args.first(2) == %w[release create] }
+    assert_includes release, '--prerelease'
+    assert_equal 'v2.0.0-rc.1', release[2]
+    assert @gh.any? { |args| args.first(2) == %w[pr create] && args.include?('release/v2.0.0-rc.1') }
+  end
+
+  def test_release_step_holds_a_pending_milestone_train_without_releasing
+    batch = { 'hold' => true, 'pending' => [43, 44], 'members' => [41, 42], 'labels' => [], 'titles' => [] }
+    output = run_service_release(decision: release_decision('1.3.0'), batch: batch)
+    assert_equal 'true', output.fetch('held')
+    refute output.key?('release_tag')
+    comment = @gh.find { |args| args.first(2) == %w[issue comment] }
+    assert_includes comment.last, '# Release held: milestone Train 1.3'
+    assert_includes comment.last, '#43, #44'
+    refute @gh.any? { |args| %w[pr release].include?(args.first) && %w[create merge].include?(args[1]) }
+    refute @calls.any? { |args| args.first == 'git' && (args[1] == 'push' || args.first(3) == %w[git checkout -b]) }
+    refute @calls.any? { |args| args[1].to_s.end_with?('classify-bump.mjs') }, 'The bump is only decided once the train is complete'
+  end
+
+  def test_release_step_with_no_bump_reports_no_release_and_publishes_nothing
+    output = run_service_release(decision: release_decision(nil, bump: 'none'), milestone: false)
+    refute output.key?('release_tag')
+    comment = @gh.find { |args| args.first(2) == %w[issue comment] }
+    assert_includes comment.last, '# No release'
+    refute @gh.any? { |args| %w[pr release].include?(args.first) && %w[create merge].include?(args[1]) }
+    refute @calls.any? { |args| args.first == 'git' && (args[1] == 'push' || args.first(3) == %w[git checkout -b]) }
+  end
+
+  def test_release_step_refuses_an_unconfirmed_major_bump
+    run_service_release(decision: release_decision('2.0.0', bump: 'major', confirmation: true), milestone: false, success: false)
+    assert_includes @gh.find { |args| args.first(2) == %w[issue comment] }.last, '# Release blocked'
+    refute @gh.any? { |args| args.first(2) == %w[release create] || args.first(2) == %w[pr create] }
+  end
+
+  def test_start_release_dispatches_release_workflow_with_publish_and_deployment_settings
+    status_script = status_step('prove', 'Prove').fetch('run').split("<<'STATUS_SCRIPT'\n", 2).last.split("\nSTATUS_SCRIPT", 2).first
+    File.write(File.join(@directory, 'prove-project-status.sh'), status_script)
+    entry = step('prove', 'start_release')
+    run_step(entry, scenario([], project: project), release_environment.merge(
+      'RELEASE_SHA' => 'release-merge-sha', 'RELEASE_TAG' => 'v1.3.0', 'DEPLOYMENT_WORKFLOW' => 'deploy-docs.yml',
+      'DEPLOYMENT_EVENT' => 'release', 'RELEASE_HELD' => '', 'BATCH_MEMBERS' => '41 42'
+    ))
+    dispatch = dispatches.fetch(0)
+    assert_equal 'release.yml', dispatch[2]
+    %w[publish_workflow=publish.yml deployment_event=release deployment_workflow=deploy-docs.yml
+       release_sha=release-merge-sha release_tag=v1.3.0 batch_issues=41].each do |pair|
+      assert_includes dispatch, pair
+    end
+    refute dispatch.any? { |arg| arg.include?('npm') }
+    held = run_step(entry, scenario([], project: project), release_environment.merge('RELEASE_HELD' => 'true'))
+    assert_equal 'false', held.fetch('dispatched')
+    assert_empty dispatches
+  end
+
+  def test_release_event_deployment_is_awaited_at_the_release_commit_only_when_a_release_exists
+    runs = {
+      'publish.yml' => [[release_run('release-sha', 'release')]],
+      'deploy-pages.yml' => [[release_run('release-sha', 'release', id: 102)]]
+    }
+    environment = { 'DEPLOYMENT_WORKFLOW' => 'deploy-pages.yml', 'DEPLOYMENT_EVENT' => 'release',
+                    'DEPLOYMENT_PATHS' => "website/\n", 'RELEASE_SHA' => 'release-sha', 'RELEASE_TAG' => 'v1.2.3' }
+    report = run_release_completion(runs, environment)
+    assert_includes report, 'deploy-pages.yml, run 102: https://example.test/actions/runs/102'
+    assert_includes report, 'All required release workflows succeeded'
+    polls = @calls.select { |args| args.first == 'api' }.map { |args| args[1] }
+    assert polls.any? { |url| url.include?('workflows/publish.yml/runs?event=release&head_sha=release-sha') }
+    assert polls.any? { |url| url.include?('workflows/deploy-pages.yml/runs?event=release&head_sha=release-sha') }
+    refute polls.any? { |url| url.include?('event=push') }, 'Release-event deployments must not use the push path filter'
+
+    failing = { 'publish.yml' => runs['publish.yml'],
+                'deploy-pages.yml' => [[release_run('release-sha', 'release', id: 102, conclusion: 'failure')]] }
+    report = run_release_completion(failing, environment, success: false)
+    assert_includes report, 'Issue stays in Release'
+
+    report = run_release_completion({}, environment.merge('RELEASE_SHA' => '', 'RELEASE_TAG' => ''))
+    assert_includes report, 'Deployment not applicable'
+    refute @calls.any? { |args| args.first == 'api' }, 'No release commit means nothing to await'
   end
 
   def test_release_revision_and_reports_are_persisted
@@ -1143,9 +1303,9 @@ class WorkflowsTest < Minitest::Test
     prepare_stale_pr
     run_freshness_script('Refresh PR branch against latest base')
     FileUtils.mkdir_p(File.join(@repository, 'src'))
-    File.write(File.join(@repository, 'src/library.js'), 'export const value = 1;')
+    File.write(File.join(@repository, 'src/service.js'), 'export const value = 1;')
     git_command('add', '.')
-    git_command('commit', '-m', 'Library implementation')
+    git_command('commit', '-m', 'Service implementation')
     merge_sha = git_command('rev-parse', 'HEAD')
     File.write(File.join(@repository, 'CHANGELOG.md'), 'New release')
     git_command('add', '.')
@@ -1157,7 +1317,7 @@ class WorkflowsTest < Minitest::Test
       'PROVE_BASE_SHA' => @base_sha
     )
     data = scenario([], release_runs: {
-      'publish-npm.yml' => [[release_run(release_sha, 'release')]],
+      'publish.yml' => [[release_run(release_sha, 'release')]],
       'deploy-docs.yml' => [[release_run(merge_sha, 'push')]]
     })
     run_freshness_script('Wait for publication and deployment before Done', data: data, **environment.transform_keys(&:to_sym))
@@ -1169,7 +1329,7 @@ class WorkflowsTest < Minitest::Test
     git_command('commit', '-m', 'Release website metadata')
     release_sha = git_command('rev-parse', 'HEAD')
     data['release_runs'] = {
-      'publish-npm.yml' => [[release_run(release_sha, 'release')]],
+      'publish.yml' => [[release_run(release_sha, 'release')]],
       'deploy-docs.yml' => [[release_run(release_sha, 'push')]]
     }
     run_freshness_script('Wait for publication and deployment before Done', data: data,
@@ -1191,9 +1351,11 @@ class WorkflowsTest < Minitest::Test
   end
 
   def test_autonomous_decision_validation_is_installed_for_think
-    install = steps('think').find { |entry| entry['name'] == 'Install ALTEN-group/coding-pal think primitives' }.fetch('run')
-    assert_includes install, 'cp -R /tmp/alten-coding-pal/skills/decision-record .agents/skills/decision-record'
-    assert_includes install, 'cp /tmp/alten-coding-pal/instructions/decision-record.instructions.md .github/instructions/'
+    assert_includes install_step('think').fetch('run'), 'install-primitives.sh" --stage think'
+    definition = stage_definitions.fetch('think')
+    assert_includes definition.fetch(:skills), 'decision-record'
+    assert_includes definition.fetch(:instructions), 'decision-record'
+    assert File.file?(File.join(ROOT, 'skills/decision-record/scripts/validate-decision.mjs'))
   end
 
   def test_high_risk_automated_metadata_is_checked_before_merge
@@ -1371,11 +1533,7 @@ class WorkflowsTest < Minitest::Test
 
     def test_project_wrapper_contracts
       projects = {
-        'BumpR.js' => 'BumpR', 'Cadenza' => 'Cadenza', 'DoomR.js' => 'DoomR',
-        'FaceGun' => 'FaceGun', 'FaceR.js' => 'FaceR', 'GroovR.js' => 'GroovR',
-        'LoopR.js' => 'LoopR', 'MappR' => 'MappR', 'PixelGun' => 'PixelGun',
-        'PolyGun' => 'PolyGun', 'RoostR.js' => 'RoostR', 'ShaderGun' => 'ShaderGun',
-        'Spock.js' => 'Spock'
+        'Megadex' => 'Megadex', 'Foxnox' => 'Foxnox', 'Gatelin' => 'Gatelin'
       }
       projects.each do |repository, title|
         directory = File.join(ENV.fetch('PROJECT_WORKFLOWS_ROOT'), repository, '.github/workflows')
@@ -1392,7 +1550,7 @@ class WorkflowsTest < Minitest::Test
                    "github.event.label.name == '1-think')"
         assert_equal expected, job.fetch('if').split.join(' '), repository
         assert_equal title, job.fetch('with').fetch('project_title')
-        assert_equal '1pizzateam/coding-pal/.github/workflows/pipeline-think.yml@main', job.fetch('uses')
+        assert_equal 'ALTEN-group/coding-pal/.github/workflows/pipeline-think.yml@main', job.fetch('uses')
         %w[plan code prove].each do |phase|
           current = YAML.load_file(File.join(directory, "#{phase}.yml"))
           job = current.fetch('jobs').fetch(phase)
@@ -1423,16 +1581,15 @@ class WorkflowsTest < Minitest::Test
         end
         code = YAML.load_file(File.join(directory, 'code.yml'))
         prove_wrapper = YAML.load_file(File.join(directory, 'prove.yml'))
-        expected_npm_release = %w[BumpR.js FaceR.js GroovR.js LoopR.js RoostR.js Spock.js].include?(repository)
         prove = code.fetch('jobs').fetch('prove')
         assert_equal 'code', prove.fetch('needs')
         assert_equal "needs.code.outputs.continue_to_prove == 'true'", prove.fetch('if')
-        assert_equal '1pizzateam/coding-pal/.github/workflows/pipeline-prove.yml@main', prove.fetch('uses')
+        assert_equal 'ALTEN-group/coding-pal/.github/workflows/pipeline-prove.yml@main', prove.fetch('uses')
         assert_equal '${{ github.run_id }}', prove.dig('with', 'workflow_run_id')
         assert_equal title, prove.dig('with', 'project_title')
         assert_equal 'inherit', prove.fetch('secrets')
-        assert_equal expected_npm_release, prove.dig('with', 'auto_release_npm'), "#{repository} code.yml"
-        assert_equal expected_npm_release, prove_wrapper.dig('jobs', 'prove', 'with', 'auto_release_npm'), "#{repository} prove.yml"
+        refute prove.fetch('with').key?('auto_release_npm'), "#{repository} code.yml"
+        refute prove_wrapper.dig('jobs', 'prove', 'with').key?('auto_release_npm'), "#{repository} prove.yml"
         audits = YAML.load_file(File.join(directory, 'audits.yml'))
         assert_equal 'Audit - Run audit', audits.fetch('name')
         audit_triggers = audits['on'] || audits.fetch(true)
@@ -1446,13 +1603,10 @@ class WorkflowsTest < Minitest::Test
           assert_includes audit_job.fetch('if'), '!github.event.repository.private',
                           "#{repository} audits.yml #{job_name} must block scheduled runs on private repositories"
         end
-        resume = YAML.load_file(File.join(directory, 'upstream-resume.yml'))
-        assert_equal 'Pipeline - Resume upstream', resume.fetch('name'), "#{repository} upstream-resume.yml"
-        assert_equal '1pizzateam/coding-pal/.github/workflows/pipeline-upstream-resume.yml@main',
-                     resume.dig('jobs', 'resume', 'uses'), "#{repository} upstream-resume.yml"
+        refute File.exist?(File.join(directory, 'upstream-resume.yml')), "#{repository} must not keep the upstream-resume wrapper"
         release_wrapper = YAML.load_file(File.join(directory, 'release.yml'))
         assert_equal 'Pipeline - Release', release_wrapper.fetch('name'), "#{repository} release.yml"
-        assert_equal '1pizzateam/coding-pal/.github/workflows/pipeline-release.yml@main',
+        assert_equal 'ALTEN-group/coding-pal/.github/workflows/pipeline-release.yml@main',
                      release_wrapper.dig('jobs', 'release', 'uses'), "#{repository} release.yml"
         refute release_wrapper.key?('concurrency'), "#{repository} release.yml must not share the delivery concurrency lock"
       end
@@ -1502,53 +1656,6 @@ class WorkflowsTest < Minitest::Test
       assert multiline_status.success?
       assert_equal %w[src/keymap.js src/controls.js tests/sim.test.mjs], multiline_out.lines.map(&:strip).reject(&:empty?)
     end
-  end
-
-  def test_companion_editor_dispatch_supports_think_schema_and_body_fallback
-    entry = steps('prove').find { |item| item['name'] == 'Dispatch companion game editor updates after PR merge' }
-    FileUtils.mkdir_p(File.join(@directory, 'specs/issue-42'))
-    File.write(File.join(@directory, 'specs/issue-42/editor-requests.json'), JSON.generate([
-      {
-        'editor' => 'mappr',
-        'repo' => '1pizzateam/MappR',
-        'title' => 'feat(doors): support secret door SFX trigger property',
-        'problem' => 'DoomR.js moved secret room SFX to door open state.',
-        'suggestedDirection' => 'Update src/inspector/DoorInspector.ts',
-        'affectedFiles' => ['src/levels/door.ts']
-      }
-    ]))
-    run_step(entry, scenario, { 'REPO_FULL_NAME' => '1pizzateam/DoomR.js', 'REPO_NAME' => 'DoomR.js', 'BASE_REF' => 'main' })
-    create_call = @calls.find { |args| args.first(2) == %w[issue create] }
-    refute_nil create_call
-    assert_includes create_call, '1pizzateam/MappR'
-    body_arg = create_call[create_call.index('--body') + 1]
-    assert_includes body_arg, '## Problem'
-    assert_includes body_arg, 'DoomR.js moved secret room SFX to door open state.'
-    assert_includes body_arg, '## Suggested Direction'
-    assert_includes body_arg, 'src/levels/door.ts'
-  end
-
-  def test_upstream_resume_unblocks_matching_issues_via_jq_pipe
-    %w[npm seq grep sort].each do |command|
-      if command == 'npm'
-        path = File.join(@directory, 'bin/npm')
-        File.write(path, "#!#{RbConfig.ruby}\nputs '1.2.3'\n")
-        File.chmod(0o755, path)
-      else
-        executable = ENV.fetch('PATH').split(File::PATH_SEPARATOR)
-                        .map { |dir| File.join(dir, command) }
-                        .find { |candidate| File.executable?(candidate) && !File.directory?(candidate) }
-        File.symlink(executable, File.join(@directory, 'bin', command)) unless File.exist?(File.join(@directory, 'bin', command))
-      end
-    end
-    entry = workflow('upstream-resume').fetch('jobs').fetch('resume').fetch('steps').first
-    issues = [
-      { 'number' => 12, 'body' => 'Waiting on @1pizzateam/spock release', 'comments' => [] },
-      { 'number' => 19, 'body' => 'Unrelated issue', 'comments' => [{ 'body' => 'Blocked on @1pizzateam/roostr' }] }
-    ]
-    run_step(entry, scenario([], issues: issues))
-    edits = @calls.select { |args| args.first(2) == %w[issue edit] }
-    assert_equal [['issue', 'edit', '12', '--remove-label', 'blocked:upstream', '--add-label', '5-release']], edits
   end
 
   def test_developer_comments_and_previous_specs_are_passed_to_agents
@@ -1789,71 +1896,6 @@ class WorkflowsTest < Minitest::Test
     cost_step_md = File.read(File.join(@directory, 'specs/issue-42/ai-cost-step.md'))
     assert_includes cost_step_md, '<!-- ai-cost-step:{"step":"Think","model":"gpt-6.1-sol","input_tokens":55655,"output_tokens":94,"cached_tokens":27738,"requests":2,"cost_usd":0.0515} -->'
     assert_includes cost_step_md, '💰 **AI Cost (Think):** `$0.0515` (`gpt-6.1-sol` · 55655 in / 94 out tokens · 2 requests)'
-  end
-
-  def test_forge_catalog_is_valid_and_merges_repo_declarations_and_package_versions
-    catalog_path = File.join(ROOT, 'forge-catalog.json')
-    assert File.file?(catalog_path), 'forge-catalog.json must exist at repository root'
-    catalog = JSON.parse(File.read(catalog_path))
-    assert_equal 1, catalog.fetch('version')
-    asset_ids = catalog.fetch('assets').map { |a| a.fetch('id') }
-    assert_equal %w[spock bumpr loopr roostr groovr facer ctrltab cadenza facegun mappr pixelgun polygun shadergun].sort, asset_ids.sort
-
-    %w[think plan code prove].each do |phase|
-      content = File.read(File.join(ROOT, ".github/workflows/pipeline-#{phase}.yml"))
-      refute_includes content, 'No Forge catalog in repository', "pipeline-#{phase}.yml must not hardcode missing Forge catalog"
-      assert_includes content, '.agents/skills/forge/catalog.json', "pipeline-#{phase}.yml must install .agents/skills/forge/catalog.json"
-    end
-
-    %w[cp mv].each do |command|
-      executable = ENV.fetch('PATH').split(File::PATH_SEPARATOR)
-                      .map { |dir| File.join(dir, command) }
-                      .find { |candidate| File.executable?(candidate) && !File.directory?(candidate) }
-      File.symlink(executable, File.join(@directory, 'bin', command)) if executable && !File.exist?(File.join(@directory, 'bin', command))
-    end
-
-    FileUtils.mkdir_p(File.join(@directory, '.agents/skills/forge'))
-    FileUtils.cp(catalog_path, File.join(@directory, '.agents/skills/forge/catalog.json'))
-    File.write(File.join(@directory, 'forge-catalog.json'), JSON.generate({
-      'assets' => [
-        {
-          'id' => 'external-glsl-lint',
-          'name' => 'External GLSL Lint',
-          'kind' => 'cli',
-          'maturity' => 'stable',
-          'version' => '2.1.0',
-          'releasedAt' => '2026-03-01',
-          'owner' => 'shader-tools',
-          'summary' => 'Standalone GLSL validator hosted outside 1pizzateam.',
-          'capabilities' => ['glsl-validation', 'shader-linting'],
-          'keywords' => ['glsl', 'shader', 'lint'],
-          'interface' => { 'type' => 'cli', 'entry' => 'npx external-glsl-lint' },
-          'artifact' => { 'type' => 'npm', 'ref' => 'external-glsl-lint@2.1.0' },
-          'docs' => 'https://example.com/external-glsl-lint',
-          'repository' => 'https://github.com/example/external-glsl-lint'
-        }
-      ]
-    }))
-    File.write(File.join(@directory, 'package.json'), JSON.generate({
-      'dependencies' => { '@1pizzateam/roostr' => '^0.12.0' },
-      'devDependencies' => { '@1pizzateam/bumpr' => '~1.4.2', '@dwtechs/ctrltab' => '^3.1.0' }
-    }))
-
-    install_script = steps('think').find { |item| item['name'] == 'Install ALTEN-group/coding-pal think primitives' }.fetch('run')
-    merge_snippet = install_script[/for repo_cat in .*?^fi/m]
-    refute_nil merge_snippet
-    _, stderr, status = Open3.capture3(
-      @environment, File.join(@directory, 'bin/bash'), '--noprofile', '--norc', '-e', '-o', 'pipefail',
-      stdin_data: merge_snippet, chdir: @directory, unsetenv_others: true
-    )
-    assert status.success?, stderr
-
-    merged = JSON.parse(File.read(File.join(@directory, '.agents/skills/forge/catalog.json')))
-    merged_by_id = merged.fetch('assets').to_h { |a| [a.fetch('id'), a] }
-    assert merged_by_id.key?('external-glsl-lint'), 'Repo-local forge-catalog.json asset must be merged'
-    assert_equal '0.12.0', merged_by_id.dig('roostr', 'version')
-    assert_equal '1.4.2', merged_by_id.dig('bumpr', 'version')
-    assert_equal '3.1.0', merged_by_id.dig('ctrltab', 'version')
   end
 
   def test_code_exit_gates_auto_commit_in_scope_edits_and_reject_empty_branches
@@ -2099,28 +2141,40 @@ class WorkflowsTest < Minitest::Test
     out_active = run_step(preflight, scenario([], issues: [{ 'number' => 1 }]), { 'EVENT_NAME' => 'schedule' })
     assert_equal 'false', out_active.fetch('skip')
 
-    # 6. Fleet dispatcher triggers audits.yml across target repositories, skips private repos in group dispatches, and filters docs-sync-audit
+    # 6. Fleet dispatcher triggers audits.yml on every fleet repository (FLEET_REPOS_DEFAULT), skips private
+    # repositories in `all` dispatches and runs no per-repository applicability filter any more.
     fleet = YAML.load_file(File.join(ROOT, '.github/workflows/audit-fleet.yml'))
+    assert_equal 'Megadex Foxnox Gatelin', fleet.dig('env', 'FLEET_REPOS_DEFAULT')
+    assert_equal %w[all dependency-audit dead-code-audit test-gap-audit docs-sync-audit a11y-audit token-audit],
+                 (fleet['on'] || fleet.fetch(true)).dig('workflow_dispatch', 'inputs', 'audit', 'options')
     dispatch_step = fleet.fetch('jobs').fetch('dispatch').fetch('steps').find { |item| item['id'] == 'dispatch_fleet' }
     refute_nil dispatch_step
+    fleet_env = { 'OWNER' => 'ALTEN-group', 'FLEET_REPOS' => '', 'SCOPE' => 'src/', 'DEPENDENCY' => 'all',
+                  'FLEET_REPOS_DEFAULT' => fleet.dig('env', 'FLEET_REPOS_DEFAULT') }
 
-    out_libs = run_step(dispatch_step, scenario([], private_repos: ['1pizzateam/FaceR.js']), { 'TARGET' => 'libraries', 'AUDIT' => 'all' })
-    assert_equal '5', out_libs.fetch('dispatched_count')
-    assert_equal 5, dispatches.length
-    assert_includes dispatches.first, '1pizzateam/BumpR.js'
-    refute dispatches.any? { |args| args.include?('1pizzateam/FaceR.js') }
+    out_all = run_step(dispatch_step, scenario([], private_repos: ['ALTEN-group/Gatelin']), fleet_env.merge('TARGET' => 'all', 'AUDIT' => 'all'))
+    assert_equal '2', out_all.fetch('dispatched_count')
+    assert_equal [
+      ['workflow', 'run', 'audits.yml', '--repo', 'ALTEN-group/Megadex', '-f', 'audit=all', '-f', 'scope=src/', '-f', 'dependency=all'],
+      ['workflow', 'run', 'audits.yml', '--repo', 'ALTEN-group/Foxnox', '-f', 'audit=all', '-f', 'scope=src/', '-f', 'dependency=all']
+    ], dispatches
 
-    out_editors_docs = run_step(dispatch_step, scenario, { 'TARGET' => 'editors', 'AUDIT' => 'docs-sync-audit' })
-    assert_equal '1', out_editors_docs.fetch('dispatched_count')
-    assert_equal [['workflow', 'run', 'audits.yml', '--repo', '1pizzateam/FaceGun', '-f', 'audit=docs-sync-audit', '-f', 'scope=src/', '-f', 'dependency=all']], dispatches
+    %w[docs-sync-audit a11y-audit token-audit].each do |audit_name|
+      out_each = run_step(dispatch_step, scenario, fleet_env.merge('TARGET' => 'all', 'AUDIT' => audit_name))
+      assert_equal '3', out_each.fetch('dispatched_count'), "#{audit_name} is dispatched to every fleet repository"
+      assert_equal %w[Megadex Foxnox Gatelin], dispatches.map { |args| args[4].split('/').last }
+      assert dispatches.all? { |args| args.include?("audit=#{audit_name}") }
+    end
 
-    out_libs_a11y = run_step(dispatch_step, scenario, { 'TARGET' => 'libraries', 'AUDIT' => 'a11y-audit' })
-    assert_equal '0', out_libs_a11y.fetch('dispatched_count')
-    assert_empty dispatches
+    out_one = run_step(dispatch_step, scenario([], private_repos: ['ALTEN-group/Foxnox']), fleet_env.merge('TARGET' => 'Foxnox', 'AUDIT' => 'dependency-audit', 'DEPENDENCY' => 'express', 'SCOPE' => ''))
+    assert_equal '1', out_one.fetch('dispatched_count'), 'A single named target is dispatched even when private'
+    assert_equal [['workflow', 'run', 'audits.yml', '--repo', 'ALTEN-group/Foxnox', '-f', 'audit=dependency-audit', '-f', 'scope=', '-f', 'dependency=express']], dispatches
 
-    out_editors_a11y = run_step(dispatch_step, scenario, { 'TARGET' => 'editors', 'AUDIT' => 'a11y-audit' })
-    assert_equal '6', out_editors_a11y.fetch('dispatched_count')
-    assert_equal 6, dispatches.length
+    out_variable = run_step(dispatch_step, scenario, fleet_env.merge('TARGET' => 'all', 'AUDIT' => 'all', 'FLEET_REPOS' => 'Megadex'))
+    assert_equal '1', out_variable.fetch('dispatched_count'), 'The FLEET_REPOS variable overrides the default fleet'
+
+    run_step(dispatch_step, scenario, fleet_env.merge('TARGET' => 'SomethingElse', 'AUDIT' => 'all'), success: false)
+    assert_empty dispatches, 'Unknown targets dispatch nothing'
   end
 
   def test_audit_finding_issues_skip_think_and_synthesize_valid_think_spec
@@ -2264,12 +2318,10 @@ class WorkflowsTest < Minitest::Test
     refute @calls.any? { |args| args.first(2) == %w[issue edit] }, 'Different-title overlapping finding must not overwrite existing issue body'
   end
 
-  def test_audit_runner_merges_close_findings_and_requests_before_creating_issues
+  def test_audit_runner_merges_close_findings_before_creating_issues
     audit = YAML.load_file(File.join(ROOT, '.github/workflows/audit-runner.yml'))
     steps_list = audit.fetch('jobs').fetch('audit').fetch('steps')
     create_entry = steps_list.find { |item| item['id'] == 'create_findings' }
-    upstream_entry = steps_list.find { |item| item['name'] == 'Escalate upstream @1pizzateam/* library requests' }
-    editor_entry = steps_list.find { |item| item['name'] == 'Dispatch companion game editor requests' }
 
     # 1. Three close findings (same file src/raycaster.js, paired test file tests/raycaster.test.js) merge into 1 issue,
     #    while an unrelated finding in src/audio.js stays a separate issue (total created_count = 2).
@@ -2337,122 +2389,188 @@ class WorkflowsTest < Minitest::Test
     %w[issueId=ISSUE fieldId=PRIORITY_FIELD optionId=prio_high].each { |arg| assert_includes field_calls[0], arg }
     %w[issueId=ISSUE fieldId=MODEL_FIELD optionId=model_claude-opus-5.5].each { |arg| assert_includes field_calls[1], arg }
     %w[issueId=ISSUE fieldId=EFFORT_FIELD optionId=effort_high].each { |arg| assert_includes field_calls[2], arg }
+  end
 
-    # 2. Close upstream requests targeting the same library merge into 1 consumer + 1 upstream issue
-    File.write(File.join(@directory, 'upstream-requests.json'), JSON.generate([
-      {
-        'package' => '@1pizzateam/spock',
-        'repo' => '1pizzateam/Spock.js',
-        'priority' => 'Medium',
-        'model' => 'claude-sonnet-5.5',
-        'effort' => 'Medium',
-        'library_issue_title' => 'feat(vec2): add clampLength method',
-        'library_issue_body' => "## Problem\n\nMissing `clampLength`.\n\n## Proposed API\n\n`vec.clampLength(max)`\n\n## Acceptance Criteria\n\n- **AC-1:** `clampLength` clamps vector length.",
-        'consumer_issue_title' => 'refactor(movement): use Vec2.clampLength',
-        'consumer_issue_body' => "## Problem\n\nManual clamp in `src/movement.js`.\n\n## Affected Files\n\n- `src/movement.js`\n\n## Suggested Fix\n\nDelegate to `clampLength`.\n\n## Acceptance Criteria\n\n- **AC-1:** `src/movement.js` uses `clampLength`."
-      },
-      {
-        'package' => '@1pizzateam/spock',
-        'repo' => '1pizzateam/Spock.js',
-        'priority' => 'High',
-        'model' => 'claude-opus-5.5',
-        'effort' => 'High',
-        'library_issue_title' => 'feat(vec2): add projectOnto method',
-        'library_issue_body' => "## Problem\n\nMissing `projectOnto`.\n\n## Proposed API\n\n`vec.projectOnto(axis)`\n\n## Acceptance Criteria\n\n- **AC-1:** `projectOnto` projects vector onto axis.",
-        'consumer_issue_title' => 'refactor(movement): use Vec2.projectOnto for wall slide',
-        'consumer_issue_body' => "## Problem\n\nManual projection in `src/slide.js`.\n\n## Affected Files\n\n- `src/slide.js`\n\n## Suggested Fix\n\nDelegate to `projectOnto`.\n\n## Acceptance Criteria\n\n- **AC-1:** `src/slide.js` uses `projectOnto`."
-      }
-    ]))
-    run_step(upstream_entry, scenario([], issues: [], project: project))
-    upstream_creates = @calls.select { |args| args.first(2) == %w[issue create] }
-    assert_equal 2, upstream_creates.length, 'Two close upstream requests for the same library must merge into 1 consumer issue + 1 upstream issue'
-    consumer_body = upstream_creates[0][upstream_creates[0].index('--body') + 1]
-    lib_body = upstream_creates[1][upstream_creates[1].index('--body') + 1]
-    assert_includes consumer_body, "- `src/movement.js`\n- `src/slide.js`"
-    assert_includes consumer_body, "- **AC-1:** `src/movement.js` uses `clampLength`.\n- **AC-2:** `src/slide.js` uses `projectOnto`."
-    assert_includes lib_body, "- **AC-1:** `clampLength` clamps vector length.\n- **AC-2:** `projectOnto` projects vector onto axis."
+  INSTALL_SCRIPT = File.join(ROOT, 'scripts/factory/install-primitives.sh')
 
-    # 3. Close editor requests targeting the same companion editor merge into 1 issue
-    File.write(File.join(@directory, 'editor-requests.json'), JSON.generate([
-      {
-        'editor' => 'mappr',
-        'repo' => '1pizzateam/MappR',
-        'priority' => 'Low',
-        'model' => 'claude-haiku-5.5',
-        'effort' => 'Low',
-        'title' => 'feat(schema): support door lock color property',
-        'problem' => 'Added lock color in DoomR.js.',
-        'affectedFiles' => ['src/door.js'],
-        'suggestedDirection' => 'Add lock color dropdown in MappR inspector.'
-      },
-      {
-        'editor' => 'mappr',
-        'repo' => '1pizzateam/MappR',
-        'priority' => 'High',
-        'model' => 'claude-sonnet-5.5',
-        'effort' => 'Medium',
-        'title' => 'feat(schema): support door speed property',
-        'problem' => 'Added door speed in DoomR.js.',
-        'affectedFiles' => ['src/door-speed.js'],
-        'suggestedDirection' => 'Add speed numeric input in MappR inspector.'
-      }
-    ]))
-    run_step(editor_entry, scenario([], issues: [], project: project))
-    editor_creates = @calls.select { |args| args.first(2) == %w[issue create] }
-    assert_equal 1, editor_creates.length, 'Two close editor requests for the same companion editor must merge into 1 issue'
-    ed_title = editor_creates[0][editor_creates[0].index('--title') + 1]
-    ed_body = editor_creates[0][editor_creates[0].index('--body') + 1]
-    assert_equal 'feat(schema): support door lock color property and support door speed property', ed_title
-    assert_includes ed_body, "- `src/door.js`\n- `src/door-speed.js`"
+  # { 'prove' => { agents: [...], instructions: [...], skills: [...] } } read from the stage table of the install script.
+  def stage_definitions
+    File.read(INSTALL_SCRIPT).scan(/^\s+(think|plan|code|prove)\)\s+STAGE_DEF="([^"]*)"/).to_h do |stage, definition|
+      agents, instructions, skills = definition.split('|', 3).map(&:split)
+      [stage, { agents: agents, instructions: instructions, skills: skills }]
+    end
+  end
+
+  def install_step(phase)
+    steps(phase).find { |item| item['name'] == "Install coding-pal #{phase} primitives" } ||
+      raise("Missing install step in #{phase}")
   end
 
   def test_primitive_validators_and_agents_are_wired_across_phases
-    think_install = steps('think').find { |item| item['name'] == 'Install ALTEN-group/coding-pal think primitives' }.fetch('run')
-    refute_includes think_install, 'forge.instructions.md'
-    refute_includes think_install, '/tmp/alten-coding-pal/skills/forge'
-    assert_includes think_install, 'mkdir -p .agents/skills/forge'
+    stages = stage_definitions
+    assert_equal %w[think plan code prove], stages.keys
+    assert_equal %w[think], stages.dig('think', :agents)
+    assert_includes stages.dig('think', :skills), 'decision-record'
+    assert_includes stages.dig('think', :instructions), 'decision-record'
+    assert_equal %w[plan], stages.dig('plan', :agents)
+    assert_includes stages.dig('plan', :skills), 'think'
+    assert_equal %w[code], stages.dig('code', :agents)
+    assert_equal %w[think plan code prove], stages.dig('code', :skills).first(4)
+    assert_equal %w[prove gate-fix], stages.dig('prove', :agents)
+    refute_includes stages.dig('prove', :agents), 'code'
+    assert_equal %w[think plan code prove], stages.dig('prove', :skills).first(4)
+    stages.each_value do |definition|
+      definition[:agents].each { |agent| assert File.file?(File.join(ROOT, "agents/#{agent}.agent.md")), "agent #{agent}" }
+      definition[:instructions].each { |name| assert File.file?(File.join(ROOT, "instructions/#{name}.instructions.md")), "instructions #{name}" }
+      definition[:skills].each { |skill| assert File.directory?(File.join(ROOT, "skills/#{skill}")), "skill #{skill}" }
+    end
+
+    PHASES.each do |phase|
+      install = install_step(phase).fetch('run')
+      assert_includes install, %(install-primitives.sh" --stage #{phase} --engine "$ENGINE_DIR" --keep-tracked-clean)
+      refute_match(/^\s*cp\s/, install, "#{phase}: primitives are installed by the script, not by inline cp lines")
+      refute_includes install, 'forge'
+      assert_equal '${{ secrets.PIPELINE_GITHUB_TOKEN }}', install_step(phase).dig('env', 'GH_TOKEN')
+      assert_equal '${{ inputs.engine_repo }}', install_step(phase).dig('env', 'ENGINE_REPO')
+      refute install_step(phase).fetch('env').key?('COPILOT_GITHUB_TOKEN')
+    end
+    code_entries = steps('code')
+    checkout_engine = code_entries.find { |item| item['name'] == 'Check out pipeline engine' }
+    refute_nil checkout_engine
+    assert_equal 'Check out pipeline engine', code_entries.find { |item| item['run'].to_s.include?('install-primitives.sh') }['name'],
+                 'Code checks the engine out first so its own steps can use it'
+    assert_operator code_entries.index(checkout_engine), :<, code_entries.index(install_step('code'))
+
     think_validate = steps('think').find { |item| item['name'] == 'Validate think.md contract' }.fetch('run')
     refute_includes think_validate, 'bindings-check.mjs'
     assert_includes think_validate, 'validate-decision.mjs --think "$THINK_FILE"'
-
-    plan_install = steps('plan').find { |item| item['name'] == 'Install ALTEN-group/coding-pal plan primitives' }.fetch('run')
-    refute_includes plan_install, 'forge.instructions.md'
-    refute_includes plan_install, '/tmp/alten-coding-pal/skills/forge'
-    assert_includes plan_install, 'mkdir -p .agents/skills/forge'
-    assert_includes plan_install, 'skills/think'
     plan_validate = steps('plan').find { |item| item['name'] == 'Validate plan.md contract and cross-check against think.md' }.fetch('run')
     refute_includes plan_validate, 'bindings-check.mjs'
-
-    code_install = steps('code').find { |item| item['name'] == 'Install ALTEN-group/coding-pal code primitives' }.fetch('run')
-    assert_includes code_install, 'cp /tmp/alten-coding-pal/instructions/code.instructions.md .github/instructions/'
-    assert_includes code_install, 'for skill in think plan code prove; do'
-    assert_includes code_install, 'mkdir -p .agents/skills/forge'
     code_gates = steps('code').find { |item| item['name'] == 'Run deterministic Code exit gates' }.fetch('run')
     assert_includes code_gates, 'validate-plan.mjs --plan "${SPEC_DIR}/plan.md" --think "${SPEC_DIR}/think.md"'
     assert_includes code_gates, '.agents/skills/code/scripts/validate-pr.mjs'
-
-    prove_install = steps('prove').find { |item| item['name'] == 'Install ALTEN-group/coding-pal Prove and Remediation primitives' }.fetch('run')
-    refute_includes prove_install, 'prove-controls.instructions.md'
-    refute_includes prove_install, 'agents/code.agent.md'
-    assert_includes prove_install, 'for skill in think plan code prove; do'
-    assert_includes prove_install, 'mkdir -p .agents/skills/forge'
-    assert_includes prove_install, 'maxBuffer: 64 * 1024 * 1024'
-    assert_includes prove_install, '.agents/skills/prove/scripts/verify-criteria.mjs'
-    assert_includes prove_install, 'reportsFile([test.file], fp)'
     prove_loop = steps('prove').find { |item| item['name'] == 'Run Prove validation and auto-remediation loop' }.fetch('run')
+    assert_includes prove_loop, '.agents/skills/prove/scripts/verify-criteria.mjs'
     assert_includes prove_loop, '.agents/skills/prove/scripts/dependency-guard.mjs --git --base "origin/${BASE_REF}" --plan "${SPEC_DIR}/plan.md" --pr pr.md'
-    assert_includes prove_loop, '--diff-filter=AM "origin/${BASE_REF}..HEAD"'
-    assert_includes prove_loop, '--test-cmd "bash $RUNNER_TEMP/run-tests.sh"'
     assert_includes prove_loop, '--agent="gate-fix"'
     refute_includes prove_loop, '--agent="code"'
 
     audit_steps = YAML.load_file(File.join(ROOT, '.github/workflows/audit-runner.yml')).fetch('jobs').fetch('audit').fetch('steps')
-    audit_install = audit_steps.find { |item| item['name'] == 'Install ALTEN-group/coding-pal audit primitives' }.fetch('run')
-    assert_includes audit_install, 'for agent in dead-code test-gap docs-sync dependency-leverage token-audit a11y-audit; do'
-    assert_includes audit_install, 'cp /tmp/1pizza-coding-pal/agents/*.md .github/agents/'
-    assert_includes audit_install, '.agents/skills/forge/catalog.json'
-    assert_equal %w[perf-audit.agent.md vector-first.agent.md],
-                 Dir.children(File.join(ROOT, 'agents')).sort
+    audit_install = audit_steps.find { |item| item['name'] == 'Install coding-pal audit primitives' }
+    assert_includes audit_install.fetch('run'), 'install-primitives.sh" --stage audit --agent "$AGENT" --engine "$ENGINE_DIR" --keep-tracked-clean'
+    refute_match(/^\s*cp\s/, audit_install.fetch('run'))
+    assert_equal '${{ inputs.agent }}', audit_install.dig('env', 'AGENT')
+    %w[dead-code test-gap docs-sync dependency-leverage token-audit a11y-audit].each do |agent|
+      assert File.file?(File.join(ROOT, "agents/#{agent}.agent.md")), "audit agent #{agent} must exist in the engine"
+    end
+  end
+
+  def write_files(root, names, content = "fixture\n")
+    names.each do |name|
+      FileUtils.mkdir_p(File.dirname(File.join(root, name)))
+      File.write(File.join(root, name), content)
+    end
+  end
+
+  def build_fake_engine
+    engine = File.join(@directory, 'engine-fixture')
+    agents = %w[think plan code prove gate-fix token-audit dead-code]
+    instructions = %w[think plan code prove decision-record sharp-agent node-express node-unit-tests postgres-liquibase
+                      docker angular-admin vitepress-docs]
+    skills = %w[think plan code prove release-readiness decision-record vitepress-docs node-express-examples
+                postgres-liquibase-examples docker-examples angular-admin-examples]
+    write_files(engine, agents.map { |name| "agents/#{name}.agent.md" })
+    write_files(engine, instructions.map { |name| "instructions/#{name}.instructions.md" })
+    write_files(engine, skills.map { |name| "skills/#{name}/SKILL.md" })
+    engine
+  end
+
+  def build_fake_app(name, express: true, stack: true)
+    app = File.join(@directory, name)
+    FileUtils.mkdir_p(app)
+    dependencies = express ? { 'express' => '^4.19.0' } : { 'left-pad' => '^1.3.0' }
+    File.write(File.join(app, 'package.json'), JSON.generate('name' => name, 'version' => '1.2.2', 'dependencies' => dependencies))
+    if stack
+      %w[src tests db/liquibase docker admin website].each { |dir| FileUtils.mkdir_p(File.join(app, dir)) }
+      File.write(File.join(app, 'admin/angular.json'), '{}')
+    end
+    write_files(app, %w[.github/agents/old.agent.md .claude/x.md])
+    git_command('init', '-q', directory: app)
+    git_command('add', '-A', directory: app)
+    git_command('-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-q', '-m', 'initial', directory: app)
+    app
+  end
+
+  def run_install_script(app, engine, *arguments)
+    Open3.capture3('bash', INSTALL_SCRIPT, '--engine', engine, '--dest', app, *arguments)
+  end
+
+  def installed(app, directory)
+    Dir.glob(File.join(app, directory, '*')).map { |path| File.basename(path) }.sort
+  end
+
+  def test_install_script_installs_only_the_prove_stage_and_detected_stack_primitives
+    engine = build_fake_engine
+    app = build_fake_app('megadex')
+    output, error, status = run_install_script(app, engine, '--stage', 'prove', '--keep-tracked-clean')
+    assert status.success?, error
+    assert_includes output, 'stage=prove agents=[prove gate-fix]'
+
+    assert_equal %w[gate-fix.agent.md prove.agent.md], installed(app, '.github/agents')
+    assert_equal %w[angular-admin-examples code docker-examples node-express-examples plan postgres-liquibase-examples
+                    prove release-readiness think vitepress-docs],
+                 installed(app, '.agents/skills')
+    assert_equal %w[angular-admin.instructions.md docker.instructions.md node-express.instructions.md
+                    node-unit-tests.instructions.md postgres-liquibase.instructions.md prove.instructions.md
+                    sharp-agent.instructions.md vitepress-docs.instructions.md],
+                 installed(app, '.github/instructions')
+    refute File.exist?(File.join(app, '.github/agents/old.agent.md')), 'old harness files are wiped'
+    refute File.exist?(File.join(app, '.claude')), 'old harness folders are wiped'
+    assert File.file?(File.join(app, '.agents/skills/prove/SKILL.md'))
+
+    status_lines = git_command('status', '--porcelain', directory: app).lines.map(&:strip)
+    assert_empty status_lines.grep(/\A\S*D\s/), "committed harness files must not show as deleted: #{status_lines.inspect}"
+
+    control = build_fake_app('megadex-control')
+    _, error, status = run_install_script(control, engine, '--stage', 'prove')
+    assert status.success?, error
+    assert git_command('status', '--porcelain', directory: control).lines.any? { |line| line.match?(/\A\s*D\s+\.github\/agents\/old\.agent\.md/) },
+           'without --keep-tracked-clean the wipe shows up as a deletion (control)'
+  end
+
+  def test_install_script_stage_and_stack_selection
+    engine = build_fake_engine
+    plain = build_fake_app('foxnox', express: false, stack: false)
+    _, error, status = run_install_script(plain, engine, '--stage', 'think')
+    assert status.success?, error
+    assert_equal %w[think.agent.md], installed(plain, '.github/agents')
+    assert_equal %w[decision-record.instructions.md sharp-agent.instructions.md think.instructions.md], installed(plain, '.github/instructions')
+    assert_equal %w[decision-record think], installed(plain, '.agents/skills')
+
+    api = build_fake_app('gatelin', stack: false)
+    FileUtils.mkdir_p(File.join(api, 'src'))
+    _, error, status = run_install_script(api, engine, '--stage', 'plan')
+    assert status.success?, error
+    assert_includes installed(api, '.github/instructions'), 'node-express.instructions.md', 'express dependency plus src/ selects the Node/Express standard'
+    refute_includes installed(api, '.github/instructions'), 'postgres-liquibase.instructions.md'
+    assert_includes installed(api, '.agents/skills'), 'node-express-examples'
+
+    app = build_fake_app('audited')
+    _, error, status = run_install_script(app, engine, '--stage', 'audit', '--agent', 'token-audit')
+    assert status.success?, error
+    assert_equal %w[token-audit.agent.md], installed(app, '.github/agents')
+    assert_empty installed(app, '.agents/skills') & %w[think plan code prove release-readiness decision-record]
+    assert_includes installed(app, '.github/instructions'), 'sharp-agent.instructions.md'
+
+    _, error, status = run_install_script(app, engine, '--stage', 'audit')
+    refute status.success?, 'audit needs --agent'
+    assert_includes error, '--agent is required'
+    _, error, status = run_install_script(app, engine, '--stage', 'audit', '--agent', 'missing-audit')
+    refute status.success?
+    assert_includes error, "agent 'missing-audit' not found"
+    _, error, status = run_install_script(app, engine, '--stage', 'ship')
+    refute status.success?
+    assert_includes error, 'unknown stage'
   end
 
   def test_closed_or_superseded_runs_skip_without_mutating_issue

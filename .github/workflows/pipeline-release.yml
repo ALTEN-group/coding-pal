@@ -29,12 +29,12 @@ on:
         required: true
         type: string
       release_sha:
-        description: 'Release commit SHA if a library release was tagged (optional)'
+        description: 'Release commit SHA if a GitHub Release was created (optional)'
         required: false
         type: string
         default: ''
       release_tag:
-        description: 'Release tag if a library release was tagged (optional)'
+        description: 'Release tag if a GitHub Release was created (optional)'
         required: false
         type: string
         default: ''
@@ -53,6 +53,16 @@ on:
         required: false
         type: string
         default: ''
+      deployment_event:
+        description: 'Event that triggers the deployment workflow: push (path-filtered push to the base branch) or release (runs when the GitHub Release is published)'
+        required: false
+        type: string
+        default: 'push'
+      publish_workflow:
+        description: 'Workflow file triggered by the published GitHub Release that builds the container images (awaited before Done; empty to skip)'
+        required: false
+        type: string
+        default: 'publish.yml'
       batch_issues:
         description: 'Space-separated numbers of the other merged issues released together in the same milestone train (moved to Done with this issue)'
         required: false
@@ -214,6 +224,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
           DEPLOYMENT_WORKFLOW: ${{ inputs.deployment_workflow }}
           DEPLOYMENT_PATHS: ${{ inputs.deployment_paths }}
+          PUBLISH_WORKFLOW: ${{ inputs.publish_workflow }}
+          DEPLOYMENT_EVENT: ${{ inputs.deployment_event }}
         run: |
           mkdir -p reports
           REPORT="reports/release.md"
@@ -262,10 +274,19 @@ jobs:
           failed=0
           if [ -n "$RELEASE_SHA" ]; then
             echo "GitHub Release: ${RELEASE_TAG}; commit ${RELEASE_SHA}." >> "$REPORT"
-            wait_for_release_run publish-npm.yml release "$RELEASE_SHA" || failed=1
+            if [ -n "$PUBLISH_WORKFLOW" ]; then
+              wait_for_release_run "$PUBLISH_WORKFLOW" release "$RELEASE_SHA" || failed=1
+            fi
           fi
 
-          if [ -n "$DEPLOYMENT_WORKFLOW" ]; then
+          if [ -n "$DEPLOYMENT_WORKFLOW" ] && [ "$DEPLOYMENT_EVENT" = "release" ]; then
+            # The deployment runs when the GitHub Release is published (like the image publication).
+            if [ -n "$RELEASE_SHA" ]; then
+              wait_for_release_run "$DEPLOYMENT_WORKFLOW" release "$RELEASE_SHA" || failed=1
+            else
+              echo "Deployment not applicable: no GitHub Release was created, so ${DEPLOYMENT_WORKFLOW} was not triggered." >> "$REPORT"
+            fi
+          elif [ -n "$DEPLOYMENT_WORKFLOW" ]; then
             git fetch origin "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
             DEPLOY_SHA="${RELEASE_SHA:-$RELEASE_MERGE_SHA}"
             PATHS=()

@@ -97,6 +97,7 @@ export default withMermaid(defineConfig({
         collapsed: false,
         items: [
           { text: 'APM Distribution', link: '/guide/apm-distribution' },
+          { text: 'Delivery Pipeline', link: '/guide/delivery-pipeline' },
           { text: 'Authoring Guide', link: '/guide/authoring-guide' },
         ],
       },

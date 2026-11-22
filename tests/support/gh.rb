@@ -61,7 +61,7 @@ result = case ARGV.first(2)
          when ['issue', 'list']
            scenario.fetch('issues', [])
          when ['issue', 'create']
-           puts 'https://github.com/1pizzateam/MappR/issues/77'
+           puts 'https://github.com/ALTEN-group/Megadex/issues/77'
            nil
          when ['pr', 'create']
            puts 'https://example.test/pr/99'
@@ -102,6 +102,13 @@ result = case ARGV.first(2)
            end
          when ['workflow', 'run']
            reject_command("Unexpected dispatch: #{ARGV.inspect}") unless %w[think.yml plan.yml code.yml prove.yml release.yml audits.yml].include?(ARGV[2])
+           nil
+         when ['release', 'create']
+           reject_command("Missing tag or --target for gh release create: #{ARGV.inspect}") if ARGV[2].to_s.empty? || argument('--target').to_s.empty?
+           nil
+         when ['release', 'view']
+           scenario.fetch('latest_release', { 'tagName' => 'v1.0.0' })
+         when ->(args) { args.first == 'api' && ARGV.join(' ').include?('/milestones/') && ARGV.include?('PATCH') }
            nil
          when ['pr', 'edit']
            if scenario['track_fix_labels'] && argument('--add-label')&.start_with?('fix-loop:')

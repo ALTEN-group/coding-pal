@@ -18,6 +18,16 @@ on:
         required: false
         default: ''
         type: string
+      engine_repo:
+        description: 'Repository holding the pipeline engine, agents and skills'
+        required: false
+        default: 'ALTEN-group/coding-pal'
+        type: string
+      engine_ref:
+        description: 'Engine ref (tag, branch or SHA). Empty uses the ref this workflow was loaded from.'
+        required: false
+        default: ''
+        type: string
     secrets:
       PIPELINE_GITHUB_TOKEN:
         required: true
@@ -458,60 +468,22 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.resolve.outputs.skip != 'true'
 
-      - name: Install ALTEN-group/coding-pal plan primitives
+      - name: Install coding-pal plan primitives
         if: steps.resolve.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || job.workflow_sha || 'main' }}
         run: |
-          mkdir -p specs
-          cp -R /tmp/specs/. specs/
-          if [ -s "specs/issue-${ISSUE_NUMBER}/think.md" ]; then
-            jq -Rsr 'sub("\\n+## Forge Asset Bindings\\r?\\n[\\s\\S]*?(?=\\n## |$)"; "")' "specs/issue-${ISSUE_NUMBER}/think.md" > "specs/issue-${ISSUE_NUMBER}/think.md.tmp" && mv "specs/issue-${ISSUE_NUMBER}/think.md.tmp" "specs/issue-${ISSUE_NUMBER}/think.md"
+          # Check out the engine (this repository) at the ref the running workflow was loaded from, so
+          # workflows, skills, agents and validators always come from one consistent version.
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
           fi
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/ALTEN-group/coding-pal.git /tmp/alten-coding-pal
-          git clone --depth 1 https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/coding-pal.git /tmp/1pizza-coding-pal
-          rm -rf .github/instructions .github/agents .github/prompts .github/skills .github/copilot-instructions.md .agents .claude .cursor .gemini CLAUDE.md GEMINI.md AGENTS.md .cursorrules .windsurfrules
-          mkdir -p .github/instructions .github/agents .agents/skills
-          cp /tmp/1pizza-coding-pal/instructions/*.md .github/instructions/
-          cp /tmp/alten-coding-pal/instructions/plan.instructions.md .github/instructions/
-          [ -d tests ] && [ -f /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md ] && cp /tmp/alten-coding-pal/instructions/node-unit-tests.instructions.md .github/instructions/
-          [ -d website ] && [ -f /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md ] && cp /tmp/alten-coding-pal/instructions/vitepress-docs.instructions.md .github/instructions/
-          cp /tmp/alten-coding-pal/agents/plan.agent.md .github/agents/
-          cp -R /tmp/alten-coding-pal/skills/think .agents/skills/think
-          cp -R /tmp/alten-coding-pal/skills/plan .agents/skills/plan
-          [ -d /tmp/1pizza-coding-pal/skills/plan-fast-path ] && cp -R /tmp/1pizza-coding-pal/skills/plan-fast-path .agents/skills/plan-fast-path
-          if [ -f .agents/skills/plan/scripts/validate-plan.mjs ]; then
-            node -e '
-              const fs = require("fs");
-              const p = ".agents/skills/plan/scripts/validate-plan.mjs";
-              let src = fs.readFileSync(p, "utf8");
-              src = src.replace(
-                "tested.add(criterion);",
-                "tested.add(criterion);\n\t\tfor (const m of test.matchAll(/`?((?:tests?|scripts|__tests__)\\/[A-Za-z0-9_./-]+\\.[A-Za-z0-9]+|[A-Za-z0-9_./-]+\\.(?:test|spec)\\.[A-Za-z0-9]+)`?\\s*:/g)) {\n\t\t\tconst tf = m[1].trim();\n\t\t\tif (!pathInScope(tf, inScope)) fail(`${filename} Test file(s) referenced in ## Test Plan are missing from ## File Scope & Boundaries (- **In Scope:**): ${tf}`);\n\t\t\tif (!steps[n - 1].files.some((sf) => matchScopePath(tf, sf))) fail(`${filename} Test file \"${tf}\" referenced in ## Test Plan row ${criterion} must also be listed in Step ${n} Files`);\n\t\t}"
-              );
-              fs.writeFileSync(p, src);
-            '
-          fi
-          mkdir -p .agents/skills/forge
-          cp /tmp/1pizza-coding-pal/forge-catalog.json .agents/skills/forge/catalog.json
-          for repo_cat in docs/forge/catalog.json .github/forge-catalog.json forge-catalog.json; do
-            if [ -f "$repo_cat" ]; then
-              jq -s '.[0] as $base | .[1] as $ext | ($base * $ext) | .assets = (((($base.assets // []) + ($ext.assets // [])) | group_by(.id) | map(reduce .[] as $item ({}; . * $item))))' \
-                .agents/skills/forge/catalog.json "$repo_cat" > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-            fi
-          done
-          if [ -f package.json ]; then
-            jq --slurpfile pkg package.json '
-              (($pkg[0].dependencies // {}) + ($pkg[0].devDependencies // {})) as $deps |
-              .assets |= map(
-                . as $a |
-                ($deps["@1pizzateam/" + $a.id] // $deps["@dwtechs/" + $a.id] // $deps[$a.id] // "") |
-                sub("^[~^>=<v]+"; "") as $v |
-                if ($v | test("^[0-9]+\\.[0-9]+\\.[0-9]+")) then ($a | .version = $v) else $a end
-              )
-            ' .agents/skills/forge/catalog.json > .agents/skills/forge/catalog.json.tmp && mv .agents/skills/forge/catalog.json.tmp .agents/skills/forge/catalog.json
-          fi
-          rm -rf /tmp/alten-coding-pal /tmp/1pizza-coding-pal
+          bash "$ENGINE_DIR/scripts/factory/install-primitives.sh" --stage plan --engine "$ENGINE_DIR" --keep-tracked-clean
 
       - uses: actions/setup-node@v4
         if: steps.resolve.outputs.skip != 'true'
@@ -525,23 +497,6 @@ jobs:
           if [ -f package-lock.json ]; then
             npm ci --ignore-scripts --prefer-offline --no-audit 2>/dev/null || npm ci --prefer-offline --no-audit || true
           fi
-
-      - name: Clone sibling DoomR.js workspace for companion game editors
-        if: steps.resolve.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
-        run: |
-          case "$REPO_NAME" in
-            Cadenza|FaceGun|MappR|PixelGun|PolyGun|ShaderGun)
-              if [ ! -d ../DoomR.js ]; then
-                git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/DoomR.js.git" ../DoomR.js
-              fi
-              if [ "$REPO_NAME" = "FaceGun" ] && [ ! -d ../FaceR.js ]; then
-                git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/FaceR.js.git" ../FaceR.js
-              fi
-              ;;
-          esac
 
       - name: Cache Copilot CLI
         if: steps.resolve.outputs.skip != 'true'
@@ -647,9 +602,9 @@ jobs:
           "
           fi
 
-          LIBRARY_DOCS_HINT=""
-          if [ -f package.json ] && [ "$(node -p "const p=require('./package.json'); Boolean(p.name && p.name.startsWith('@1pizzateam/') && !p.private)")" = "true" ]; then
-            LIBRARY_DOCS_HINT="Because this repository is a published @1pizzateam/* library, if any public export, class, method, or signature in src/** is added or modified, ensure the corresponding documentation files (exact files under website/docs/ if website/docs exists, or README.md otherwise) are included in ## File Scope & Boundaries (- **In Scope:**) and updated in an atomic step so release-readiness verification (verify-release-readiness.mjs) passes."
+          API_DOCS_HINT=""
+          if [ -d swagger ] || [ -d db/liquibase ]; then
+            API_DOCS_HINT="If any HTTP endpoint, request or response schema, environment variable or database migration is added or modified, ensure the corresponding files (the hand-maintained OpenAPI spec swagger/src/*.openapi*.json, the Liquibase changelog under db/liquibase/, docker/conf/.env.*.example, exact files under website/docs/ if website/docs exists, README.md, CHANGELOG.md) are included in ## File Scope & Boundaries (- **In Scope:**) and updated in an atomic step so the release-readiness verification (verify-release-readiness.mjs) passes and the next version bump is computed from accurate files."
           fi
 
           export COPILOT_OTEL_ENABLED="true"
@@ -676,7 +631,7 @@ jobs:
             - Only top-level '- **Files:**', '- **Action:**', '- **Verification:**', '- **Bootable Check:**', and '- **Serves:**' bullets may start at column 0 in a step; indent any sub-bullets inside Action by at least 2 spaces. Do NOT write source code or test code blocks in ${PLAN_FILE} (no code fences or New Code fields)—code is written once in Code.
           - **High-Value Acceptance Criteria (AC-1..AC-8):** Formulate 4 to 8 substantive, observable 'Given ..., then ...' criteria (each on a single '- **AC-<N>:**' line) that verify core mechanics, state transitions, edge cases, and invariants—not just superficial existence checks. Never write an acceptance criterion that locks in a broken legacy behavior or forbids modifying a companion component/threshold if adjusting it is required for the primary fix (AC-1) to work end-to-end.
           - **Documentation Steps:** Every '- **Docs:**' path in ${THINK_FILE}'s ## Persistent Context Updates MUST be listed under '- **In Scope:**' and in the Files field of its own atomic step placed after the first step that changes code (validate-plan.mjs enforces this order), serving the relevant AC-<n>. Do NOT add any new level-two heading to ${PLAN_FILE}: the plan contract allows only its fixed headings.
-          ${LIBRARY_DOCS_HINT}
+          ${API_DOCS_HINT}
           Every test in ## Test Plan must include its acceptance criterion ID ('AC-1', 'AC-2', etc.) in the test name (for example 'tests/<file>: AC-1 ...' or 'scripts/<file>: AC-1 ...') and start the Test Plan 'Test' cell with the relative test file path so criteria-verify can verify every criterion with --require-test-files.
           A documentation or changelog criterion is still verified by a test file: name the test file that asserts the documentation content (never a .md or source file) and add that test to the Step that serves the criterion.
           Do not modify any production or test files; only write ${PLAN_FILE}.
@@ -867,15 +822,15 @@ jobs:
           # An issue closed as already resolved never gets a PR, so Prove never runs and its "Advance chain" step never
           # fires. Start the next `ready` issue here so the chain does not stall. Same rules as Prove's step:
           # nothing else in flight, lowest-numbered ready issue (same milestone first). See plan-chain.mjs.
-          rm -rf /tmp/chain-coding-pal
-          git clone --depth 1 -q "https://x-access-token:${GH_TOKEN}@github.com/1pizzateam/coding-pal.git" /tmp/chain-coding-pal 2>/dev/null || exit 0
+          CHAIN_SCRIPT=/tmp/coding-pal-engine/skills/release-bump/scripts/plan-chain.mjs
+          [ -f "$CHAIN_SCRIPT" ] || exit 0
           MILESTONE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json milestone --jq '.milestone.title // ""' 2>/dev/null || true)
           CHAIN=$(jq -n --arg mode advance --argjson issue "$ISSUE_NUMBER" --arg milestone "$MILESTONE_TITLE" \
             --argjson issues "$(gh issue list --state open --limit 500 --json number,labels,milestone)" \
             --argjson merged "$(gh pr list --state merged --limit 500 --json headRefName)" \
             --argjson open "$(gh pr list --state open --limit 200 --json headRefName)" \
             '{mode: $mode, issueNumber: $issue, milestone: $milestone, issues: $issues, mergedPrs: $merged, openPrs: $open}' \
-            | node /tmp/chain-coding-pal/skills/release-bump/scripts/plan-chain.mjs)
+            | node "$CHAIN_SCRIPT")
           echo "$CHAIN"
           [ "$(echo "$CHAIN" | jq -r '.action')" = "trigger" ] || exit 0
           NEXT=$(echo "$CHAIN" | jq -r '.issue')
@@ -1034,7 +989,6 @@ jobs:
             specs/issue_number.txt
             specs/issue-${{ env.ISSUE_NUMBER }}/think.md
             specs/issue-${{ env.ISSUE_NUMBER }}/plan.md
-            specs/issue-${{ env.ISSUE_NUMBER }}/editor-requests.json
           retention-days: 7
 
       - name: Start Code
