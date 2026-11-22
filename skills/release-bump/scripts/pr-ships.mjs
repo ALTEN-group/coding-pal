@@ -1,28 +1,60 @@
 #!/usr/bin/env node
 /**
- * Does a merged PR touch anything that can ship in the npm package?
+ * Does a merged PR touch anything that can ship in the service (code, migrations, API spec,
+ * env templates, Docker build, dependencies)?
  *
- * Test-suite, docs, CI and housekeeping PRs must never trigger a release on their own. The
- * tarball comparison alone cannot tell: master may carry earlier unreleased changes, and the
- * PR that happens to merge next would get blamed for (and named in) the release.
+ * Test-suite, docs, CI and housekeeping PRs must never trigger a release on their own: the
+ * main branch may carry earlier unreleased changes that would otherwise be blamed on (and
+ * named in) the release of whichever PR merges next.
  *
  * Reads changed file paths (one per line) on stdin, prints `true` or `false`.
  */
 
+/** Never ships, whatever else the path looks like. Checked first. */
 const NON_SHIPPING = [
-  /(^|\/)(tests?|__tests__|__mocks__|e2e|specs?|docs?|website|\.github|\.agents|\.claude|\.vscode|reports|scripts)\//i,
+  // tests, at any depth
+  /(^|\/)(tests?|__tests__|__mocks__|e2e)\//i,
   /\.(test|spec)\.[cm]?[jt]sx?$/i,
+  // top-level folders that are docs, CI, agent/IDE context, specs, tooling
+  /^(doc|docs|website|specs?|reports|scripts|\.github|\.agents|\.claude|\.cursor|\.vscode)\//i,
+  /(^|\/)scripts\//i,
+  // docs and repository housekeeping files
   /\.(md|mdx|txt)$/i,
-  /(^|\/)(license|licence|changelog|contributor|pr)(\.[a-z]+)?$/i,
-  /(^|\/)(jest|vitest|playwright|eslint|prettier)\.config\.[cm]?[jt]s$/i,
-  /(^|\/)\.(gitignore|dockerignore|eslintrc[^/]*|prettierrc[^/]*|editorconfig|npmrc)$/i,
-  /(^|\/)(dockerfile|docker-compose\.ya?ml|apm\.lock\.ya?ml)$/i,
+  /^(license|licence|contributor|pr)(\.[a-z]+)?$/i,
+  /(^|\/)\.(gitignore|dockerignore|editorconfig|eslintrc[^/]*|prettierrc[^/]*|nvmrc)$/i,
+  // dev tooling configuration
+  /(^|\/)(jest|vitest|playwright|karma|cypress|eslint|prettier)\.config\.[cm]?[jt]s$/i,
+  /(^|\/)(karma|jest)\.conf(ig)?\.[cm]?[jt]s$/i,
   /(^|\/)gate-output\.log$/i,
+  // local stack and API fuzzing, not the image
+  /^docker\/[^/]*compose[^/]*$/i,
+  /(^|\/)docker-compose[^/]*\.ya?ml$/i,
+  /^docker\/restler\//i,
 ];
 
-export const isShippedPath = (file) => !NON_SHIPPING.some((re) => re.test(file.trim()));
+/** Ships (checked after the exclusions above). */
+const SHIPPING = [
+  /^src\//i,
+  /^db\//i,
+  /^swagger\/src\//i,
+  /^docker\/conf\/[^/]+\.example$/i,
+  /(^|\/)dockerfile[^/]*$/i,
+  /(^|\/)[^/]+\.dockerfile$/i,
+  /^(admin|web)\//i,
+  /^package(-lock)?\.json$/i,
+  /^tsconfig[^/]*\.json$/i,
+];
 
-export const prShipsCode = (files) => files.map((f) => f.trim()).filter(Boolean).some(isShippedPath);
+const normalize = (file) => file.trim().replace(/^\.\//, '');
+
+export const isShippedPath = (file) => {
+  const f = normalize(file);
+  if (!f) return false;
+  if (NON_SHIPPING.some((re) => re.test(f))) return false;
+  return SHIPPING.some((re) => re.test(f));
+};
+
+export const prShipsCode = (files) => files.map(normalize).filter(Boolean).some(isShippedPath);
 
 if (process.argv[1] && import.meta.filename === process.argv[1]) {
   let input = '';

@@ -1,45 +1,47 @@
 #!/usr/bin/env node
 /**
- * Deterministic Release-Readiness Control for @1pizzateam/* libraries.
+ * Deterministic release-readiness control for Node.js services released as GitHub Releases + Docker images.
  *
- * Verifies 3 pillars before a library PR is proven or a new release is tagged/published:
- *   1. package.json, lockfiles & npm pack tarball contents (root + website version sync, semver bump, dist artifacts, exact tarball files)
- *   2. CHANGELOG.md (top Version X.Y.Z (Month Dayth Year) or Version X.Y.Z (unreleased) section, underline, bullet points, no placeholders/duplicates, released sections never edited)
- *   3. Documentation (README.md + website/docs/** coverage of all public runtime exports, VitePress sidebar links, and optional website build)
+ * Checks (errors fail the run, warnings are printed only):
+ *   1. package.json version (== --expected-version in release mode, above --previous-version when given)
+ *      and package-lock.json root version in sync
+ *   2. CHANGELOG.md in the app's format (`# X.Y.Z (Nov 21st 2026)` headings, bullets): in release mode the top entry is
+ *      the released version and dated; no leftover `(unreleased)` heading for older versions; no placeholders/duplicates
+ *   3. Docker: a production dockerfile exists and `.github/workflows/publish.yml` exists
+ *   4. swagger/src/*.openapi*.json is valid JSON; its info.version differing from the release is a WARNING
+ *   5. .env.*.example templates (docker/conf and repository root) parse
+ *
+ * Usage:
+ *   verify-release-readiness.mjs [--dir <repo>] [--mode pr|release] [--expected-version X.Y.Z] [--previous-version X.Y.Z]
+ *                                [--require-dist]   (accepted and ignored, for CLI compatibility)
+ * Exit code 0 on success, 1 with a list of errors otherwise.
  */
 
-import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
-const MONTHS = new Set([
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]);
+const PLAIN_SEMVER_RE = /^\d+\.\d+\.\d+$/;
+const HEADING_RE = /^(#{1,6})[ \t]+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)[ \t]+\((.+?)\)[ \t]*$/;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const LONG_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DATE_RE = new RegExp(`^(?:${[...MONTHS, ...LONG_MONTHS].join('|')})\\s+\\d{1,2}(?:st|nd|rd|th)\\s+\\d{4}$`);
 
-function parseArgs(argv) {
-  const opts = {
-    dir: process.cwd(),
-    mode: 'release', // 'release' | 'pr'
-    expectedVersion: '',
-    previousVersion: '',
-    requireDist: false,
-    buildDocs: false,
-  };
+export function parseArgs(argv) {
+  const opts = { dir: process.cwd(), mode: 'release', expectedVersion: '', previousVersion: '', requireDist: false };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--dir' && argv[i + 1]) opts.dir = path.resolve(argv[++i]);
     else if (arg === '--mode' && argv[i + 1]) opts.mode = argv[++i];
     else if (arg === '--expected-version' && argv[i + 1]) opts.expectedVersion = argv[++i].replace(/^v/, '');
     else if (arg === '--previous-version' && argv[i + 1]) opts.previousVersion = argv[++i].replace(/^v/, '');
-    else if (arg === '--require-dist') opts.requireDist = true;
-    else if (arg === '--build-docs') opts.buildDocs = true;
+    else if (arg === '--require-dist') opts.requireDist = true; // no-op
   }
   return opts;
 }
 
-function compareSemver(a, b) {
+export function compareSemver(a, b) {
   const ma = a.match(SEMVER_RE);
   const mb = b.match(SEMVER_RE);
   if (!ma || !mb) return 0;
@@ -50,361 +52,186 @@ function compareSemver(a, b) {
   const preA = ma[4] ?? '';
   const preB = mb[4] ?? '';
   if (!preA && !preB) return 0;
-  if (!preA) return 1; // normal release > prerelease of same X.Y.Z
+  if (!preA) return 1; // stable > prerelease of the same X.Y.Z
   if (!preB) return -1;
   return preA.localeCompare(preB, undefined, { numeric: true });
 }
 
-/** Text of the `Version <version> (...)` section (header through the line before the next header), or null. */
-function extractChangelogSection(text, version) {
-  const lines = text.split(/\r?\n/);
-  const start = lines.findIndex((l) => new RegExp(`^Version\\s+${version.replace(/[.+*?^${}()|[\]\\]/g, '\\$&')}\\s+\\(`).test(l));
-  if (start === -1) return null;
-  let end = lines.findIndex((l, i) => i > start && /^Version\s+/.test(l));
-  if (end === -1) end = lines.length;
-  return lines.slice(start, end).join('\n').trimEnd();
-}
-
-function gitTagExists(rootDir, tag) {
+function readJson(file, label, errors) {
   try {
-    return execSync(`git tag --list ${tag}`, { cwd: rootDir, stdio: 'pipe' }).toString().trim() === tag;
-  } catch {
-    return false;
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (err) {
+    errors.push(`[${label}] Invalid JSON: ${err.message}`);
+    return null;
   }
 }
 
-function gitShowAtTag(rootDir, tag, file) {
+function listFiles(dir, maxDepth, depth = 0, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (depth < maxDepth) listFiles(full, maxDepth, depth + 1, out);
+    } else out.push(full);
+  }
+  return out;
+}
+
+function gitShow(root, ref, file) {
   try {
-    return execSync(`git show ${tag}:${file}`, { cwd: rootDir, stdio: 'pipe' }).toString();
+    return execFileSync('git', ['show', `${ref}:${file}`], { cwd: root, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' });
   } catch {
     return null;
   }
 }
 
-function collectMarkdownText(dirPath) {
-  let out = '';
-  if (!existsSync(dirPath)) return out;
-  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.vitepress' || entry.name === '.git') continue;
-    const full = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) out += '\n' + collectMarkdownText(full);
-    else if (entry.name.endsWith('.md')) out += '\n' + readFileSync(full, 'utf8');
-  }
+/** Headings of a changelog: [{ index, version, date, unreleased }]. */
+export function changelogHeadings(lines) {
+  const out = [];
+  lines.forEach((line, index) => {
+    const m = HEADING_RE.exec(line);
+    if (m) out.push({ index, version: m[2], date: m[3].trim(), unreleased: /^unreleased$/i.test(m[3].trim()) });
+  });
   return out;
 }
 
-function isRuntimeSymbol(filePath, origName) {
-  if (!existsSync(filePath)) return true;
-  const content = readFileSync(filePath, 'utf8');
-  if (new RegExp(`export\\s+(?:interface|type)\\s+${origName}\\b`).test(content)) return false;
-  if (new RegExp(`export\\s+(?:abstract\\s+)?(?:class|function|const|let|var|enum)\\s+${origName}\\b`).test(content)) return true;
-  return true;
-}
+const sectionText = (lines, headings, version) => {
+  const i = headings.findIndex((h) => h.version === version);
+  if (i === -1) return null;
+  const end = headings[i + 1]?.index ?? lines.length;
+  return lines.slice(headings[i].index, end).join('\n').trimEnd();
+};
 
-function findEntryFile(rootDir, pkg) {
-  const baseName = (pkg.name || '').split('/').pop() || 'index';
-  const candidates = [
-    path.join(rootDir, 'src', `${baseName}.ts`),
-    path.join(rootDir, 'src', 'index.ts'),
-  ];
-  for (const c of candidates) {
-    if (existsSync(c)) return c;
-  }
-  const srcDir = path.join(rootDir, 'src');
-  if (existsSync(srcDir)) {
-    const tsFiles = readdirSync(srcDir).filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'));
-    if (tsFiles.length === 1) return path.join(srcDir, tsFiles[0]);
-  }
-  return null;
-}
+export function verify(opts) {
+  const root = opts.dir;
+  const errors = [];
+  const warnings = [];
+  const mode = opts.mode === 'pr' ? 'pr' : 'release';
 
-function extractPublicRuntimeExports(entryFile) {
-  const src = readFileSync(entryFile, 'utf8');
-  const symbols = [];
-  const entryDir = path.dirname(entryFile);
-
-  for (const m of src.matchAll(/export\s+\*\s+from\s+['"](\.[^'"]+)['"]/g)) {
-    let target = path.resolve(entryDir, m[1]);
-    if (!target.endsWith('.ts')) target = target.replace(/\.js$/, '') + '.ts';
-    if (existsSync(target)) {
-      const subSrc = readFileSync(target, 'utf8');
-      for (const sm of subSrc.matchAll(/export\s+(?:abstract\s+)?(?:class|function|const|let|var|enum)\s+([A-Za-z0-9_]+)/g)) {
-        symbols.push({ sym: sm[1], from: m[1] });
+  // 1. package.json and lock ------------------------------------------------------------------
+  let pkg = null;
+  const pkgPath = path.join(root, 'package.json');
+  if (!existsSync(pkgPath)) errors.push('[package.json] Missing root package.json.');
+  else pkg = readJson(pkgPath, 'package.json', errors);
+  if (pkg) {
+    if (!pkg.version || !SEMVER_RE.test(pkg.version)) errors.push(`[package.json] Invalid SemVer "version": "${pkg.version}".`);
+    if (opts.expectedVersion && pkg.version !== opts.expectedVersion) {
+      errors.push(`[package.json] Expected version "${opts.expectedVersion}", found "${pkg.version}".`);
+    }
+    if (opts.previousVersion && compareSemver(pkg.version, opts.previousVersion) <= 0) {
+      errors.push(`[package.json] Version "${pkg.version}" was not incremented above previous version "${opts.previousVersion}".`);
+    }
+    const lockPath = path.join(root, 'package-lock.json');
+    if (existsSync(lockPath)) {
+      const lock = readJson(lockPath, 'package-lock.json', errors);
+      if (lock) {
+        if (lock.version !== pkg.version) errors.push(`[package-lock.json] Top-level version "${lock.version}" does not match package.json version "${pkg.version}".`);
+        const rootEntry = lock.packages?.['']?.version;
+        if (rootEntry && rootEntry !== pkg.version) errors.push(`[package-lock.json] packages[""].version "${rootEntry}" does not match package.json version "${pkg.version}".`);
       }
+    } else {
+      warnings.push('[package-lock.json] Missing package-lock.json.');
     }
   }
+  const version = opts.expectedVersion || pkg?.version || '';
 
-  for (const m of src.matchAll(/export\s+\{([^}]+)\}\s+from\s+['"](\.[^'"]+)['"]/g)) {
-    const fromMod = m[2];
-    let target = path.resolve(entryDir, fromMod);
-    if (!target.endsWith('.ts')) target = target.replace(/\.js$/, '') + '.ts';
-    for (const part of m[1].split(',')) {
-      const p = part.trim();
-      if (!p || p.startsWith('type ')) continue;
-      const asMatch = p.match(/^([A-Za-z0-9_]+)\s+as\s+([A-Za-z0-9_]+)$/);
-      const orig = asMatch ? asMatch[1] : p;
-      const sym = asMatch ? asMatch[2] : p;
-      if (isRuntimeSymbol(target, orig)) {
-        symbols.push({ sym, from: fromMod });
-      }
-    }
-  }
-
-  for (const sm of src.matchAll(/export\s+(?:abstract\s+)?(?:class|function|const|let|var|enum)\s+([A-Za-z0-9_]+)/g)) {
-    symbols.push({ sym: sm[1], from: path.basename(entryFile) });
-  }
-
-  return symbols;
-}
-
-const opts = parseArgs(process.argv);
-const rootDir = opts.dir;
-const errors = [];
-
-// ============================================================================
-// 1. package.json, Lockfiles, Website Version & npm Tarball Controls
-// ============================================================================
-const pkgPath = path.join(rootDir, 'package.json');
-let pkg = null;
-if (!existsSync(pkgPath)) {
-  errors.push('[package.json] Missing root package.json.');
-} else {
-  pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-  if (!pkg.name || !pkg.name.startsWith('@1pizzateam/')) {
-    errors.push(`[package.json] Expected "name" to start with "@1pizzateam/", got "${pkg.name}".`);
-  }
-  if (!pkg.version || !SEMVER_RE.test(pkg.version)) {
-    errors.push(`[package.json] Invalid SemVer "version": "${pkg.version}".`);
-  }
-  if (opts.expectedVersion && pkg.version !== opts.expectedVersion) {
-    errors.push(`[package.json] Expected version "${opts.expectedVersion}", found "${pkg.version}".`);
-  }
-  if (opts.previousVersion && compareSemver(pkg.version, opts.previousVersion) <= 0) {
-    errors.push(`[package.json] Version "${pkg.version}" was not incremented above previous version "${opts.previousVersion}".`);
-  }
-  if (!pkg.main || !pkg.types) {
-    errors.push('[package.json] Both "main" and "types" fields must be defined.');
-  }
-  const cleanMain = (pkg.main || '').replace(/^\.\//, '');
-  const cleanTypes = (pkg.types || '').replace(/^\.\//, '');
-  const dotExport = pkg.exports?.['.'];
-  if (!dotExport || dotExport.import !== `./${cleanMain}` || dotExport.types !== `./${cleanTypes}`) {
-    errors.push('[package.json] "exports[\'.\']" must define "import" and "types" matching "main" and "types".');
-  }
-  if (opts.requireDist && cleanMain && cleanTypes) {
-    for (const rel of [cleanMain, cleanTypes]) {
-      const full = path.join(rootDir, rel);
-      if (!existsSync(full) || statSync(full).size === 0) {
-        errors.push(`[package.json] Built artifact "${rel}" is missing or empty. Run "npm run build:lib" first.`);
-      }
-    }
-    try {
-      const packRaw = execSync('npm pack --dry-run --json', { cwd: rootDir, stdio: 'pipe' }).toString();
-      const packJson = JSON.parse(packRaw);
-      const packEntry = Array.isArray(packJson) ? packJson[0] : Object.values(packJson)[0];
-      const actualFiles = (packEntry?.files || []).map((f) => f.path);
-      const expectedFiles = ['LICENSE', 'README.md', cleanTypes, cleanMain, 'package.json'];
-      const missingFiles = expectedFiles.filter((f) => !actualFiles.includes(f));
-      const extraFiles = actualFiles.filter((f) => !expectedFiles.includes(f));
-      if (missingFiles.length > 0 || extraFiles.length > 0) {
-        errors.push(
-          `[npm pack] Package tarball mismatch — missing: [${missingFiles.join(', ')}], unexpected: [${extraFiles.join(', ')}].`,
-        );
-      }
-    } catch (err) {
-      const stderr = err?.stderr ? err.stderr.toString() : err?.message || String(err);
-      errors.push(`[npm pack] Failed to inspect package tarball:\n${stderr}`);
-    }
-  }
-
-  const lockPath = path.join(rootDir, 'package-lock.json');
-  if (existsSync(lockPath)) {
-    const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
-    if (lock.version !== pkg.version) {
-      errors.push(`[package-lock.json] Top-level version "${lock.version}" does not match package.json version "${pkg.version}".`);
-    }
-    if (lock.packages?.['']?.version && lock.packages[''].version !== pkg.version) {
-      errors.push(`[package-lock.json] packages[""].version "${lock.packages[''].version}" does not match package.json version "${pkg.version}".`);
-    }
-  }
-
-  const webPkgPath = path.join(rootDir, 'website', 'package.json');
-  if (existsSync(webPkgPath)) {
-    const webPkg = JSON.parse(readFileSync(webPkgPath, 'utf8'));
-    if (webPkg.version !== pkg.version) {
-      errors.push(`[website/package.json] Version "${webPkg.version}" does not match root package.json version "${pkg.version}".`);
-    }
-    const webLockPath = path.join(rootDir, 'website', 'package-lock.json');
-    if (existsSync(webLockPath)) {
-      const webLock = JSON.parse(readFileSync(webLockPath, 'utf8'));
-      if (webLock.version !== pkg.version) {
-        errors.push(`[website/package-lock.json] Top-level version "${webLock.version}" does not match root package.json version "${pkg.version}".`);
-      }
-      if (webLock.packages?.['']?.version && webLock.packages[''].version !== pkg.version) {
-        errors.push(`[website/package-lock.json] packages[""].version "${webLock.packages[''].version}" does not match root package.json version "${pkg.version}".`);
-      }
-    }
-  }
-}
-
-// ============================================================================
-// 2. CHANGELOG.md Controls
-// ============================================================================
-const changelogPath = path.join(rootDir, 'CHANGELOG.md');
-if (!existsSync(changelogPath)) {
-  errors.push('[CHANGELOG.md] Missing CHANGELOG.md.');
-} else if (pkg) {
-  const rawChangelog = readFileSync(changelogPath, 'utf8');
-  const lines = rawChangelog.split(/\r?\n/);
-  const firstLine = (lines[0] || '').trim();
-  const secondLine = (lines[1] || '').trim();
-
-  const datedMatch = firstLine.match(/^Version\s+([0-9A-Za-z.-]+)\s+\(([A-Z][a-z]+)\s+(\d{1,2})(st|nd|rd|th)\s+(\d{4})\)$/);
-  const unreleasedMatch = firstLine.match(/^Version\s+([0-9A-Za-z.-]+)\s+\(unreleased\)$/i);
-  if (unreleasedMatch) {
-    const unreleasedVersion = unreleasedMatch[1];
-    if (opts.mode === 'release') {
-      errors.push(`[CHANGELOG.md] Top section "${firstLine}" is still unreleased; rename it to "Version ${unreleasedVersion} (Month Day<st|nd|rd|th> Year)" when releasing.`);
-    } else if (!SEMVER_RE.test(unreleasedVersion) || compareSemver(unreleasedVersion, pkg.version) <= 0 || gitTagExists(rootDir, `v${unreleasedVersion}`)) {
-      errors.push(`[CHANGELOG.md] Unreleased section "${firstLine}" must be a version above the released package.json version "${pkg.version}" and must not match an existing tag.`);
-    }
-  } else if (!datedMatch) {
-    errors.push(`[CHANGELOG.md] Line 1 must match "Version X.Y.Z (Month Day<st|nd|rd|th> Year)" or "Version X.Y.Z (unreleased)", got: "${firstLine}".`);
+  // 2. CHANGELOG.md ---------------------------------------------------------------------------
+  const changelogPath = path.join(root, 'CHANGELOG.md');
+  if (!existsSync(changelogPath)) {
+    errors.push('[CHANGELOG.md] Missing CHANGELOG.md.');
   } else {
-    const [, changelogVersion, monthName] = datedMatch;
-    if (!MONTHS.has(monthName)) {
-      errors.push(`[CHANGELOG.md] Unrecognized month "${monthName}" in header "${firstLine}".`);
-    }
-    if (opts.mode === 'release' && changelogVersion !== pkg.version) {
-      errors.push(`[CHANGELOG.md] Top section is for Version "${changelogVersion}", but package.json version is "${pkg.version}".`);
-    }
-  }
-
-  // A released section is immutable: new entries belong under "Version X.Y.Z (unreleased)".
-  if (opts.mode === 'pr' && pkg?.version) {
-    const tag = `v${pkg.version}`;
-    const releasedChangelog = gitShowAtTag(rootDir, tag, 'CHANGELOG.md');
-    if (releasedChangelog !== null) {
-      const before = extractChangelogSection(releasedChangelog, pkg.version);
-      const after = extractChangelogSection(rawChangelog, pkg.version);
-      if (before !== null && before !== after) {
-        errors.push(`[CHANGELOG.md] The released section for Version ${pkg.version} (tag ${tag}) was modified. Add new entries under a "Version X.Y.Z (unreleased)" section above it instead.`);
+    const raw = readFileSync(changelogPath, 'utf8');
+    const lines = raw.split(/\r?\n/);
+    const headings = changelogHeadings(lines);
+    const top = headings[0];
+    if (!top) {
+      errors.push('[CHANGELOG.md] No version heading found; expected "# X.Y.Z (Nov 21st 2026)".');
+    } else {
+      if (mode === 'release') {
+        if (version && top.version !== version) errors.push(`[CHANGELOG.md] Top entry is for "${top.version}", expected "${version}".`);
+        if (top.unreleased) errors.push(`[CHANGELOG.md] Top entry "${lines[top.index]}" is still unreleased; date it when releasing.`);
       }
-    }
-  }
-
-  if (!/^-{5,}$/.test(secondLine)) {
-    errors.push(`[CHANGELOG.md] Line 2 must be a dashed underline ("-----------------------------"), got: "${secondLine}".`);
-  }
-
-  let nextHeaderIdx = lines.findIndex((l, idx) => idx > 1 && /^Version\s+/.test(l));
-  if (nextHeaderIdx === -1) nextHeaderIdx = lines.length;
-  const topSectionLines = lines.slice(2, nextHeaderIdx);
-  const bullets = topSectionLines.filter((l) => /^\s*\*\s+\S+/.test(l));
-  if (bullets.length === 0) {
-    errors.push(`[CHANGELOG.md] Top version section (${firstLine}) contains no " * " bullet entries.`);
-  }
-  const topSectionText = topSectionLines.join('\n');
-  if (/\b(TODO|TBD|FIXME)\b/i.test(topSectionText)) {
-    errors.push('[CHANGELOG.md] Top version section contains placeholder text (TODO/TBD/FIXME).');
-  }
-
-  const seenVersions = new Set();
-  for (const line of lines) {
-    const m = line.match(/^Version\s+([0-9A-Za-z.-]+)\s+\(/);
-    if (m) {
-      if (seenVersions.has(m[1])) {
-        errors.push(`[CHANGELOG.md] Duplicate section found for Version ${m[1]}.`);
+      if (!top.unreleased && !DATE_RE.test(top.date)) {
+        errors.push(`[CHANGELOG.md] Top entry date "${top.date}" must look like "Nov 21st 2026".`);
       }
-      seenVersions.add(m[1]);
-    }
-  }
-}
-
-// ============================================================================
-// 3. Documentation (website/docs/** & README.md) Controls
-// ============================================================================
-const readmePath = path.join(rootDir, 'README.md');
-if (!existsSync(readmePath)) {
-  errors.push('[README.md] Missing README.md.');
-} else if (pkg) {
-  const readme = readFileSync(readmePath, 'utf8');
-  if (!readme.includes(pkg.name)) {
-    errors.push(`[README.md] Must mention the package name "${pkg.name}".`);
-  }
-  if (readme.includes('Jest:coverage') && !/!\[Jest:coverage\]\(https:\/\/img\.shields\.io\/badge\/Jest:coverage-\d+(?:\.\d+)?%25-[a-z]+\.svg\)/.test(readme)) {
-    errors.push('[README.md] Malformed Jest coverage badge URL.');
-  }
-
-  const websiteDocsDir = path.join(rootDir, 'website', 'docs');
-  const hasWebsiteDocs = existsSync(websiteDocsDir);
-  const docsCorpus = (hasWebsiteDocs ? collectMarkdownText(websiteDocsDir) : '') + '\n' + readme;
-
-  const entryFile = findEntryFile(rootDir, pkg);
-  if (!entryFile) {
-    errors.push('[Docs] Could not locate root TypeScript entrypoint in src/.');
-  } else {
-    const runtimeExports = extractPublicRuntimeExports(entryFile);
-    const undocumented = runtimeExports.filter((e) => !new RegExp(`\\b${e.sym}\\b`).test(docsCorpus));
-    if (undocumented.length > 0) {
-      const targetDocLabel = hasWebsiteDocs ? 'website/docs/**' : 'README.md';
-      errors.push(
-        `[Docs] Undocumented public runtime exports in ${targetDocLabel}: ${undocumented
-          .map((u) => `${u.sym} (from ${u.from})`)
-          .join(', ')}.`,
-      );
-    }
-  }
-
-  const vitepressConfigPath = path.join(websiteDocsDir, '.vitepress', 'config.mjs');
-  if (existsSync(vitepressConfigPath)) {
-    const cfg = readFileSync(vitepressConfigPath, 'utf8');
-    const links = [...cfg.matchAll(/link\s*:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
-    for (const link of links) {
-      if (/^https?:\/\//.test(link)) continue;
-      const clean = link.split('#')[0].replace(/\/$/, '/index');
-      const mdPath = path.join(websiteDocsDir, clean.endsWith('.md') ? clean : `${clean}.md`);
-      if (!existsSync(mdPath)) {
-        errors.push(`[website/docs] Broken VitePress link "${link}" in .vitepress/config.mjs (missing ${path.relative(rootDir, mdPath)}).`);
+      for (const h of headings.slice(1)) {
+        if (h.unreleased) errors.push(`[CHANGELOG.md] Leftover "(unreleased)" heading for older version ${h.version} (line ${h.index + 1}).`);
       }
-    }
-    for (const sub of ['api', 'guide']) {
-      const subDir = path.join(websiteDocsDir, sub);
-      if (!existsSync(subDir)) continue;
-      for (const file of readdirSync(subDir)) {
-        if (!file.endsWith('.md') || file === 'index.md') continue;
-        const slug = `/${sub}/${file.replace(/\.md$/, '')}`;
-        if (!cfg.includes(slug)) {
-          errors.push(`[website/docs] Documentation page "website/docs${slug}.md" is not registered in .vitepress/config.mjs sidebar.`);
+      const topLines = lines.slice(top.index + 1, headings[1]?.index ?? lines.length);
+      if (!topLines.some((l) => /^\s*[-*]\s+\S/.test(l))) errors.push(`[CHANGELOG.md] Top entry (${lines[top.index]}) contains no bullet entries.`);
+      if (/\b(TODO|TBD|FIXME)\b/.test(topLines.join('\n'))) errors.push('[CHANGELOG.md] Top entry contains placeholder text (TODO/TBD/FIXME).');
+      const seen = new Set();
+      for (const h of headings) {
+        if (seen.has(h.version)) errors.push(`[CHANGELOG.md] Duplicate entry for version ${h.version}.`);
+        seen.add(h.version);
+      }
+      // A released entry is immutable: new work goes under a new (or unreleased) heading.
+      if (mode === 'pr' && pkg?.version) {
+        const released = gitShow(root, `v${pkg.version}`, 'CHANGELOG.md');
+        if (released !== null) {
+          const rLines = released.split(/\r?\n/);
+          const before = sectionText(rLines, changelogHeadings(rLines), pkg.version);
+          const after = sectionText(lines, headings, pkg.version);
+          if (before !== null && before !== after) {
+            errors.push(`[CHANGELOG.md] The released entry for ${pkg.version} (tag v${pkg.version}) was modified; add new entries under a new heading above it.`);
+          }
         }
       }
     }
   }
 
-  if (opts.buildDocs && existsSync(path.join(rootDir, 'website', 'package.json'))) {
-    const webPkg = JSON.parse(readFileSync(path.join(rootDir, 'website', 'package.json'), 'utf8'));
-    if (webPkg.scripts?.build) {
-      try {
-        if (!existsSync(path.join(rootDir, 'website', 'node_modules'))) {
-          execSync('npm --prefix website ci', { cwd: rootDir, stdio: 'pipe' });
-        }
-        execSync('npm --prefix website run build', { cwd: rootDir, stdio: 'pipe' });
-      } catch (err) {
-        const stderr = err?.stderr ? err.stderr.toString() : err?.message || String(err);
-        errors.push(`[website/docs] VitePress documentation build failed:\n${stderr}`);
-      }
+  // 3. Docker ----------------------------------------------------------------------------------
+  const dockerfiles = [root, path.join(root, 'docker')]
+    .flatMap((dir) => listFiles(dir, dir === root ? 0 : 2))
+    .filter((f) => /^dockerfile([.-].*)?$/i.test(path.basename(f)) || /\.dockerfile$/i.test(path.basename(f)));
+  if (!dockerfiles.length) errors.push('[docker] No production dockerfile found (expected docker/dockerfile.prod or a Dockerfile*).');
+  if (!existsSync(path.join(root, '.github', 'workflows', 'publish.yml'))) {
+    errors.push('[docker] Missing .github/workflows/publish.yml (builds the Docker image on release published).');
+  }
+
+  // 4. OpenAPI spec ----------------------------------------------------------------------------
+  const swaggerDir = path.join(root, 'swagger', 'src');
+  const specs = existsSync(swaggerDir) ? readdirSync(swaggerDir).filter((f) => /\.openapi.*\.json$/i.test(f)) : [];
+  for (const file of specs) {
+    const rel = `swagger/src/${file}`;
+    const spec = readJson(path.join(swaggerDir, file), rel, errors);
+    const specVersion = spec?.info?.version;
+    if (spec && version && typeof specVersion === 'string' && PLAIN_SEMVER_RE.test(specVersion) && specVersion !== version) {
+      warnings.push(`[${rel}] info.version "${specVersion}" differs from the release version "${version}".`);
     }
   }
-}
 
-if (errors.length > 0) {
-  console.error('✗ Release readiness verification FAILED:');
-  for (const err of errors) {
-    console.error(`  - ${err}`);
+  // 5. env templates ---------------------------------------------------------------------------
+  const envFiles = [path.join(root, 'docker', 'conf'), root]
+    .flatMap((dir) => listFiles(dir, 0))
+    .filter((f) => /^\.env(\..+)?\.example$/.test(path.basename(f)));
+  for (const file of envFiles) {
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    const names = new Set();
+    readFileSync(file, 'utf8').split(/\r?\n/).forEach((raw, i) => {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) return;
+      const m = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*(?:=.*)?$/.exec(line);
+      if (!m) {
+        errors.push(`[${rel}] Line ${i + 1} is not a valid KEY=value entry: "${line.slice(0, 60)}".`);
+        return;
+      }
+      if (names.has(m[1])) warnings.push(`[${rel}] Variable ${m[1]} is defined more than once.`);
+      names.add(m[1]);
+    });
   }
-  process.exit(1);
+
+  return { errors, warnings, version: pkg?.version ?? '', name: pkg?.name ?? '', mode };
 }
 
-console.log(
-  `✓ Release readiness verified for ${pkg.name}@${pkg.version} (mode=${opts.mode}): package.json, tarball, CHANGELOG.md, and documentation are in sync.`,
-);
+if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
+  const result = verify(parseArgs(process.argv));
+  for (const w of result.warnings) console.warn(`  warning: ${w}`);
+  if (result.errors.length > 0) {
+    console.error('✗ Release readiness verification FAILED:');
+    for (const err of result.errors) console.error(`  - ${err}`);
+    process.exit(1);
+  }
+  console.log(`✓ Release readiness verified for ${result.name}@${result.version} (mode=${result.mode}): package.json, CHANGELOG.md, Docker and API spec are in sync.`);
+}

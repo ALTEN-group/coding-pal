@@ -1,40 +1,34 @@
 ---
 name: release-readiness
-description: "Verify @1pizzateam/* library package.json, lockfiles, npm tarball contents, CHANGELOG.md, and documentation before PR validation or release."
+description: "Verify a Node.js service's package.json, lockfile, CHANGELOG.md, production dockerfile, publish workflow, OpenAPI spec and env templates before PR validation or release."
 ---
 
 # Release Readiness Skill
 
-Deterministic pre-release gate for `@1pizzateam/*` libraries (`RoostR.js`, `BumpR.js`, `LoopR.js`, `Spock.js`, `GroovR.js`, `FaceR.js`).
+Deterministic pre-release gate for services released as GitHub Releases + Docker images (Megadex, Foxnox, Gatelin).
 
 ## Usage
 
-### 1. During PR Validation (`Code` & `Prove`)
+### 1. During PR validation (`Code` & `Prove`)
 ```bash
-node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr --require-dist
+node skills/release-readiness/scripts/verify-release-readiness.mjs --mode pr
 ```
 
-### 2. Before Tagging & Publishing a Release
+### 2. Before tagging a release
 ```bash
-node .agents/skills/release-readiness/scripts/verify-release-readiness.mjs \
-  --mode release \
-  --expected-version <X.Y.Z> \
-  --previous-version <prev-X.Y.Z> \
-  --require-dist
+node skills/release-readiness/scripts/verify-release-readiness.mjs \
+  --mode release --expected-version <X.Y.Z[-alpha.N]> [--previous-version <prev>]
 ```
 
-## Deterministic Checks Enforced
+`--dir <repo>` selects the repository (default: cwd). `--require-dist` is accepted and ignored. Exit code 0 on success; on failure a readable list of errors goes to stderr and the exit code is 1. Warnings are printed but never fail the run.
 
-1. **`package.json`, Lockfiles & Tarball Contents**:
-   - `name` starts with `@1pizzateam/` and `version` is valid SemVer (matching `--expected-version` and strictly greater than `--previous-version` when provided).
-   - `package-lock.json`, `website/package.json`, and `website/package-lock.json` versions match root `package.json`.
-   - `main`, `types`, and `exports["."]` (`import` and `types`) are consistent, built on disk, and `npm pack --dry-run --json` contains strictly `LICENSE`, `README.md`, `package.json`, `dist/<lib>.js`, and `dist/<lib>.d.ts` (when `--require-dist` is passed).
-2. **`CHANGELOG.md`**:
-   - Line 1 matches `Version X.Y.Z (Month Day<st|nd|rd|th> Year)` (and matches `package.json` `version` when `--mode release`). With `--mode pr` it may instead be `Version X.Y.Z (unreleased)`, where `X.Y.Z` is above the `package.json` version and not an existing tag; `--mode release` rejects a section that is still unreleased.
-   - With `--mode pr`, the section of the `package.json` version is compared with the one in tag `v<version>`; editing a released section fails. New entries go under `Version X.Y.Z (unreleased)` above it, and the release step in `pipeline-prove.yml` dates that section (keeping its bullets) instead of generating one from commit subjects.
-   - Line 2 is a dashed underline (`-----------------------------`).
-   - Top section has one or more ` * ` bullet points, no `TODO`/`TBD`/`FIXME` placeholders, and no duplicate `Version X.Y.Z` sections.
-3. **Documentation (`website/docs/**` & `README.md`)**:
-   - Every public runtime export (`class`, `function`, `const`, `let`, `enum`) re-exported from the root `src/` entrypoint is documented in `website/docs/**` (or `README.md` if `website/docs` does not exist).
-   - Every internal VitePress sidebar link in `website/docs/.vitepress/config.mjs` resolves to an existing Markdown file, and no `website/docs/{api,guide}/*.md` file is orphaned from the sidebar.
-   - `npm --prefix website run build` succeeds when `--build-docs` is passed.
+## Deterministic checks
+
+1. **`package.json` and lockfile**: `version` is valid SemVer, equals `--expected-version` (release mode) and is above `--previous-version` when given. `package-lock.json` top-level and `packages[""]` versions equal `package.json`.
+2. **`CHANGELOG.md`** (the app's format: `# X.Y.Z (Nov 21st 2026)` headings, `  - ` bullets; `##` headings and long month names are accepted):
+   - Release mode: the top entry is the released version, dated, and not `(unreleased)`. PR mode may also have a top `(unreleased)` entry.
+   - No leftover `(unreleased)` heading for older versions, no duplicate versions, at least one bullet in the top entry, no `TODO`/`TBD`/`FIXME`.
+   - PR mode: the entry of the `package.json` version is compared with the one in tag `v<version>`; editing a released entry fails.
+3. **Docker**: a production dockerfile exists (`docker/dockerfile.prod` or any `Dockerfile*`) and `.github/workflows/publish.yml` exists.
+4. **OpenAPI**: every `swagger/src/*.openapi*.json` is valid JSON. When `info.version` is a plain semver different from the release version it is reported as a **warning**, not an error.
+5. **Env templates**: `.env.*.example` files in `docker/conf/` and the repository root parse (`KEY=value` lines, comments); duplicate variables only warn.
