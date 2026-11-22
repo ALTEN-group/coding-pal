@@ -10,6 +10,7 @@ import {
 	evaluate,
 	parseCriteria,
 	parseJUnit,
+	parseTap,
 	parseReport,
 	parseTestPlan,
 	renderTable,
@@ -198,4 +199,9 @@ test("parses TAP and runner line reports with optional # file: headers", () => {
 	const specTests = parseReport(specReport, "node-test.log");
 	assert.equal(specTests.length, 3);
 	assert.deepEqual(specTests.map((t) => t.status), ["passed", "passed", "failed"]);
+});
+
+test("TAP lines without a test number (ok - name) are parsed", () => {
+	const tests = parseTap("ok - AC-1 rejects unauthenticated requests\nnot ok - AC-2 creates a role\nok 3 - AC-3 deletes a role\n");
+	assert.deepEqual(tests.map((t) => t.status), ["passed", "failed", "passed"]);
 });

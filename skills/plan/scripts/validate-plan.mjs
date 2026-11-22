@@ -199,6 +199,11 @@ export function validatePlanContent(rawMarkdown, filename = "plan.md", options =
 		if (!stepNumbers.has(n)) fail(`${filename} Test Plan row ${criterion} names Step "${stepRef}", which does not exist`);
 		if (!steps[n - 1].serves.includes(criterion)) fail(`${filename} Test Plan row ${criterion} names Step ${n}, which does not serve ${criterion}`);
 		tested.add(criterion);
+		for (const m of test.matchAll(/`?((?:tests?|scripts|__tests__)\/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+|[A-Za-z0-9_./-]+\.(?:test|spec)\.[A-Za-z0-9]+)`?\s*:/g)) {
+			const tf = m[1].trim();
+			if (!pathInScope(tf, inScope)) fail(`${filename} Test file(s) referenced in ## Test Plan are missing from ## File Scope & Boundaries (- **In Scope:**): ${tf}`);
+			if (!steps[n - 1].files.some((sf) => matchScopePath(tf, sf))) fail(`${filename} Test file "${tf}" referenced in ## Test Plan row ${criterion} must also be listed in Step ${n} Files`);
+		}
 	}
 	for (const ac of criteria) {
 		if (!tested.has(ac)) fail(`${filename} ${ac} has no row in the Test Plan`);
