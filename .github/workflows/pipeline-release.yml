@@ -1,0 +1,538 @@
+name: Pipeline - Release
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        description: 'Issue number for the merged pull request'
+        required: true
+        type: string
+      pr_number:
+        description: 'Merged pull request number'
+        required: true
+        type: string
+      base_ref:
+        description: 'Base branch into which the PR was merged'
+        required: false
+        type: string
+        default: 'main'
+      prove_base_sha:
+        description: 'Base commit SHA before the PR merge'
+        required: true
+        type: string
+      release_merge_sha:
+        description: 'Merge commit SHA produced by the PR merge'
+        required: true
+        type: string
+      release_started_at:
+        description: 'UTC ISO-8601 timestamp recorded right before PR merge'
+        required: true
+        type: string
+      release_sha:
+        description: 'Release commit SHA if a GitHub Release was created (optional)'
+        required: false
+        type: string
+        default: ''
+      release_tag:
+        description: 'Release tag if a GitHub Release was created (optional)'
+        required: false
+        type: string
+        default: ''
+      project_title:
+        description: 'GitHub Project V2 board title'
+        required: false
+        type: string
+        default: ''
+      deployment_workflow:
+        description: 'Push-triggered deployment workflow to await before Done (empty when no deployment is configured)'
+        required: false
+        type: string
+        default: ''
+      deployment_paths:
+        description: 'Newline-separated git paths matching the deployment push filter (empty means every push)'
+        required: false
+        type: string
+        default: ''
+      deployment_event:
+        description: 'Event that triggers the deployment workflow: push (path-filtered push to the base branch) or release (runs when the GitHub Release is published)'
+        required: false
+        type: string
+        default: 'push'
+      publish_workflow:
+        description: 'Workflow file triggered by the published GitHub Release that builds the container images (awaited before Done; empty to skip)'
+        required: false
+        type: string
+        default: 'publish.yml'
+      batch_issues:
+        description: 'Space-separated numbers of the other merged issues released together in the same milestone train (moved to Done with this issue)'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      PIPELINE_GITHUB_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ github.repository }}-${{ inputs.issue_number }}
+      cancel-in-progress: false
+    env:
+      GH_REPO: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+      BASE_REF: ${{ inputs.base_ref }}
+      PROVE_BASE_SHA: ${{ inputs.prove_base_sha }}
+      RELEASE_MERGE_SHA: ${{ inputs.release_merge_sha }}
+      RELEASE_STARTED_AT: ${{ inputs.release_started_at }}
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+
+      - name: Prepare Project board status helper
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+          TARGET_STATUS: Release
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          cat > "$RUNNER_TEMP/prove-project-status.sh" <<'STATUS_SCRIPT'
+          if [ -z "$PROJECT_TITLE" ]; then
+            echo "::notice::No project_title configured; skipping Project status update."
+            exit 0
+          fi
+
+          DATA=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $number: Int!, $projectTitle: String!) {
+              repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                  id
+                  projectItems(first: 20) {
+                    nodes {
+                      id
+                      project { id }
+                    }
+                  }
+                }
+                owner {
+                  ... on ProjectV2Owner {
+                    projectsV2(first: 20, query: $projectTitle) {
+                      nodes {
+                        id
+                        title
+                        field(name: "Status") {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            options { id name }
+                          }
+                        }
+                        fields(first: 50) {
+                          nodes {
+                            ... on ProjectV2Field {
+                              id
+                              name
+                              dataType
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f owner="$OWNER" -f repo="$REPO" -F number="$ISSUE_NUMBER" -f projectTitle="$PROJECT_TITLE" 2>/dev/null || true)
+          if [ -z "$DATA" ]; then
+            exit 1
+          fi
+
+          ISSUE_ID=$(echo "$DATA" | jq -r '.data.repository.issue.id // empty')
+          PROJECT=$(echo "$DATA" | jq -c --arg title "$PROJECT_TITLE" --arg repo "$REPO" '.data.repository.owner.projectsV2.nodes[]? | select((.title | ascii_downcase | sub("\\.js$"; "")) == ($title | ascii_downcase | sub("\\.js$"; "")) or (.title | ascii_downcase) == ($repo | ascii_downcase))' | head -n 1)
+          PROJECT_ID=$(echo "$PROJECT" | jq -r '.id // empty')
+          FIELD_ID=$(echo "$PROJECT" | jq -r '.field.id // empty')
+          OPTION_ID=$(echo "$PROJECT" | jq -r --arg status "$TARGET_STATUS" '.field.options[]? | select((.name | ascii_downcase) == ($status | ascii_downcase)) | .id' | head -n 1)
+          COST_FIELD_ID=$(echo "$PROJECT" | jq -r '(.costField.id // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].id)) // empty')
+          COST_FIELD_TYPE=$(echo "$PROJECT" | jq -r '(.costField.dataType // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].dataType)) // empty')
+
+          if [ -z "$ISSUE_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$FIELD_ID" ] || [ -z "$OPTION_ID" ]; then
+            echo "::error::Could not find issue, project, Status field, or '$TARGET_STATUS' option for ${OWNER}/${REPO} in Project '$PROJECT_TITLE'."
+            exit 1
+          fi
+
+          ITEM_ID=$(gh api graphql -f query='
+            mutation($projectId: ID!, $contentId: ID!) {
+              addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } }
+            }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_ID" --jq '.data.addProjectV2ItemById.item.id' 2>/dev/null || true)
+          if [ -z "$ITEM_ID" ]; then
+            ITEM_ID=$(echo "$DATA" | jq -r --arg pid "$PROJECT_ID" '.data.repository.issue.projectItems.nodes[]? | select(.project.id == $pid) | .id' | head -n 1)
+          fi
+
+          if [ -n "$ITEM_ID" ]; then
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f optionId="$OPTION_ID" >/dev/null 2>&1 || echo "::warning::Transient GitHub ProjectV2 API error updating Status to '$TARGET_STATUS'; continuing."
+          fi
+
+          if [ -n "$COST_FIELD_ID" ]; then
+            CUM_COST=$(
+              gh issue view "$ISSUE_NUMBER" --json comments --jq '.comments[].body // empty' 2>/dev/null | sed -n 's/.*<!-- ai-cost-step:\({.*}\) -->.*/\1/p' | jq -sr '([.[].cost_usd // 0] | add // 0) | (. * 10000 | round / 10000)' 2>/dev/null || echo "0"
+            )
+            if [ "${COST_FIELD_TYPE:-NUMBER}" = "NUMBER" ]; then
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $val: Float!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { number: $val }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -F val="${CUM_COST:-0}" >/dev/null 2>&1 || true
+            elif [ "$COST_FIELD_TYPE" = "TEXT" ]; then
+              COST_TEXT=$(printf '$%.4f' "${CUM_COST:-0}")
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $val: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { text: $val }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -f val="$COST_TEXT" >/dev/null 2>&1 || true
+            fi
+          fi
+          STATUS_SCRIPT
+          bash -eo pipefail "$RUNNER_TEMP/prove-project-status.sh"
+
+      - name: Wait for publication and deployment before Done
+        id: release_completion
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          DEPLOYMENT_WORKFLOW: ${{ inputs.deployment_workflow }}
+          DEPLOYMENT_PATHS: ${{ inputs.deployment_paths }}
+          PUBLISH_WORKFLOW: ${{ inputs.publish_workflow }}
+          DEPLOYMENT_EVENT: ${{ inputs.deployment_event }}
+        run: |
+          mkdir -p reports
+          REPORT="reports/release.md"
+          {
+            echo "# Release report"
+            echo "Issue #${ISSUE_NUMBER}; PR #${PR_NUMBER}; merged commit ${RELEASE_MERGE_SHA}."
+            echo "Delivery run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } > "$REPORT"
+
+          wait_for_release_run() {
+            local workflow="$1" event="$2" sha="$3"
+            local response run run_id url status conclusion poll
+            echo "Waiting for ${workflow} (${event}) at commit ${sha}." >> "$REPORT"
+            for ((poll=0; poll<120; poll++)); do
+              if ! response=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?event=${event}&head_sha=${sha}&per_page=100"); then
+                echo "::error::Cannot read ${workflow} release runs."
+                echo "FAILED: Could not read ${workflow} release runs." >> "$REPORT"
+                return 1
+              fi
+              run=$(echo "$response" | jq -c --arg sha "$sha" --arg event "$event" --arg since "$RELEASE_STARTED_AT" '
+                [.workflow_runs[] | select(.head_sha == $sha and .event == $event and .created_at >= $since)]
+                | sort_by(.id) | last // empty
+              ') || return 1
+              if [ -n "$run" ]; then
+                run_id=$(echo "$run" | jq -r '.id')
+                url=$(echo "$run" | jq -r '.html_url')
+                status=$(echo "$run" | jq -r '.status')
+                conclusion=$(echo "$run" | jq -r '.conclusion')
+                echo "${workflow}: ${url} (${status}/${conclusion})"
+                if [ "$status" = "completed" ]; then
+                  echo "- ${workflow}, run ${run_id}: ${url} — ${conclusion}." >> "$REPORT"
+                  if [ "$conclusion" = "success" ]; then
+                    return 0
+                  fi
+                  echo "::error::${workflow} did not succeed: ${url} (${conclusion})."
+                  return 1
+                fi
+              fi
+              sleep 15
+            done
+            echo "::error::Timed out waiting for ${workflow} at ${sha} after 30 minutes."
+            echo "FAILED: Timed out waiting for ${workflow} at ${sha} after 30 minutes. Last run: ${url:-not created}." >> "$REPORT"
+            return 1
+          }
+
+          failed=0
+          if [ -n "$RELEASE_SHA" ]; then
+            echo "GitHub Release: ${RELEASE_TAG}; commit ${RELEASE_SHA}." >> "$REPORT"
+            if [ -n "$PUBLISH_WORKFLOW" ]; then
+              wait_for_release_run "$PUBLISH_WORKFLOW" release "$RELEASE_SHA" || failed=1
+            fi
+          fi
+
+          if [ -n "$DEPLOYMENT_WORKFLOW" ] && [ "$DEPLOYMENT_EVENT" = "release" ]; then
+            # The deployment runs when the GitHub Release is published (like the image publication).
+            if [ -n "$RELEASE_SHA" ]; then
+              wait_for_release_run "$DEPLOYMENT_WORKFLOW" release "$RELEASE_SHA" || failed=1
+            else
+              echo "Deployment not applicable: no GitHub Release was created, so ${DEPLOYMENT_WORKFLOW} was not triggered." >> "$REPORT"
+            fi
+          elif [ -n "$DEPLOYMENT_WORKFLOW" ]; then
+            git fetch origin "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+            DEPLOY_SHA="${RELEASE_SHA:-$RELEASE_MERGE_SHA}"
+            PATHS=()
+            while IFS= read -r path; do
+              [ -z "$path" ] || PATHS+=("$path")
+            done <<< "$DEPLOYMENT_PATHS"
+            if [ "${#PATHS[@]}" -gt 0 ]; then
+              # Only await pushes which match the deployment workflow's path filter.
+              if [ -n "$RELEASE_SHA" ]; then
+                CHANGED=$(git diff --name-only "${RELEASE_SHA}^" "$RELEASE_SHA" -- "${PATHS[@]}")
+                if [ -z "$CHANGED" ]; then
+                  DEPLOY_SHA="$RELEASE_MERGE_SHA"
+                fi
+              fi
+              if [ "$DEPLOY_SHA" = "$RELEASE_MERGE_SHA" ]; then
+                CHANGED=$(git diff --name-only "$PROVE_BASE_SHA" "$RELEASE_MERGE_SHA" -- "${PATHS[@]}")
+                if [ -z "$CHANGED" ]; then
+                  DEPLOY_SHA=""
+                  echo "Deployment not applicable: no changes matching ${DEPLOYMENT_WORKFLOW}'s path filter." >> "$REPORT"
+                fi
+              fi
+            fi
+            if [ -n "$DEPLOY_SHA" ]; then
+              wait_for_release_run "$DEPLOYMENT_WORKFLOW" push "$DEPLOY_SHA" || failed=1
+            fi
+          fi
+
+          if [ "$failed" -eq 1 ]; then
+            echo "Release incomplete. Issue stays in Release; developer attention is required." >> "$REPORT"
+          else
+            echo "All required release workflows succeeded (or no external publication/deployment was applicable)." >> "$REPORT"
+          fi
+          COST_SUMMARY=$(
+            gh issue view "$ISSUE_NUMBER" --json comments --jq '.comments[].body // empty' 2>/dev/null | sed -n 's/.*<!-- ai-cost-step:\({.*}\) -->.*/\1/p' | jq -sr '
+              if length == 0 then "" else
+                def fmt_usd(x): (x * 10000 | round / 10000) | tostring | if test("\\.") then (split(".") | .[0] + "." + ((.[1] + "0000")[0:4])) else . + ".0000" end;
+                ([.[].input_tokens // 0] | add // 0) as $tot_in |
+                ([.[].output_tokens // 0] | add // 0) as $tot_out |
+                ([.[].requests // 0] | add // 0) as $tot_req |
+                ([.[].cost_usd // 0] | add // 0) as $tot_cost |
+                "\n## AI Cost Summary\n\n| Step | Model | Input Tokens | Output Tokens | Requests | Cost (USD) |\n| :--- | :--- | ---: | ---: | ---: | ---: |\n" +
+                (map("| " + (.step // "Step") + " | `" + (.model // "auto") + "` | " + ((.input_tokens // 0) | tostring) + " | " + ((.output_tokens // 0) | tostring) + " | " + ((.requests // 1) | tostring) + " | `$" + fmt_usd(.cost_usd // 0) + "` |") | join("\n")) +
+                "\n| **Total** | — | **" + ($tot_in | tostring) + "** | **" + ($tot_out | tostring) + "** | **" + ($tot_req | tostring) + "** | **`$" + fmt_usd($tot_cost) + "`** |"
+              end
+            ' 2>/dev/null || true
+          )
+          if [ -n "$COST_SUMMARY" ]; then
+            printf "%s\n" "$COST_SUMMARY" >> "$REPORT"
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file "$REPORT"
+          gh pr comment "$PR_NUMBER" --body-file "$REPORT"
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          [ "$failed" -eq 0 ]
+
+      - name: Sync issue to Done on Project board
+        if: steps.release_completion.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+          TARGET_STATUS: Done
+        run: |
+          if [ -z "$PROJECT_TITLE" ]; then
+            echo "::notice::No project_title configured; skipping Project status update."
+            exit 0
+          fi
+
+          DATA=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $number: Int!, $projectTitle: String!) {
+              repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                  id
+                  projectItems(first: 20) {
+                    nodes {
+                      id
+                      project { id }
+                    }
+                  }
+                }
+                owner {
+                  ... on ProjectV2Owner {
+                    projectsV2(first: 20, query: $projectTitle) {
+                      nodes {
+                        id
+                        title
+                        field(name: "Status") {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            options { id name }
+                          }
+                        }
+                        fields(first: 50) {
+                          nodes {
+                            ... on ProjectV2Field {
+                              id
+                              name
+                              dataType
+                            }
+                          }
+                        }
+                        items(first: 100) {
+                          nodes {
+                            id
+                            isArchived
+                            updatedAt
+                            fieldValueByName(name: "Status") {
+                              ... on ProjectV2ItemFieldSingleSelectValue {
+                                name
+                                optionId
+                              }
+                            }
+                            content {
+                              ... on Issue {
+                                closedAt
+                                updatedAt
+                              }
+                              ... on PullRequest {
+                                closedAt
+                                updatedAt
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f owner="$OWNER" -f repo="$REPO" -F number="$ISSUE_NUMBER" -f projectTitle="$PROJECT_TITLE" 2>/dev/null || true)
+          if [ -z "$DATA" ]; then
+            exit 1
+          fi
+
+          ISSUE_ID=$(echo "$DATA" | jq -r '.data.repository.issue.id // empty')
+          PROJECT=$(echo "$DATA" | jq -c --arg title "$PROJECT_TITLE" --arg repo "$REPO" '.data.repository.owner.projectsV2.nodes[]? | select((.title | ascii_downcase | sub("\\.js$"; "")) == ($title | ascii_downcase | sub("\\.js$"; "")) or (.title | ascii_downcase) == ($repo | ascii_downcase))' | head -n 1)
+          PROJECT_ID=$(echo "$PROJECT" | jq -r '.id // empty')
+          FIELD_ID=$(echo "$PROJECT" | jq -r '.field.id // empty')
+          OPTION_ID=$(echo "$PROJECT" | jq -r --arg status "$TARGET_STATUS" '.field.options[]? | select((.name | ascii_downcase) == ($status | ascii_downcase)) | .id' | head -n 1)
+          COST_FIELD_ID=$(echo "$PROJECT" | jq -r '(.costField.id // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].id)) // empty')
+          COST_FIELD_TYPE=$(echo "$PROJECT" | jq -r '(.costField.dataType // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].dataType)) // empty')
+          if [ -z "$ISSUE_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$FIELD_ID" ] || [ -z "$OPTION_ID" ]; then
+            echo "::error::Could not find issue, project, Status field, or '$TARGET_STATUS' option for ${OWNER}/${REPO} in Project '$PROJECT_TITLE'."
+            exit 1
+          fi
+
+          ITEM_ID=$(gh api graphql -f query='
+            mutation($projectId: ID!, $contentId: ID!) {
+              addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } }
+            }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_ID" --jq '.data.addProjectV2ItemById.item.id' 2>/dev/null || true)
+          if [ -z "$ITEM_ID" ]; then
+            ITEM_ID=$(echo "$DATA" | jq -r --arg pid "$PROJECT_ID" '.data.repository.issue.projectItems.nodes[]? | select(.project.id == $pid) | .id' | head -n 1)
+          fi
+
+          if [ -n "$ITEM_ID" ]; then
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f optionId="$OPTION_ID" >/dev/null 2>&1 || echo "::warning::Transient GitHub ProjectV2 API error updating Status to '$TARGET_STATUS'; continuing."
+          fi
+
+          if [ -n "$COST_FIELD_ID" ]; then
+            CUM_COST=$(
+              gh issue view "$ISSUE_NUMBER" --json comments --jq '.comments[].body // empty' 2>/dev/null | sed -n 's/.*<!-- ai-cost-step:\({.*}\) -->.*/\1/p' | jq -sr '([.[].cost_usd // 0] | add // 0) | (. * 10000 | round / 10000)' 2>/dev/null || echo "0"
+            )
+            if [ "${COST_FIELD_TYPE:-NUMBER}" = "NUMBER" ]; then
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $val: Float!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { number: $val }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -F val="${CUM_COST:-0}" >/dev/null 2>&1 || true
+            elif [ "$COST_FIELD_TYPE" = "TEXT" ]; then
+              COST_TEXT=$(printf '$%.4f' "${CUM_COST:-0}")
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $val: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { text: $val }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -f val="$COST_TEXT" >/dev/null 2>&1 || true
+            fi
+          fi
+
+          STALE_DONE_ITEMS=$(echo "$PROJECT" | jq -r --arg done_id "$OPTION_ID" --arg current_id "$ITEM_ID" '
+            [
+              .items.nodes[]?
+              | select(.id != $current_id and (.isArchived // false) == false)
+              | select(((.fieldValueByName.name // "" | ascii_downcase) == "done") or (.fieldValueByName.optionId == $done_id))
+            ]
+            | sort_by((.content.closedAt // .updatedAt // .content.updatedAt // "") | fromdateiso8601? // 0)
+            | reverse
+            | .[39:][]
+            | .id
+          ' 2>/dev/null || true)
+          for STALE_ITEM_ID in $STALE_DONE_ITEMS; do
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!) {
+                archiveProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
+                  item { id }
+                }
+              }' -f projectId="$PROJECT_ID" -f itemId="$STALE_ITEM_ID" >/dev/null 2>&1 || true
+          done
+
+      - name: Sync milestone train members to Done on Project board
+        if: steps.release_completion.outcome == 'success' && inputs.batch_issues != ''
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+          BATCH_ISSUES: ${{ inputs.batch_issues }}
+        run: |
+          for member in $BATCH_ISSUES; do
+            gh issue comment "$member" --body "Released together with #${ISSUE_NUMBER}${RELEASE_TAG:+ in ${RELEASE_TAG}}: milestone train published." || true
+            ISSUE_NUMBER="$member" TARGET_STATUS=Done bash -eo pipefail "$RUNNER_TEMP/prove-project-status.sh" || true
+          done
+
+      - name: Upload release.md artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-spec-${{ inputs.issue_number }}
+          path: |
+            reports/release.md
+
+      - name: Report Release failure on the issue and PR
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+        run: |
+          if [ -f "$RUNNER_TEMP/prove-project-status.sh" ]; then
+            TARGET_STATUS=Release bash -eo pipefail "$RUNNER_TEMP/prove-project-status.sh" || true
+          fi
+          MESSAGE="Release failed or did not finish. Issue stays in Release and needs developer attention. Inspect ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}; any detailed Release report is posted above. A merged PR is not rolled back automatically."
+          gh issue comment "$ISSUE_NUMBER" --body "$MESSAGE"
+          gh pr comment "$PR_NUMBER" --body "$MESSAGE"
+          GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh label create needs:developer --force --description "Pipeline failed or fix-loop limit reached; developer attention required" || true
+          GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh issue edit "$ISSUE_NUMBER" --add-label "needs:developer" --remove-label "1-think,2-plan,3-code,4-prove,5-release" || true
+          gh issue edit "$ISSUE_NUMBER" --add-assignee "@me" || true

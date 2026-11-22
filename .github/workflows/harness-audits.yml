@@ -1,0 +1,28 @@
+name: Harness audits
+
+# Audits the automation of this repository itself (agent, skill and workflow token waste) with the shared audit engine.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Path to audit (e.g. . for the whole repository)'
+        type: string
+        default: '.'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  token-audit:
+    if: github.event_name == 'workflow_dispatch' || !github.event.repository.private
+    uses: ./.github/workflows/audit-runner.yml
+    with:
+      agent: token-audit
+      scope: ${{ inputs.scope || '.' }}
+      engine_repo: ${{ github.repository }}
+      engine_ref: ${{ github.sha }}
+    secrets: inherit

@@ -67,6 +67,10 @@ APM compiles and translates each primitive into the target harness's native conf
 - **Claude Code**: `.claude/rules/`, `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
 - **Cursor**: `.cursor/rules/*.mdc`, `.cursor/agents/`, `.cursor/commands/`, `.agents/skills/`
 
+## Delivery pipeline
+
+Besides the primitives, this repository ships the reusable GitHub Actions workflows that turn an issue into a merged and released change (**Think → Plan → Code → Prove → Release**), the weekly audits that feed the Project board, the caller templates and the bootstrap scripts. See the **[Delivery Pipeline guide](https://alten-group.github.io/coding-pal/guide/delivery-pipeline.html)**.
+
 ---
 
 ## Contributing

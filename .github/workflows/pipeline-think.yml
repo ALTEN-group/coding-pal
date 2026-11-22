@@ -1,0 +1,858 @@
+name: Pipeline - Think
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        description: 'Issue number to generate think.md for'
+        required: true
+        type: string
+      event_name:
+        description: 'Triggering event name (issues or workflow_dispatch)'
+        required: false
+        default: 'issues'
+        type: string
+      project_title:
+        description: 'Optional GitHub Project V2 board title'
+        required: false
+        default: ''
+        type: string
+      engine_repo:
+        description: 'Repository holding the pipeline engine, agents and skills'
+        required: false
+        default: 'ALTEN-group/coding-pal'
+        type: string
+      engine_ref:
+        description: 'Engine ref (tag, branch or SHA) to check out; callers pass the same ref as in their uses: line. Empty uses main.'
+        required: false
+        default: ''
+        type: string
+    secrets:
+      PIPELINE_GITHUB_TOKEN:
+        required: true
+      COPILOT_GITHUB_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+  pull-requests: read
+
+jobs:
+  think:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: copilot-think-${{ github.repository }}-issue-${{ inputs.issue_number }}
+      cancel-in-progress: false
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Inspect existing specs for Smart Resume
+        id: resume
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          echo "ISSUE_NUMBER=${ISSUE_NUMBER}" >> "$GITHUB_ENV"
+
+          ISSUE_VIEW=$(gh issue view "$ISSUE_NUMBER" --json state,title,body,labels,comments)
+          ISSUE_STATE=$(echo "$ISSUE_VIEW" | jq -r '.state // "OPEN"')
+          if [ "$ISSUE_STATE" = "CLOSED" ]; then
+            echo "Issue #${ISSUE_NUMBER} is already CLOSED; skipping Think."
+            echo "resumed_stage=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Unassign the issue while the agent is actively working
+          gh issue edit "$ISSUE_NUMBER" --remove-assignee "@me" 2>/dev/null || true
+
+          HAS_AUDIT_LABEL=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | any(startswith("audit:"))')
+          HAS_THINK_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("1-think") != null')
+          HAS_PLAN_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("2-plan") != null')
+          HAS_CODE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("3-code") != null')
+          HAS_PROVE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("4-prove") != null')
+          HAS_RELEASE_TRIGGER=$(echo "$ISSUE_VIEW" | jq -r '[.labels[].name] | index("5-release") != null')
+          EXISTING_PR_JSON=$(gh pr list --state open --json number,headRefName,mergeable,labels \
+            --jq "[.[] | select(.headRefName | test(\"^(feature|fix|chore)/issue-${ISSUE_NUMBER}-\"))][0] // empty" 2>/dev/null || true)
+          EXISTING_PR=$(echo "$EXISTING_PR_JSON" | jq -r '.number // empty')
+          EXISTING_PR_CONFLICT=$(echo "$EXISTING_PR_JSON" | jq -r '(.mergeable // "") == "CONFLICTING" or ([.labels[]?.name] | index("needs:rebase") != null)')
+          RESET_IDX=$(echo "$ISSUE_VIEW" | jq -r --arg has_open_pr "${EXISTING_PR:+true}" '
+            (.comments | map(.body // "") | to_entries) as $all |
+            ([ $all[] | select(.value | test(if $has_open_pr == "true" then "^(# (Release:|Release report|Release decision:|No release|Release blocked:)|✅ \\*\\*Already Resolved on Base Branch\\*\\*|### Companion Game Editor Updates Dispatched|Release failed or did not finish\\.)" else "^(# (Prove:|Release:|Release report|Release decision:|No release|Release blocked:)|✅ \\*\\*Already Resolved on Base Branch\\*\\*|Pull request opened for #|### Companion Game Editor Updates Dispatched|Release failed or did not finish\\.)" end; "m")) | .key ] | last // -1) as $last_done_idx |
+            ([ $all[] | select((.value | gsub("\\s+"; "") | length > 0) and ((.value | test("^(# (Think|Plan|Code|Prove|Release|Release report|Release decision|No release|Release blocked)|✅ \\*\\*Already Resolved on Base Branch\\*\\*|## Upstream Library Released|⏸️ \\*\\*(Paused (after|for)|Blocked on)|Blocked waiting on upstream library issue |⚠️ \\*\\*(Think|Plan|Code|Prove) failed|Pull request opened for #|### Companion Game Editor Updates (Dispatched|Scheduled)|Fix-loop limit of|# Queued|Started by the chain|Milestone train complete|Released together with|Release failed or did not finish\\.|PR #[0-9]+ (conflicts with|or its base changed))"; "m")) | not)) | .key ] | last // -1) as $last_dev_idx |
+            ([$last_done_idx, $last_dev_idx] | max)
+          ')
+          EXISTING_THINK=$(echo "$ISSUE_VIEW" | jq -r --argjson reset_idx "${RESET_IDX:--1}" '
+            (.comments | map(.body // "") | to_entries) as $all |
+            [ $all[] | select(.key > $reset_idx and (.value | test("^# Think:"; "m"))) | .value ] | last // empty | sub("\\n*(?:---\\n+)?<!-- ai-cost-step:[^\\n]*-->[\\s\\S]*$"; "") | sub("\\n+## Forge Asset Bindings\\r?\\n[\\s\\S]*?(?=\\n## |$)"; "")
+          ')
+          EXISTING_PLAN=$(echo "$ISSUE_VIEW" | jq -r --argjson reset_idx "${RESET_IDX:--1}" '
+            (.comments | map(.body // "") | to_entries) as $all |
+            ([ $all[] | select(.key > $reset_idx and (.value | test("^# Think:"; "m"))) | .key ] | last // -1) as $last_think_idx |
+            [ $all[] | select(.key > $reset_idx and .key > $last_think_idx and (.value | test("^# Plan:"; "m"))) | .value ] | last // empty | sub("\\n*(?:---\\n+)?<!-- ai-cost-step:[^\\n]*-->[\\s\\S]*$"; "")
+          ')
+          EXISTING_PR_STALE_SPEC=$(echo "$ISSUE_VIEW" | jq -r '
+            (.comments | map(.body) | to_entries) as $all |
+            ([ $all[] | select(.value | test("^# (Think|Plan):"; "m")) | .key ] | last // -1) as $last_spec_idx |
+            ([ $all[] | select(.value | test("^Pull request opened for #"; "m")) | .key ] | last // -1) as $last_pr_idx |
+            ($last_pr_idx >= 0 and $last_spec_idx > $last_pr_idx)
+          ')
+
+          # Smart Resume 0: An open PR already exists and the issue was explicitly marked for prove or release.
+          if [ -n "$EXISTING_PR" ] && { [ -n "$EXISTING_THINK" ] || { [ "$HAS_AUDIT_LABEL" = "true" ] && [ "${RESET_IDX:--1}" -lt 0 ]; }; } && [ -n "$EXISTING_PLAN" ] && [ "$EXISTING_PR_STALE_SPEC" != "true" ] && [ "$HAS_THINK_TRIGGER" != "true" ] && [ "$HAS_PLAN_TRIGGER" != "true" ] && { [ "$HAS_PROVE_TRIGGER" = "true" ] || [ "$HAS_RELEASE_TRIGGER" = "true" ]; } && [ "$EXISTING_PR_CONFLICT" != "true" ]; then
+            echo "Found open PR #${EXISTING_PR} for issue #${ISSUE_NUMBER}; dispatching Pipeline - Prove directly."
+            gh pr edit "$EXISTING_PR" --remove-assignee "@me" 2>/dev/null || true
+            gh workflow run prove.yml -f pr_number="$EXISTING_PR" -f issue_number="$ISSUE_NUMBER"
+            echo "resumed_stage=prove" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Smart Resume 1: Reuse specs for Code unless Think or Plan was explicitly requested.
+          if { [ -n "$EXISTING_THINK" ] || { [ "$HAS_AUDIT_LABEL" = "true" ] && [ "${RESET_IDX:--1}" -lt 0 ]; }; } && [ -n "$EXISTING_PLAN" ] && [ "$HAS_THINK_TRIGGER" != "true" ] && [ "$HAS_PLAN_TRIGGER" != "true" ]; then
+            echo "Found validated # Plan: comment on issue #${ISSUE_NUMBER}; dispatching Pipeline - Code directly."
+            gh workflow run code.yml -f issue_number="$ISSUE_NUMBER"
+            echo "resumed_stage=code" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Smart Resume 2: Reuse an existing Think spec unless Think was explicitly requested again.
+          if [ -n "$EXISTING_THINK" ] && [ "$HAS_THINK_TRIGGER" != "true" ]; then
+            echo "Found validated # Think: comment on issue #${ISSUE_NUMBER}; reusing existing think.md to trigger Plan."
+            mkdir -p "specs/issue-${ISSUE_NUMBER}"
+            printf "%s\n" "$EXISTING_THINK" > "specs/issue-${ISSUE_NUMBER}/think.md"
+            echo "$ISSUE_NUMBER" > specs/issue_number.txt
+            echo "resumed_stage=plan" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Smart Resume 3: Audit finding issues skip the Think agent unless explicitly tagged 1-think.
+          if [ "$HAS_AUDIT_LABEL" = "true" ] && [ "${RESET_IDX:--1}" -lt 0 ] && { [ "$HAS_THINK_TRIGGER" != "true" ] || [ "$HAS_PLAN_TRIGGER" = "true" ] || [ "$HAS_CODE_TRIGGER" = "true" ] || [ "$HAS_PROVE_TRIGGER" = "true" ] || [ "$HAS_RELEASE_TRIGGER" = "true" ]; }; then
+            echo "Audit finding issue #${ISSUE_NUMBER} detected without explicit 1-think; skipping Pipeline - Think and starting Plan."
+            mkdir -p "specs/issue-${ISSUE_NUMBER}"
+            TODAY=$(date -u +%Y-%m-%d 2>/dev/null || echo "2026-01-01")
+            echo "$ISSUE_VIEW" | jq -r --arg issue_number "$ISSUE_NUMBER" --arg today "$TODAY" '
+              ((.title // "") | gsub("[\\r\\n]+"; " ") | sub("^\\s+"; "") | sub("\\s+$"; "") | if length > 0 then . else "Audit Finding Remediation" end) as $title |
+              ([.labels[]?.name // empty | select(startswith("audit:"))] | first // "audit:finding") as $audit_label |
+              ((.body // "")
+                | gsub("```[\\s\\S]*?```"; " ")
+                | gsub("~~~[\\s\\S]*?~~~"; " ")
+                | sub("\\n*---\\n+_Reported by[\\s\\S]*$"; "")
+                | gsub("(?m)^\\s*#+\\s*"; "")
+                | gsub("(?m)^\\s*[-*+]\\s*(\\[[ xX]\\]\\s*)?"; "")
+                | gsub("[`*_~]+"; "")
+                | gsub("[\\r\\n\\t ]+"; " ")
+                | sub("^\\s+"; "")
+                | sub("\\s+$"; "")
+                | if length > 400 then .[0:400] + "..." elif length > 0 then . else $title end
+              ) as $summary |
+              ([(.body // "") | scan("`([A-Za-z0-9_][A-Za-z0-9_./-]*\\.[A-Za-z0-9]+)`") | .[0] | select((startswith("/") or test("(^|/)\\.\\.(/|$)")) | not)] | unique | if length > 0 then ((map("`" + . + "`") + ["`tests/`"]) | unique | join(", ")) else "Repository source and test modules identified in issue #" + $issue_number end) as $affected |
+              "# Think: " + $title + "\n\n" +
+              "## Business Need & Outcome\n" +
+              "- **Backlog Issue:** #" + $issue_number + " — " + $title + " (" + $audit_label + ")\n" +
+              "- **Problem Statement:** " + $summary + "\n" +
+              "- **Consumer:** Repository maintainers and downstream consumers relying on verified codebase quality.\n" +
+              "- **Desired Outcome:** Resolve the reported " + $audit_label + " finding in #" + $issue_number + " with deterministic automated verification and zero regressions.\n\n" +
+              "## Options Considered\n" +
+              "### Option 1: Targeted In-Place Remediation\n" +
+              "- **Approach:** Address the audit finding directly within the affected files (" + $affected + ") while preserving existing public contracts and runtime behavior.\n" +
+              "- **Trade-offs:** Keeps scope strictly bounded to the reported finding without broader architectural churn.\n" +
+              "- **Cost:** Low\n" +
+              "- **Risk:** Low\n\n" +
+              "### Option 2: Broad Subsystem Refactor\n" +
+              "- **Approach:** Re-architect surrounding modules beyond the immediate audit finding scope.\n" +
+              "- **Trade-offs:** Expands blast radius and review surface area unnecessarily for a targeted audit remediation.\n" +
+              "- **Cost:** Medium\n" +
+              "- **Risk:** Medium\n\n" +
+              "## Chosen Approach\n" +
+              "- **Selected:** Option 1\n" +
+              "- **Reasoning:** Automated audit findings already pinpoint the exact file scope, root cause, and remediation direction, making a targeted in-place fix the lowest-risk path.\n" +
+              "- **Approved By:** Automated by coding-pal-audit on " + $today + "\n\n" +
+              "## System Flow & Responsibilities\n" +
+              "- **Request Tracing:** Execution flows through the affected module(s) (" + $affected + ") and their corresponding unit tests.\n" +
+              "- **Component Responsibilities:** Target files identified in issue #" + $issue_number + " own the localized remediation and regression test coverage.\n" +
+              "- **Boundaries:** Changes remain strictly within the files and module boundaries implicated by the audit finding.\n\n" +
+              "## Constraints & Invariants\n" +
+              "- **Decision Records:** _None._\n" +
+              "- **Non-Negotiable Rules:** Preserve existing public APIs, build outputs, and unrelated runtime behavior while resolving the audit finding.\n" +
+              "- **Side-Effect Constraints:** No unintended state mutations, external network calls, or out-of-scope file modifications.\n\n" +
+              "## Blast Radius\n" +
+              "- **Tier:** Low\n" +
+              "- **Affected:** " + $affected + "\n" +
+              "- **Rationale:** Scoped remediation of a single automated audit finding within existing module boundaries.\n" +
+              "- **Rollback:** Revert the pull request commit if any regression is detected.\n\n" +
+              "## Decision Record\n" +
+              "- **Required:** no\n" +
+              "- **Reason:** Low-blast-radius audit remediation within existing architectural boundaries does not require an ADR.\n\n" +
+              "## Persistent Context Updates\n" +
+              "- **Docs:** _None._ - Scoped audit remediation does not change public APIs or user-facing documentation.\n\n" +
+              "## Ambiguities & Open Questions\n" +
+              "_None._"
+            ' > "specs/issue-${ISSUE_NUMBER}/think.md"
+            if [ "$HAS_THINK_TRIGGER" = "true" ]; then
+              gh issue edit "$ISSUE_NUMBER" --remove-label "1-think" 2>/dev/null || true
+            fi
+            echo "$ISSUE_NUMBER" > specs/issue_number.txt
+            echo "resumed_stage=plan" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "resumed_stage=none" >> "$GITHUB_OUTPUT"
+
+      - name: Sync issue to Think on Project board
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+          TARGET_STATUS: Think
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          if [ -z "$PROJECT_TITLE" ]; then
+            echo "::notice::No project_title configured; skipping Project status update."
+            exit 0
+          fi
+
+          DATA=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $number: Int!, $projectTitle: String!) {
+              repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                  id
+                  projectItems(first: 20) {
+                    nodes {
+                      id
+                      project { id }
+                    }
+                  }
+                  issueFieldValues(first: 20) {
+                    nodes {
+                      ... on IssueFieldSingleSelectValue {
+                        value
+                        optionId
+                        field {
+                          ... on IssueFieldSingleSelect {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                owner {
+                  ... on Organization {
+                    issueFields(first: 20) {
+                      nodes {
+                        ... on IssueFieldSingleSelect {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                  ... on ProjectV2Owner {
+                    projectsV2(first: 20, query: $projectTitle) {
+                      nodes {
+                        id
+                        title
+                        field(name: "Status") {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            options { id name }
+                          }
+                        }
+                        fields(first: 50) {
+                          nodes {
+                            ... on ProjectV2Field {
+                              id
+                              name
+                              dataType
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f owner="$OWNER" -f repo="$REPO" -F number="$ISSUE_NUMBER" -f projectTitle="$PROJECT_TITLE" 2>/dev/null || true)
+          if [ -z "$DATA" ]; then
+            exit 1
+          fi
+
+          ISSUE_ID=$(echo "$DATA" | jq -r '.data.repository.issue.id // empty' | head -n 1)
+          PROJECT=$(echo "$DATA" | jq -c --arg title "$PROJECT_TITLE" --arg repo "$REPO" '.data.repository.owner.projectsV2.nodes[]? | select((.title | ascii_downcase | sub("\\.js$"; "")) == ($title | ascii_downcase | sub("\\.js$"; "")) or (.title | ascii_downcase) == ($repo | ascii_downcase))' | head -n 1)
+          PROJECT_ID=$(echo "$PROJECT" | jq -r '.id // empty')
+          FIELD_ID=$(echo "$PROJECT" | jq -r '.field.id // empty')
+          OPTION_ID=$(echo "$PROJECT" | jq -r --arg status "$TARGET_STATUS" '.field.options[]? | select((.name | ascii_downcase) == ($status | ascii_downcase)) | .id' | head -n 1)
+          COST_FIELD_ID=$(echo "$PROJECT" | jq -r '(.costField.id // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].id)) // empty')
+          COST_FIELD_TYPE=$(echo "$PROJECT" | jq -r '(.costField.dataType // ([.fields.nodes[]? | select((.name // "" | ascii_downcase) == "ai cost")][0].dataType)) // "NUMBER"')
+
+          if [ -z "$ISSUE_ID" ] || [ -z "$PROJECT_ID" ] || [ -z "$FIELD_ID" ] || [ -z "$OPTION_ID" ]; then
+            echo "::error::Could not find issue, project, Status field, or '$TARGET_STATUS' option for ${OWNER}/${REPO} in Project '$PROJECT_TITLE'."
+            exit 1
+          fi
+
+          ITEM_ID=$(gh api graphql -f query='
+            mutation($projectId: ID!, $contentId: ID!) {
+              addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } }
+            }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_ID" --jq '.data.addProjectV2ItemById.item.id' 2>/dev/null || true)
+          if [ -z "$ITEM_ID" ]; then
+            ITEM_ID=$(echo "$DATA" | jq -r --arg pid "$PROJECT_ID" '.data.repository.issue.projectItems.nodes[]? | select(.project.id == $pid) | .id' | head -n 1)
+          fi
+
+          if [ -n "$ITEM_ID" ]; then
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f optionId="$OPTION_ID" >/dev/null 2>&1 || echo "::warning::Transient GitHub ProjectV2 API error updating Status to '$TARGET_STATUS'; continuing."
+          fi
+
+          if [ -z "${ISSUE_AI_MODEL:-}" ]; then
+            CURRENT_PRIORITY=$(echo "$DATA" | jq -r '.data.repository.issue.issueFieldValues.nodes[]? | select((.field.name // "" | ascii_downcase) == "priority") | .value // empty' | head -n 1)
+            if [ -z "$CURRENT_PRIORITY" ]; then
+              PRIORITY_FIELD_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "priority") | .id // empty' | head -n 1)
+              PRIORITY_DEFAULT_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "priority") | .options[]? | select((.name | ascii_downcase) == "medium") | .id // empty' | head -n 1)
+              PRIORITY_FIELD_ID="${PRIORITY_FIELD_ID:-IFSS_kgDOAoWpGg}"
+              PRIORITY_DEFAULT_ID="${PRIORITY_DEFAULT_ID:-IFSSO_kgDOBGndmQ}"
+              if [ -n "$PRIORITY_FIELD_ID" ] && [ -n "$PRIORITY_DEFAULT_ID" ]; then
+                gh api graphql -f query='
+                  mutation($issueId: ID!, $fieldId: ID!, $fieldOptionId: ID!) {
+                    setIssueFieldValue(input: {
+                      issueId: $issueId,
+                      issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $fieldOptionId }]
+                    }) { issue { id } }
+                  }' -f issueId="$ISSUE_ID" -f fieldId="$PRIORITY_FIELD_ID" -f fieldOptionId="$PRIORITY_DEFAULT_ID" >/dev/null 2>&1 || true
+              fi
+            fi
+
+            CURRENT_MODEL=$(echo "$DATA" | jq -r '.data.repository.issue.issueFieldValues.nodes[]? | select((.field.name // "" | ascii_downcase) == "model") | .value // empty' | head -n 1)
+            if [ -z "$CURRENT_MODEL" ]; then
+              CURRENT_MODEL="claude-sonnet-5.5"
+              MODEL_FIELD_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "model") | .id // empty' | head -n 1)
+              MODEL_DEFAULT_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "model") | .options[]? | select((.name | ascii_downcase) == "claude-sonnet-5.5") | .id // empty' | head -n 1)
+              MODEL_FIELD_ID="${MODEL_FIELD_ID:-IFSS_kgDOAvKZhw}"
+              MODEL_DEFAULT_ID="${MODEL_DEFAULT_ID:-IFSSO_kgDOBSkjiw}"
+              if [ -n "$MODEL_FIELD_ID" ] && [ -n "$MODEL_DEFAULT_ID" ]; then
+                gh api graphql -f query='
+                  mutation($issueId: ID!, $fieldId: ID!, $fieldOptionId: ID!) {
+                    setIssueFieldValue(input: {
+                      issueId: $issueId,
+                      issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $fieldOptionId }]
+                    }) { issue { id } }
+                  }' -f issueId="$ISSUE_ID" -f fieldId="$MODEL_FIELD_ID" -f fieldOptionId="$MODEL_DEFAULT_ID" >/dev/null 2>&1 || true
+              fi
+            fi
+
+            CURRENT_EFFORT=$(echo "$DATA" | jq -r '.data.repository.issue.issueFieldValues.nodes[]? | select((.field.name // "" | ascii_downcase) == "effort") | .value // empty' | head -n 1)
+            if [ -z "$CURRENT_EFFORT" ]; then
+              CURRENT_EFFORT="Medium"
+              EFFORT_FIELD_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "effort") | .id // empty' | head -n 1)
+              EFFORT_DEFAULT_ID=$(echo "$DATA" | jq -r '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "effort") | .options[]? | select((.name | ascii_downcase) == "medium") | .id // empty' | head -n 1)
+              EFFORT_FIELD_ID="${EFFORT_FIELD_ID:-IFSS_kgDOAvKWEg}"
+              EFFORT_DEFAULT_ID="${EFFORT_DEFAULT_ID:-IFSSO_kgDOBSkdRg}"
+              if [ -n "$EFFORT_FIELD_ID" ] && [ -n "$EFFORT_DEFAULT_ID" ]; then
+                gh api graphql -f query='
+                  mutation($issueId: ID!, $fieldId: ID!, $fieldOptionId: ID!) {
+                    setIssueFieldValue(input: {
+                      issueId: $issueId,
+                      issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $fieldOptionId }]
+                    }) { issue { id } }
+                  }' -f issueId="$ISSUE_ID" -f fieldId="$EFFORT_FIELD_ID" -f fieldOptionId="$EFFORT_DEFAULT_ID" >/dev/null 2>&1 || true
+              fi
+            fi
+
+            case "$CURRENT_MODEL" in
+              claude-sonnet-5.5|claude-opus-5.5|claude-haiku-5.5|gpt-6.1-sol|gpt-6.1-terra|gpt-6-luna|gpt-5.3-codex|gemini-4-argon|gemini-3.8-flash|auto)
+                ISSUE_AI_MODEL="$CURRENT_MODEL"
+                ;;
+              *)
+                ISSUE_AI_MODEL="claude-sonnet-5.5"
+                ;;
+            esac
+            EFFORT_LOWER=$(echo "$CURRENT_EFFORT" | tr '[:upper:]' '[:lower:]')
+            case "$EFFORT_LOWER" in
+              low|medium|high|max)
+                ISSUE_AI_EFFORT="$EFFORT_LOWER"
+                ;;
+              *)
+                ISSUE_AI_EFFORT="medium"
+                ;;
+            esac
+            export ISSUE_AI_MODEL ISSUE_AI_EFFORT
+            echo "ISSUE_AI_MODEL=${ISSUE_AI_MODEL}" >> "$GITHUB_ENV"
+            echo "ISSUE_AI_EFFORT=${ISSUE_AI_EFFORT}" >> "$GITHUB_ENV"
+          fi
+
+          if [ -n "$COST_FIELD_ID" ]; then
+            echo "PROJECT_ID=${PROJECT_ID}" >> "$GITHUB_ENV"
+            echo "PROJECT_ITEM_ID=${ITEM_ID}" >> "$GITHUB_ENV"
+            echo "COST_FIELD_ID=${COST_FIELD_ID}" >> "$GITHUB_ENV"
+            echo "COST_FIELD_TYPE=${COST_FIELD_TYPE}" >> "$GITHUB_ENV"
+            COMMENTS_JSON=$(gh issue view "$ISSUE_NUMBER" --json comments 2>/dev/null || echo '{"comments":[]}')
+            PENDING_JSON="[]"
+            if [ -s "specs/issue-${ISSUE_NUMBER}/ai-cost-pending.jsonl" ]; then
+              PENDING_JSON=$(jq -s '.' "specs/issue-${ISSUE_NUMBER}/ai-cost-pending.jsonl")
+            fi
+            TOTAL_COST=$(jq -n --argjson issue "$COMMENTS_JSON" --argjson pending "$PENDING_JSON" '
+              ([ $issue.comments[]?.body // "" | scan("<!-- ai-cost-step:(\\{[^\\n]*?\\}) -->") | .[0] | fromjson? ] + $pending)
+              | [.[].cost_usd // 0] | add // 0 | ((. * 10000 | round) / 10000)
+            ')
+            if [ "$COST_FIELD_TYPE" = "TEXT" ]; then
+              TOTAL_COST_TEXT=$(jq -n --argjson c "$TOTAL_COST" '
+                def fmt_usd:
+                  ((. * 10000 | round) | tostring) as $s
+                  | (if ($s | length) <= 4 then ("0000" + $s)[-4:] else $s end) as $padded
+                  | (if ($s | length) <= 4 then "0" else $s[0:($s | length) - 4] end) + "." + $padded[-4:];
+                "$" + ($c | fmt_usd)
+              ' -r)
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $cost: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { text: $cost }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -f cost="$TOTAL_COST_TEXT" >/dev/null 2>&1 || true
+            else
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $cost: Float!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { number: $cost }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$COST_FIELD_ID" -F cost="$TOTAL_COST" >/dev/null 2>&1 || true
+            fi
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.resume.outputs.resumed_stage == 'none'
+
+      - name: Install coding-pal think primitives
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || 'main' }}
+        run: |
+          # Check out the engine (this repository) at the ref the running workflow was loaded from, so
+          # workflows, skills, agents and validators always come from one consistent version.
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
+          fi
+          bash "$ENGINE_DIR/scripts/factory/install-primitives.sh" --stage think --engine "$ENGINE_DIR" --keep-tracked-clean
+
+      - uses: actions/setup-node@v4
+        if: steps.resume.outputs.resumed_stage == 'none'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install project dependencies for codebase investigation
+        if: steps.resume.outputs.resumed_stage == 'none'
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts --prefer-offline --no-audit 2>/dev/null || npm ci --prefer-offline --no-audit || true
+          fi
+
+      - name: Cache Copilot CLI
+        if: steps.resume.outputs.resumed_stage == 'none'
+        uses: actions/cache@v4
+        with:
+          path: ~/.copilot-cli
+          key: copilot-cli-${{ runner.os }}-node22
+
+      - name: Install Copilot CLI
+        if: steps.resume.outputs.resumed_stage == 'none'
+        run: |
+          if [ ! -x "$HOME/.copilot-cli/bin/copilot" ]; then
+            npm install --prefix "$HOME/.copilot-cli" -g @github/copilot
+          fi
+          echo "$HOME/.copilot-cli/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch issue context and run Thinker agent
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          ISSUE_JSON=$(gh issue view "$ISSUE_NUMBER" --json title,body,labels,comments)
+          ISSUE_TITLE=$(echo "$ISSUE_JSON" | jq -r '.title')
+          ISSUE_BODY=$(echo "$ISSUE_JSON" | jq -r '.body // ""')
+          PREVIOUS_THINK=$(echo "$ISSUE_JSON" | jq -r '[.comments[].body | select(test("^# Think:"; "m"))] | last // empty | sub("\\n*(?:---\\n+)?<!-- ai-cost-step:[^\\n]*-->[\\s\\S]*$"; "") | sub("\\n+## Forge Asset Bindings\\r?\\n[\\s\\S]*?(?=\\n## |$)"; "")')
+          DEV_COMMENTS=$(echo "$ISSUE_JSON" | jq -r '
+            [.comments[]
+              | select((.body // "") | test("^(# (Think|Plan|Code|Prove|Release|Release report|Release decision|No release|Release blocked)|✅ \\*\\*Already Resolved on Base Branch\\*\\*|## Upstream Library Released|⏸️ \\*\\*(Paused (after|for)|Blocked on)|Blocked waiting on upstream library issue |⚠️ \\*\\*(Think|Plan|Code|Prove) failed|Pull request opened for #|### Companion Game Editor Updates (Dispatched|Scheduled)|Fix-loop limit of|# Queued|Started by the chain|Milestone train complete|Released together with|Release failed or did not finish\\.|PR #[0-9]+ (conflicts with|or its base changed))"; "m") | not)
+              | select((.body // "") | gsub("\\s+"; "") | length > 0)
+              | "### Comment by @" + (.author.login // "developer") + " (" + (.createdAt // "") + "):\n" + .body
+            ] | join("\n\n")
+          ')
+          SPEC_DIR="specs/issue-${ISSUE_NUMBER}"
+          THINK_FILE="${SPEC_DIR}/think.md"
+          mkdir -p "$SPEC_DIR"
+
+          IMAGE_URLS=$(echo "$ISSUE_JSON" | jq -r '
+            [ (.body // ""), (.comments[]?.body // "") ]
+            | join("\n")
+            | [ scan("https://(?:github\\.com/user-attachments/assets/[A-Za-z0-9_-]+|user-images\\.githubusercontent\\.com/[^\"\\)\\s>]+|private-user-images\\.githubusercontent\\.com/[^\"\\)\\s>]+|[^\"\\)\\s>]+\\.(?:png|jpg|jpeg|gif|webp))") ]
+            | map(if type == "array" then .[0] else . end)
+            | unique[]
+          ' 2>/dev/null || true)
+          IMAGE_CONTEXT=""
+          if [ -n "$IMAGE_URLS" ]; then
+            IMAGE_DIR=".agents/issue-images"
+            mkdir -p "$IMAGE_DIR"
+            IMG_IDX=0
+            DOWNLOADED_IMAGES=""
+            while IFS= read -r img_url; do
+              [ -z "$img_url" ] && continue
+              IMG_IDX=$((IMG_IDX + 1))
+              IMG_FILE="${IMAGE_DIR}/attachment-${IMG_IDX}.png"
+              if command -v curl >/dev/null 2>&1; then
+                curl -L --fail --silent "$img_url" -o "$IMG_FILE" 2>/dev/null || curl -L --fail --silent -H "Authorization: Bearer ${GH_TOKEN}" "$img_url" -o "$IMG_FILE" 2>/dev/null || true
+              fi
+              if [ -s "$IMG_FILE" ]; then
+                DOWNLOADED_IMAGES="${DOWNLOADED_IMAGES}
+          - ${IMG_FILE} (downloaded inside workspace from ${img_url} — open this relative path directly with your Read/view file tool)"
+              else
+                DOWNLOADED_IMAGES="${DOWNLOADED_IMAGES}
+          - ${img_url} (download into .agents/issue-images/ with curl -L and inspect)"
+              fi
+            done <<< "$IMAGE_URLS"
+            IMAGE_CONTEXT="
+          Attached Visual Evidence / Screenshots on Issue #${ISSUE_NUMBER} (MUST be opened and viewed directly with your multimodal file-reading tool at the workspace path below before diagnosing or designing, so your specification matches the exact visual scene, room/location, and artifact shown in the screenshot):${DOWNLOADED_IMAGES}
+          "
+          fi
+
+          FEEDBACK_CONTEXT=""
+          if [ -n "$PREVIOUS_THINK" ]; then
+            FEEDBACK_CONTEXT="${FEEDBACK_CONTEXT}
+          Previous Think Specification (revise and improve this specification according to any new Developer Feedback / Follow-up Comments below):
+          ${PREVIOUS_THINK}
+          "
+          fi
+          if [ -n "$DEV_COMMENTS" ]; then
+            FEEDBACK_CONTEXT="${FEEDBACK_CONTEXT}
+          Developer Feedback / Follow-up Comments on Issue #${ISSUE_NUMBER} (MUST be taken into account and incorporated into the specification):
+          ${DEV_COMMENTS}
+          "
+          fi
+
+          API_DOCS_HINT=""
+          if [ -d swagger ] || [ -d db/liquibase ]; then
+            API_DOCS_HINT="If solving this issue adds or changes an HTTP endpoint, a request or response schema, an environment variable or a database migration, you MUST note every file that has to change with it in ## Persistent Context Updates: the hand-maintained OpenAPI spec (swagger/src/*.openapi*.json), the Liquibase changelog under db/liquibase/, the docker/conf/.env.*.example templates, website/docs pages if website/docs exists, README.md and CHANGELOG.md. These files also decide the semantic-version bump of the next release."
+          fi
+
+          export COPILOT_OTEL_ENABLED="true"
+          export COPILOT_OTEL_FILE_EXPORTER_PATH="${RUNNER_TEMP}/copilot-otel.jsonl"
+          rm -f "$RUNNER_TEMP/copilot-think.log" 2>/dev/null || true
+          COPILOT_EXIT=0
+          copilot --model="${ISSUE_AI_MODEL:-claude-sonnet-5.5}" --reasoning-effort="${ISSUE_AI_EFFORT:-medium}" --agent="think" --allow-all-tools \
+            --prompt "Produce a validated Think record at ${THINK_FILE} for GitHub Issue #${ISSUE_NUMBER}.
+          Issue Title: ${ISSUE_TITLE}
+          Issue Body:
+          ${ISSUE_BODY}
+          ${IMAGE_CONTEXT}
+          ${FEEDBACK_CONTEXT}
+
+          Follow .github/instructions/think.instructions.md and .agents/skills/think/SKILL.md (and its references/think-contract.md).
+          Keep the exact required headings and '- **<Label>:**' bullet keys enforced by validate-think.mjs, while producing a rich, insightful, IDE-grade architectural and product design specification:
+          - **Deep Codebase Investigation First:** Before writing ${THINK_FILE}, thoroughly read the relevant source files, data structures, pipelines, recent git history ('git log -n 10 --oneline' and 'git log -p -n 5 -- <files>' to detect regressions where a recent commit updated one side of a coupled invariant while leaving a sibling component on older assumptions), and tests so every section is grounded in real symbols and mechanics.
+            - **Differential & Quantitative Root-Cause Proof:** When a bug occurs in a specific level, mode, or scenario, compare what differs between the failing case and working cases—never blame shared logic that behaves identically in working cases. Verify your hypothesis quantitatively with concrete inputs/math to confirm the proposed fix accounts for the full magnitude of the observed symptom, rather than assuming a minor constant tweak is sufficient.
+            - **End-to-End Producer-to-Consumer Trace:** Trace data and coordinates from generation through every intermediate helper, coordinate transform, and downstream consumer/filter/guard, and include every required companion file in ## Blast Radius (- **Affected:**) so the implementation is never blocked by an out-of-scope file constraint.
+            - **No Self-Sabotaging Constraints:** In ## Constraints & Invariants (- **Non-Negotiable Rules:**), do not lock in broken legacy behavior or treat incidental literal/regex assertions in existing unit tests as immutable rules when updating them is required to fix the root cause; instead, include the affected module and test file in ## Blast Radius (- **Affected:**) so they are updated together.
+          - **Product & Design Ambition (No Lazy No-Op Workarounds):** When an issue is brief or high-level (e.g., a 1-sentence feature idea), expand it with genuine product, UX, or API design judgment that fulfills the user's real intent. Never select a trivial or no-op workaround (such as claiming existing unrelated items already satisfy the request) just to minimize code changes; choose the option that delivers a cohesive, complete, and compelling feature.
+          - **Substantive Options & Trade-Off Analysis:** Explore 3 to 4 genuinely distinct architectural/design options in ## Options Considered (for example: lightweight extension of an existing entity, a dedicated interactive/destructible subsystem, or reuse of an existing module or service). Give each option's Approach, Trade-offs, Cost, and Risk thorough multi-sentence analysis (and 2-space indented sub-bullets where helpful).
+          - **Rich Technical Depth in Flow & Reasoning:** In ## Chosen Approach (Reasoning) and ## System Flow & Responsibilities (Request Tracing, Component Responsibilities, Boundaries), write detailed multi-sentence explanations, 2-space indented sub-bullets ('  - ...'), and optional 'mermaid' flow/state diagrams covering concrete data models, state transitions, interaction mechanics, visual/audio feedback, and exact module boundaries. Keep top-level '- **<Label>:**' keys strictly matching the contract; indent any sub-bullets by at least 2 spaces so validate-think.mjs parses them as continuation lines of that field, and do not include source code blocks or task checkboxes.
+          - Write '_None._' in ## Ambiguities & Open Questions unless a genuine blocker exists.
+          - **Documentation Impact Analysis:** In ## Persistent Context Updates, always record every documentation file (as '- **Docs:** `path` - what changes'; the path must be under website/docs/ or docs/, or be README.md or CHANGELOG.md) the fix or feature makes stale or incomplete: pages under website/docs/ (if it exists), docs/, README.md, and CHANGELOG.md. This covers public API changes and also user-visible behavior, configuration, CLI, controls, or workflow changes. The documentation decision is mandatory: when no documentation is affected, write '- **Docs:** _None._ - <reason>' (a bare '_None._' section fails validate-think.mjs).
+          ${API_DOCS_HINT}
+          Do not post comments or edit labels on GitHub issues; only write local files under ${SPEC_DIR}.
+          Validate the generated file with: node .agents/skills/think/scripts/validate-think.mjs --think ${THINK_FILE} and fix any validation errors until it exits with code 0." \
+            > "$RUNNER_TEMP/copilot-think.log" 2>&1 || COPILOT_EXIT=$?
+          [ -f "$RUNNER_TEMP/copilot-think.log" ] && cat "$RUNNER_TEMP/copilot-think.log" || true
+
+          think_is_complete() {
+            [ -s "$THINK_FILE" ] || return 1
+            if [ -f .agents/skills/think/scripts/validate-think.mjs ]; then
+              node .agents/skills/think/scripts/validate-think.mjs --think "$THINK_FILE" >/dev/null 2>&1 || return 1
+            fi
+            return 0
+          }
+          for RESUME_ATTEMPT in 1 2; do
+            [ "$COPILOT_EXIT" -eq 0 ] || break
+            think_is_complete && break
+            RESUME_ID=$(sed -nE 's/.*copilot --resume=([^[:space:]]+).*/\1/p' "$RUNNER_TEMP/copilot-think.log" 2>/dev/null | tail -n 1 || true)
+            if [ -z "$RESUME_ID" ]; then
+              for d in "${COPILOT_HOME:-$HOME/.copilot}"/session-state/*; do
+                [ -d "$d" ] && RESUME_ID=$(basename "$d")
+              done
+            fi
+            [ -n "$RESUME_ID" ] || break
+            echo "Thinker Agent exited before producing a valid ${THINK_FILE}; resuming session ${RESUME_ID} (attempt ${RESUME_ATTEMPT}/2)..."
+            copilot --model="${ISSUE_AI_MODEL:-claude-sonnet-5.5}" --reasoning-effort="${ISSUE_AI_EFFORT:-medium}" --resume="$RESUME_ID" --agent="think" --allow-all-tools \
+              --prompt "You stopped mid-task before producing a validated Think record at ${THINK_FILE} for Issue #${ISSUE_NUMBER}. Continue immediately from where you left off: write ${THINK_FILE} and validate it with 'node .agents/skills/think/scripts/validate-think.mjs --think ${THINK_FILE}' until it exits 0." \
+              > "$RUNNER_TEMP/copilot-think-resume.log" 2>&1 || COPILOT_EXIT=$?
+            if [ -f "$RUNNER_TEMP/copilot-think-resume.log" ]; then
+              cat "$RUNNER_TEMP/copilot-think-resume.log"
+              printf '\n' >> "$RUNNER_TEMP/copilot-think.log"
+              cat "$RUNNER_TEMP/copilot-think-resume.log" >> "$RUNNER_TEMP/copilot-think.log"
+              rm -f "$RUNNER_TEMP/copilot-think-resume.log"
+            fi
+          done
+
+          STEP_COST_JSON=$(
+            {
+              for f in "${COPILOT_HOME:-$HOME/.copilot}"/session-state/*/events.jsonl "$COPILOT_OTEL_FILE_EXPORTER_PATH"; do
+                [ -f "$f" ] && cat "$f" || true
+              done
+            } | jq -sc --arg step "Think" '
+              def num(x): if (x | type) == "number" then x elif (x | type) == "string" then (x | tonumber? // 0) else 0 end;
+              ([.[] | select(.type? == "session.usage_record") | .data.usage | select(type == "object")]) as $urec |
+              ([.[] | select(.type? == "assistant.usage")]) as $ausg |
+              ([.[] | select(.type? == null and (."gen_ai.usage.input_tokens"? != null or .input_tokens? != null or .prompt_tokens? != null))]) as $otel |
+              (if ($urec | length) > 0 then $urec elif ($ausg | length) > 0 then $ausg else $otel end) as $recs |
+              def tok_in: [$recs[] | (.inputTokens? // .input_tokens? // .promptTokens? // .prompt_tokens? // ."gen_ai.usage.input_tokens"? // 0) | num(.)] | add // 0;
+              def tok_out: [$recs[] | (.outputTokens? // .output_tokens? // .completionTokens? // .completion_tokens? // ."gen_ai.usage.output_tokens"? // 0) | num(.)] | add // 0;
+              def tok_cache: [$recs[] | (.cacheReadTokens? // .cache_read_tokens? // .cached_tokens? // ."gen_ai.usage.cache_read.input_tokens"? // 0) | num(.)] | add // 0;
+              def tok_cache_write: [$recs[] | (.cacheWriteTokens? // .cache_write_tokens? // ."gen_ai.usage.cache_creation.input_tokens"? // 0) | num(.)] | add // 0;
+              def nano_aiu: [$recs[] | (.copilotUsage.totalNanoAiu? // .copilotUsage.total_nano_aiu? // .totalNanoAiu? // 0) | num(.)] | add // 0;
+              def explicit_cost: [$recs[] | (.cost_usd? // .total_cost_usd? // .costUsd? // .totalCostUsd? // ."gen_ai.usage.cost"? // 0) | num(.)] | add // 0;
+              def models: [$recs[] | (.model? // ."gen_ai.response.model"? // ."gen_ai.request.model"? // empty) | select(type == "string" and length > 0 and . != "auto")] | unique;
+              def model_str: (models | if length == 0 then "auto" else join(", ") end);
+              def rate_in(m): if (m | test("opus"; "i")) then 15.0 elif (m | test("haiku|mini|flash|nano|luna"; "i")) then 0.25 else 3.0 end;
+              def rate_out(m): if (m | test("opus"; "i")) then 75.0 elif (m | test("haiku|mini|flash|nano|luna"; "i")) then 1.25 else 15.0 end;
+              (tok_in) as $in | (tok_out) as $out | (tok_cache) as $cache | (tok_cache_write) as $cwrite | (nano_aiu) as $naiu | (model_str) as $m |
+              ([($in - $cache - $cwrite), 0] | max) as $uncached_in |
+              (if explicit_cost > 0 then explicit_cost
+               elif $naiu > 0 then (($naiu / 1000000000.0) * 0.01)
+               else (($uncached_in * rate_in($m) + $cwrite * (rate_in($m) * 1.25) + $cache * (rate_in($m) * 0.1) + $out * rate_out($m)) / 1000000.0)
+               end) as $cost |
+              {
+                step: $step,
+                model: $m,
+                input_tokens: $in,
+                output_tokens: $out,
+                cached_tokens: $cache,
+                requests: (if ($recs | length) > 0 then ($recs | length) else 1 end),
+                cost_usd: (($cost * 10000 | round) / 10000)
+              }
+            ' 2>/dev/null || echo '{"step":"Think","model":"auto","input_tokens":0,"output_tokens":0,"cached_tokens":0,"requests":1,"cost_usd":0}'
+          )
+          rm -rf "${COPILOT_HOME:-$HOME/.copilot}"/session-state/* "${COPILOT_OTEL_FILE_EXPORTER_PATH}"
+          echo "$STEP_COST_JSON" >> "${SPEC_DIR}/ai-cost.jsonl"
+          echo "$STEP_COST_JSON" > "${SPEC_DIR}/ai-cost-pending.jsonl"
+          PRIOR_COST=$(echo "$ISSUE_JSON" | jq -r '.comments[].body // empty' 2>/dev/null | sed -n 's/.*<!-- ai-cost-step:\({.*}\) -->.*/\1/p' | jq -sr '([.[].cost_usd // 0] | add // 0)' 2>/dev/null || echo "0")
+          echo "$STEP_COST_JSON" | jq -r --argjson prior "${PRIOR_COST:-0}" '
+            def fmt_usd(x): (x * 10000 | round / 10000) | tostring | if test("\\.") then (split(".") | .[0] + "." + ((.[1] + "0000")[0:4])) else . + ".0000" end;
+            ((.cost_usd // 0) + $prior) as $cum |
+            "\n\n---\n<!-- ai-cost-step:" + (. | tojson) + " -->\n💰 **AI Cost (" + .step + "):** `$" + fmt_usd(.cost_usd) + "` (`" + .model + "` · " + (.input_tokens | tostring) + " in / " + (.output_tokens | tostring) + " out tokens · " + (.requests | tostring) + (if .requests == 1 then " request" else " requests" end) + (if $prior > 0 then " · **Cumulative:** `$" + fmt_usd($cum) + "`" else "" end) + ")"
+          ' > "${SPEC_DIR}/ai-cost-step.md"
+          if [ "$COPILOT_EXIT" -ne 0 ]; then
+            {
+              echo "Think Agent (\`${ISSUE_AI_MODEL:-claude-sonnet-5.5}\` / effort \`${ISSUE_AI_EFFORT:-medium}\`) exited with status \`${COPILOT_EXIT}\` while producing \`${THINK_FILE}\`."
+              if [ -s "$RUNNER_TEMP/copilot-think.log" ]; then
+                echo ""
+                echo "<details><summary>Copilot CLI output (last 30 lines)</summary>"
+                echo ""
+                echo '```text'
+                tail -n 30 "$RUNNER_TEMP/copilot-think.log"
+                echo '```'
+                echo "</details>"
+              fi
+            } > "$RUNNER_TEMP/think-failure-reason.md"
+            exit "$COPILOT_EXIT"
+          fi
+
+      - name: Validate think.md contract
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          THINK_FILE="specs/issue-${ISSUE_NUMBER}/think.md"
+          if ! node .agents/skills/think/scripts/validate-think.mjs --think "$THINK_FILE" > "$RUNNER_TEMP/validate-think.log" 2>&1; then
+            cat "$RUNNER_TEMP/validate-think.log" >&2
+            {
+              echo "Think contract validation (\`validate-think.mjs\`) failed for \`${THINK_FILE}\`:"
+              echo ""
+              echo '```text'
+              cat "$RUNNER_TEMP/validate-think.log"
+              echo '```'
+              if [ -s "$RUNNER_TEMP/copilot-think.log" ]; then
+                echo ""
+                echo "<details><summary>Copilot CLI output (last 30 lines)</summary>"
+                echo ""
+                echo '```text'
+                tail -n 30 "$RUNNER_TEMP/copilot-think.log"
+                echo '```'
+                echo "</details>"
+              fi
+            } > "$RUNNER_TEMP/think-failure-reason.md"
+            exit 1
+          fi
+          if ! node .agents/skills/decision-record/scripts/validate-decision.mjs --think "$THINK_FILE" > "$RUNNER_TEMP/validate-decision.log" 2>&1; then
+            cat "$RUNNER_TEMP/validate-decision.log" >&2
+            {
+              echo "Decision record validation (\`validate-decision.mjs\`) failed for \`${THINK_FILE}\`:"
+              echo ""
+              echo '```text'
+              cat "$RUNNER_TEMP/validate-decision.log"
+              echo '```'
+            } > "$RUNNER_TEMP/think-failure-reason.md"
+            exit 1
+          fi
+          cat "$THINK_FILE" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment think.md on issue
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          THINK_FILE="specs/issue-${ISSUE_NUMBER}/think.md"
+          COST_STEP_FILE="specs/issue-${ISSUE_NUMBER}/ai-cost-step.md"
+          COMMENT_FILE="$THINK_FILE"
+          if [ -s "$COST_STEP_FILE" ]; then
+            COMMENT_FILE="$RUNNER_TEMP/think-comment.md"
+            printf "%s%s\n" "$(cat "$THINK_FILE")" "$(cat "$COST_STEP_FILE")" > "$COMMENT_FILE"
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file "$COMMENT_FILE"
+          rm -f "specs/issue-${ISSUE_NUMBER}/ai-cost-pending.jsonl"
+          echo "$ISSUE_NUMBER" > specs/issue_number.txt
+
+          if [ -n "${COST_FIELD_ID:-}" ] && [ -n "${PROJECT_ID:-}" ] && [ -n "${PROJECT_ITEM_ID:-}" ]; then
+            COMMENTS_JSON=$(gh issue view "$ISSUE_NUMBER" --json comments 2>/dev/null || echo '{"comments":[]}')
+            TOTAL_COST=$(jq -n --argjson issue "$COMMENTS_JSON" '
+              [ $issue.comments[]?.body // "" | scan("<!-- ai-cost-step:(\\{[^\\n]*?\\}) -->") | .[0] | fromjson? ]
+              | [.[].cost_usd // 0] | add // 0 | ((. * 10000 | round) / 10000)
+            ')
+            if [ "${COST_FIELD_TYPE:-NUMBER}" = "TEXT" ]; then
+              TOTAL_COST_TEXT=$(jq -n --argjson c "$TOTAL_COST" '
+                def fmt_usd:
+                  ((. * 10000 | round) | tostring) as $s
+                  | (if ($s | length) <= 4 then ("0000" + $s)[-4:] else $s end) as $padded
+                  | (if ($s | length) <= 4 then "0" else $s[0:($s | length) - 4] end) + "." + $padded[-4:];
+                "$" + ($c | fmt_usd)
+              ' -r)
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $cost: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { text: $cost }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$PROJECT_ITEM_ID" -f fieldId="$COST_FIELD_ID" -f cost="$TOTAL_COST_TEXT" >/dev/null 2>&1 || true
+            else
+              gh api graphql -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $cost: Float!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                    value: { number: $cost }
+                  }) { projectV2Item { id } }
+                }' -f projectId="$PROJECT_ID" -f itemId="$PROJECT_ITEM_ID" -f fieldId="$COST_FIELD_ID" -F cost="$TOTAL_COST" >/dev/null 2>&1 || true
+            fi
+          fi
+
+      - name: Check for manual validation checkpoint after Think
+        id: checkpoint
+        if: steps.resume.outputs.resumed_stage == 'none'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          ISSUE_JSON=$(gh issue view "$ISSUE_NUMBER" --json state,body,labels)
+          PAUSE_THINK=$(echo "$ISSUE_JSON" | jq -r '
+            ((.state // "OPEN") == "CLOSED")
+            or (([.labels[].name] | any(. == "1-think" or . == "pause:think")))
+            or ((([.labels[].name] | any(. == "1-think" or . == "2-plan" or . == "3-code" or . == "4-prove" or . == "5-release")) | not))
+            or ((.body // "") | test("(\\[pause:think\\]|- \\[[xX]\\] [Pp]ause after [Tt]hink)"))
+          ')
+
+          if [ "$PAUSE_THINK" != "true" ]; then
+            echo "paused=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "paused=true" >> "$GITHUB_OUTPUT"
+          gh issue edit "$ISSUE_NUMBER" --remove-label "1-think,2-plan,3-code,4-prove,5-release,pause:think" --add-assignee "@me" || true
+
+      - name: Upload think.md artifact for Plan workflow
+        id: handoff
+        if: >-
+          steps.resume.outputs.resumed_stage != 'code' &&
+          steps.resume.outputs.resumed_stage != 'prove' &&
+          steps.resume.outputs.resumed_stage != 'skip' &&
+          steps.checkpoint.outputs.paused != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: think-spec
+          path: |
+            specs/issue_number.txt
+            specs/issue-${{ inputs.issue_number }}/think.md
+          retention-days: 7
+
+      - name: Start Plan
+        if: steps.handoff.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh workflow run plan.yml -f workflow_run_id="$RUN_ID"
+
+      - name: Mark issue needs:developer if Think fails
+        if: failure() && steps.resume.outputs.resumed_stage != 'skip'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          if [ -n "${ISSUE_NUMBER:-}" ]; then
+            GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh label create needs:developer --force --description "Pipeline failed or fix-loop limit reached; developer attention required" || true
+            GH_TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}" gh issue edit "$ISSUE_NUMBER" --add-label "needs:developer" --remove-label "1-think,2-plan,3-code,4-prove,5-release" || true
+            gh issue edit "$ISSUE_NUMBER" --add-assignee "@me" || true
+            RUN_URL="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-$GH_REPO}/actions/runs/${GITHUB_RUN_ID:-}"
+            FAILURE_FILE="$RUNNER_TEMP/think-failure-comment.md"
+            {
+              echo "⚠️ **Think failed — issue stays in Think with \`needs:developer\`**"
+              echo ""
+              if [ -s "$RUNNER_TEMP/think-failure-reason.md" ]; then
+                cat "$RUNNER_TEMP/think-failure-reason.md"
+              else
+                echo "The \`Pipeline - Think\` workflow failed before producing a validated \`think.md\` specification."
+                if [ -s "$RUNNER_TEMP/copilot-think.log" ]; then
+                  echo ""
+                  echo "<details><summary>Copilot CLI output (last 30 lines)</summary>"
+                  echo ""
+                  echo '```text'
+                  tail -n 30 "$RUNNER_TEMP/copilot-think.log"
+                  echo '```'
+                  echo "</details>"
+                fi
+              fi
+              echo ""
+              echo "- **Workflow run:** ${RUN_URL}"
+              if [ -s "specs/issue-${ISSUE_NUMBER}/ai-cost-step.md" ]; then
+                cat "specs/issue-${ISSUE_NUMBER}/ai-cost-step.md"
+              fi
+            } > "$FAILURE_FILE"
+            gh issue comment "$ISSUE_NUMBER" --body-file "$FAILURE_FILE" || true
+            rm -f "specs/issue-${ISSUE_NUMBER}/ai-cost-pending.jsonl" "specs/issue-${ISSUE_NUMBER}/ai-cost-step.md"
+          fi

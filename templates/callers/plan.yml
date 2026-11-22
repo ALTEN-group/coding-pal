@@ -1,0 +1,36 @@
+# Managed by coding-pal (templates/callers/plan.yml). Re-generate with scripts/factory/bootstrap.sh instead of editing.
+name: Pipeline - Plan
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      workflow_run_id:
+        description: 'Upstream run containing the specification artifact (pipeline handoff)'
+        required: false
+        type: string
+      issue_number:
+        description: 'Issue number to plan (must already have think.md)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  plan:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.event.issue.state == 'open' &&
+       github.event.label.name == '2-plan')
+    uses: __ENGINE_REPO__/.github/workflows/pipeline-plan.yml@__ENGINE_REF__
+    with:
+      issue_number: ${{ inputs.issue_number || github.event.issue.number || '' }}
+      workflow_run_id: ${{ inputs.workflow_run_id || '' }}
+      project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
+    secrets: inherit

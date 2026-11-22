@@ -1,0 +1,105 @@
+name: Audit fleet (all repos)
+
+# Dispatches the weekly audits workflow (`audits.yml`, see templates/callers/) of several repositories at once.
+# Runs from this repository; needs the PIPELINE_GITHUB_TOKEN secret with Actions write access on the targets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Repositories to audit: "all" (every repository of FLEET_REPOS), or one repository name'
+        type: string
+        required: true
+        default: all
+      audit:
+        description: 'Audit to run'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - dependency-audit
+          - dead-code-audit
+          - test-gap-audit
+          - docs-sync-audit
+          - a11y-audit
+          - token-audit
+      scope:
+        description: 'Path to audit (empty = each audit uses its own default, e.g. src/ or admin/src/)'
+        type: string
+        default: ''
+      dependency:
+        description: 'Dependency filter for dependency-audit (or "all")'
+        type: string
+        default: 'all'
+
+permissions:
+  contents: read
+
+env:
+  # Space-separated repository names in this organization that run the delivery pipeline.
+  # Override with the organization/repository Actions variable FLEET_REPOS.
+  FLEET_REPOS_DEFAULT: 'Megadex Foxnox Gatelin'
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Dispatch audits across target repositories
+        id: dispatch_fleet
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          FLEET_REPOS: ${{ vars.FLEET_REPOS }}
+          TARGET: ${{ inputs.target }}
+          AUDIT: ${{ inputs.audit }}
+          SCOPE: ${{ inputs.scope }}
+          DEPENDENCY: ${{ inputs.dependency }}
+        run: |
+          FLEET="${FLEET_REPOS:-$FLEET_REPOS_DEFAULT}"
+          case "$TARGET" in
+            all) REPOS="$FLEET" ;;
+            *)
+              case " $FLEET " in
+                *" $TARGET "*) REPOS="$TARGET" ;;
+                *) echo "::error::'${TARGET}' is not part of the fleet (${FLEET})."; exit 1 ;;
+              esac
+              ;;
+          esac
+
+          DEP_VAL="${DEPENDENCY:-all}"
+          DISPATCHED=0
+
+          {
+            echo "### Fleet Audit Dispatch Summary"
+            echo ""
+            echo "- **Target:** \`${TARGET}\`"
+            echo "- **Audit:** \`${AUDIT}\`"
+            echo "- **Scope:** \`${SCOPE:-per-audit default}\`"
+            echo ""
+            echo "| Repository | Status |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for REPO in $REPOS; do
+            if [ "$TARGET" = "all" ]; then
+              IS_PRIVATE=$(gh repo view "${OWNER}/${REPO}" --json isPrivate --jq '.isPrivate // false' 2>/dev/null || echo "false")
+              if [ "$IS_PRIVATE" = "true" ]; then
+                echo "Skipping ${REPO}: private repositories are excluded from group fleet dispatches."
+                echo "| \`${OWNER}/${REPO}\` | Skipped (private repository) |" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+            fi
+
+            gh workflow run audits.yml \
+              --repo "${OWNER}/${REPO}" \
+              -f "audit=${AUDIT}" \
+              -f "scope=${SCOPE}" \
+              -f "dependency=${DEP_VAL}"
+            DISPATCHED=$((DISPATCHED + 1))
+            echo "| \`${OWNER}/${REPO}\` | Dispatched \`${AUDIT}\` |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo "dispatched_count=${DISPATCHED}" >> "$GITHUB_OUTPUT"

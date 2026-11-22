@@ -1,0 +1,61 @@
+# Managed by coding-pal (templates/callers/code.yml). Re-generate with scripts/factory/bootstrap.sh instead of editing.
+name: Pipeline - Code
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      workflow_run_id:
+        description: 'Upstream run containing the specification artifact (pipeline handoff)'
+        required: false
+        type: string
+      issue_number:
+        description: 'Issue number to implement from plan.md'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+# Code onward is serialized per repository: one issue at a time is coded, proven, merged and released.
+concurrency:
+  group: delivery-${{ github.repository }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  code:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.event.issue.state == 'open' &&
+       (github.event.label.name == '3-code' ||
+        github.event.label.name == '4-prove' ||
+        github.event.label.name == '5-release'))
+    uses: __ENGINE_REPO__/.github/workflows/pipeline-code.yml@__ENGINE_REF__
+    with:
+      issue_number: ${{ inputs.issue_number || github.event.issue.number || '' }}
+      workflow_run_id: ${{ inputs.workflow_run_id || '' }}
+      project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
+    secrets: inherit
+
+  prove:
+    needs: code
+    if: needs.code.outputs.continue_to_prove == 'true'
+    uses: __ENGINE_REPO__/.github/workflows/pipeline-prove.yml@__ENGINE_REF__
+    with:
+      workflow_run_id: ${{ github.run_id }}
+      project_title: __PROJECT_TITLE__
+      engine_ref: __ENGINE_REF__
+      deployment_workflow: __DEPLOYMENT_WORKFLOW__
+      deployment_paths: |
+__DEPLOYMENT_PATHS__
+      deployment_event: release
+      publish_workflow: publish.yml
+      auto_release: true
+    secrets: inherit

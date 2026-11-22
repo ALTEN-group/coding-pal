@@ -111,10 +111,7 @@ export function scanGitDiff(cwd = process.cwd(), base = "HEAD") {
 			diffBase = mb.stdout.trim();
 		}
 	}
-	const res = spawnSync("git", ["diff", "-U0", diffBase], {
-		cwd,
-		encoding: "utf-8",
-	});
+	const res = spawnSync("git", ["diff", "-U0", "--diff-filter=AM", diffBase], { cwd, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 });
 
 	if (res.status !== 0) {
 		throw new Error(`git diff failed: ${res.stderr || "Unknown error"}`);

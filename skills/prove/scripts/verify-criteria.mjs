@@ -154,7 +154,7 @@ export function parseTap(text, label = "report") {
 			currentFile = normalizePath(fileComment[1]);
 			continue;
 		}
-		const tap = raw.match(/^(ok|not ok)\s+\d+\s*(?:-\s*)?(.*?)(?:\s+#\s*(SKIP|TODO)\b.*)?$/i);
+		const tap = raw.match(/^(ok|not ok)\s+(?:\d+\s*(?:-\s*)?|-\s+)(.*?)(?:\s+#\s*(SKIP|TODO)\b.*)?$/i);
 		if (tap && tap[2].trim()) {
 			const directive = tap[3]?.toUpperCase();
 			const status = directive ? "skipped" : tap[1].toLowerCase() === "ok" ? "passed" : "failed";

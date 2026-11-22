@@ -1,0 +1,697 @@
+name: Audit engine (run agent and file issues)
+
+on:
+  workflow_call:
+    inputs:
+      agent:
+        description: 'Copilot agent name (e.g. dead-code, test-gap, docs-sync, dependency-leverage, a11y-audit, token-audit)'
+        required: true
+        type: string
+      scope:
+        description: 'Target path to audit'
+        required: false
+        default: 'src/'
+        type: string
+      prompt:
+        description: 'Extra instructions for the agent'
+        required: false
+        default: ''
+        type: string
+      project_title:
+        description: 'GitHub Project V2 board title (defaults to repository name)'
+        required: false
+        default: ''
+        type: string
+      engine_repo:
+        description: 'Repository holding the pipeline engine, agents and skills'
+        required: false
+        default: 'ALTEN-group/coding-pal'
+        type: string
+      engine_ref:
+        description: 'Engine ref (tag, branch or SHA) to check out; callers pass the same ref as in their uses: line. Empty uses main.'
+        required: false
+        default: ''
+        type: string
+    secrets:
+      PIPELINE_GITHUB_TOKEN:
+        required: true
+      COPILOT_GITHUB_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: copilot-audit-${{ inputs.agent }}-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+
+      - name: Check scheduled audit activity and backlog gate
+        id: preflight
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          CURRENT_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO_PRIVATE: ${{ github.event.repository.private }}
+          AGENT: ${{ inputs.agent }}
+          SCOPE: ${{ inputs.scope }}
+        run: |
+          if [ "$AGENT" = "a11y-audit" ]; then
+            UI_FILES=$(find . -maxdepth 4 \( -path './.git' -o -path './node_modules' -o -path './website' -o -path './dist' \) -prune -o -type f \( -name '*.html' -o -name '*.tsx' -o -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' -o -name '*.css' -o -name '*.scss' \) -print 2>/dev/null | head -n 1 || true)
+            if [ -z "$UI_FILES" ]; then
+              echo "::notice::Skipping ${AGENT} audit: no UI files found in ${CURRENT_REPO}."
+              echo "Skipped \`${AGENT}\` audit: no UI files found in repository." >> "$GITHUB_STEP_SUMMARY"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          if [ "$EVENT_NAME" != "schedule" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$REPO_PRIVATE" = "true" ]; then
+            echo "::notice::Skipping scheduled ${AGENT} audit: ${CURRENT_REPO} is a private repository."
+            echo "Skipped scheduled \`${AGENT}\` audit: private repository." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Only a change inside the audited scope is worth a new audit: release bumps, test-only merges and docs
+          # elsewhere in the repository leave the audited code untouched. Each audit kind runs once a week, so
+          # "7 days" is "since the last scheduled run". Without a usable path scope, fall back to the whole repository.
+          SCOPE_PATH="${SCOPE%/}"
+          if [ -n "$SCOPE_PATH" ] && [ -e "$SCOPE_PATH" ]; then
+            RECENT_COMMIT=$(git log -1 --since="7 days ago" --no-merges --invert-grep --grep='^chore(release)' --format="%H" -- "$SCOPE_PATH" 2>/dev/null || true)
+          else
+            RECENT_COMMIT=$(git log -1 --since="7 days ago" --no-merges --invert-grep --grep='^chore(release)' --format="%H" 2>/dev/null || true)
+          fi
+          if [ -z "$RECENT_COMMIT" ]; then
+            echo "::notice::Skipping scheduled ${AGENT} audit: no new commits touching ${SCOPE:-the repository} in ${CURRENT_REPO} in the last 7 days."
+            echo "Skipped scheduled \`${AGENT}\` audit: no new commits touching \`${SCOPE:-the repository}\` in the last 7 days." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          AUDIT_LABEL="audit:${AGENT}"
+          OPEN_AUDIT_COUNT=$(gh issue list --repo "$CURRENT_REPO" --state open --label "$AUDIT_LABEL" --limit 100 --json number 2>/dev/null | jq 'if type == "array" then length else 0 end' || echo "0")
+          if [ "$OPEN_AUDIT_COUNT" -ge 10 ]; then
+            echo "::notice::Skipping scheduled ${AGENT} audit: ${OPEN_AUDIT_COUNT} open ${AUDIT_LABEL} issues already awaiting triage."
+            echo "Skipped scheduled \`${AGENT}\` audit: ${OPEN_AUDIT_COUNT} open \`${AUDIT_LABEL}\` issues already awaiting triage." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Install coding-pal audit primitives
+        if: steps.preflight.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          ENGINE_REPO: ${{ inputs.engine_repo }}
+          ENGINE_REF: ${{ inputs.engine_ref || 'main' }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          ENGINE_DIR=/tmp/coding-pal-engine
+          if [ ! -f "$ENGINE_DIR/scripts/factory/install-primitives.sh" ]; then
+            mkdir -p "$ENGINE_DIR" && git -C "$ENGINE_DIR" init -q
+            git -C "$ENGINE_DIR" fetch -q --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${ENGINE_REPO}.git" "$ENGINE_REF"
+            git -C "$ENGINE_DIR" checkout -q FETCH_HEAD
+          fi
+          bash "$ENGINE_DIR/scripts/factory/install-primitives.sh" --stage audit --agent "$AGENT" --engine "$ENGINE_DIR" --keep-tracked-clean
+
+      - name: Install project dependencies for codebase investigation
+        if: steps.preflight.outputs.skip != 'true'
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts --prefer-offline --no-audit 2>/dev/null || npm ci --prefer-offline --no-audit || true
+          fi
+
+      - name: Cache Copilot CLI
+        if: steps.preflight.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.copilot-cli
+          key: copilot-cli-${{ runner.os }}-node22
+
+      - name: Install Copilot CLI
+        if: steps.preflight.outputs.skip != 'true'
+        run: |
+          if [ ! -x "$HOME/.copilot-cli/bin/copilot" ]; then
+            npm install --prefix "$HOME/.copilot-cli" -g @github/copilot
+          fi
+          echo "$HOME/.copilot-cli/bin" >> "$GITHUB_PATH"
+
+      - name: Run ${{ inputs.agent }} agent
+        if: steps.preflight.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          CURRENT_REPO: ${{ github.repository }}
+          AGENT: ${{ inputs.agent }}
+          SCOPE: ${{ inputs.scope }}
+          EXTRA_PROMPT: ${{ inputs.prompt }}
+        run: |
+          OPEN_ISSUES_CONTEXT=$(gh issue list --repo "$CURRENT_REPO" --state open --limit 200 --json number,title,body 2>/dev/null | jq -r '
+            if type == "array" and length > 0 then
+              "Existing open issues in this repository (do NOT re-report or bundle any finding, file, or symbol already tracked below):\n" +
+              (map(
+                "- #" + (.number | tostring) + ": " + (.title // "") +
+                (([(.body // "") | scan("`([A-Za-z0-9_./$-]+)`") | .[0]] | unique) as $refs |
+                 if ($refs | length) > 0 then " (refs: " + ($refs[0:12] | map("`" + . + "`") | join(", ")) + ")" else "" end)
+              ) | join("\n"))
+            else "" end
+          ' 2>/dev/null || echo "")
+          copilot --model="gemini-3.8-flash" --agent="$AGENT" --allow-all-tools \
+            --prompt "Scope: ${SCOPE}. ${EXTRA_PROMPT} ${OPEN_ISSUES_CONTEXT} Do not modify repository source, test, or documentation files. Keep each finding scoped to a single cohesive module/concern (do not bundle unrelated files or exports into one catch-all issue), merge closely related findings affecting the same file, module, paired source/test/doc files, or shared symbol/concern into a single consolidated finding before writing output files, and skip any symbol or file already tracked by an open issue. Write structured findings to audit-findings.json as a JSON array of objects, where each element has keys: { \"title\": \"<concise issue title>\", \"priority\": \"<Urgent|High|Medium|Low>\", \"model\": \"<claude-sonnet-5.5|claude-opus-5.5|claude-haiku-5.5|gpt-6.1-sol|gpt-6.1-terra|gpt-6-luna|gpt-5.3-codex|gemini-4-argon|gemini-3.8-flash|auto>\", \"effort\": \"<Low|Medium|High|Max>\", \"problem\": \"<clear problem explanation>\", \"affectedFiles\": [\"<file path>\"], \"suggestedFix\": \"<concrete remediation>\", \"acceptanceCriteria\": [\"- **AC-1:** <testable criterion>\"], \"body\": \"## Problem\\n\\n<problem>\\n\\n## Affected Files\\n\\n- \`<file>\`\\n\\n## Suggested Fix\\n\\n<fix>\\n\\n## Acceptance Criteria\\n\\n- **AC-1:** <criterion>\" } (or [] if no findings exist), choosing model and effort based on finding complexity and priority (e.g. gemini-3.8-flash/claude-haiku-5.5 + Low for trivial cleanup/docs, claude-sonnet-5.5 + Medium/High for standard code/tests/refactors, claude-opus-5.5 + High/Max for complex architectural changes), and write a brief Markdown summary of the audit to audit-report.md. Always separate Markdown headings and sections with real newlines (\\n\\n), never a single line."
+
+      - name: Create issues for audit findings and add to Project
+        id: create_findings
+        if: always() && steps.preflight.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          CURRENT_REPO: ${{ github.repository }}
+          AGENT: ${{ inputs.agent }}
+          SCOPE: ${{ inputs.scope }}
+          PROJECT_TITLE: ${{ inputs.project_title }}
+        run: |
+          if [ ! -s audit-findings.json ]; then
+            rm -f audit-findings.json
+            echo "created_count=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          COUNT=$(jq 'if type == "array" then length else 0 end' audit-findings.json 2>/dev/null || echo "0")
+          if [ "$COUNT" -eq 0 ]; then
+            rm -f audit-findings.json
+            echo "created_count=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          OWNER="${CURRENT_REPO%%/*}"
+          REPO="${CURRENT_REPO#*/}"
+          PROJECT_TITLE="${PROJECT_TITLE:-$REPO}"
+          AUDIT_LABEL="audit:${AGENT}"
+
+          gh label create "$AUDIT_LABEL" --repo "$CURRENT_REPO" --force --description "Finding reported by ${AGENT} audit" || true
+
+          OPEN_ISSUES=$(gh issue list --repo "$CURRENT_REPO" --state open --limit 200 --json number,title,body 2>/dev/null || echo '[]')
+
+          CANDIDATES_JSON='[]'
+          for ((i = 0; i < COUNT; i++)); do
+            TITLE=$(jq -r ".[$i].title // empty" audit-findings.json)
+            PRIORITY=$(jq -r --argjson idx "$i" '
+              ((.[$idx].priority // .[$idx].severity // "") | tostring | ascii_downcase | gsub("^\\s+|\\s+$"; "")) as $p |
+              if ($p == "urgent" or $p == "critical" or $p == "p0") then "Urgent"
+              elif ($p == "high" or $p == "major" or $p == "p1") then "High"
+              elif ($p == "low" or $p == "minor" or $p == "trivial" or $p == "p3") then "Low"
+              else "Medium" end
+            ' audit-findings.json)
+            MODEL=$(jq -r --argjson idx "$i" '
+              ((.[$idx].model // "") | tostring | ascii_downcase | gsub("^\\s+|\\s+$"; "")) as $m |
+              if ($m == "claude-opus-5.5" or $m == "opus") then "claude-opus-5.5"
+              elif ($m == "claude-haiku-5.5" or $m == "haiku") then "claude-haiku-5.5"
+              elif ($m == "gpt-6.1-sol") then "gpt-6.1-sol"
+              elif ($m == "gpt-6.1-terra" or $m == "terra") then "gpt-6.1-terra"
+              elif ($m == "gpt-6-luna" or $m == "luna") then "gpt-6-luna"
+              elif ($m == "gpt-5.3-codex" or $m == "codex") then "gpt-5.3-codex"
+              elif ($m == "gemini-4-argon" or $m == "argon") then "gemini-4-argon"
+              elif ($m == "gemini-3.8-flash" or $m == "flash") then "gemini-3.8-flash"
+              elif ($m == "auto") then "auto"
+              else "claude-sonnet-5.5" end
+            ' audit-findings.json)
+            EFFORT=$(jq -r --argjson idx "$i" '
+              ((.[$idx].effort // .[$idx].reasoningEffort // .[$idx].reasoning_effort // "") | tostring | ascii_downcase | gsub("^\\s+|\\s+$"; "")) as $e |
+              if ($e == "max" or $e == "xhigh") then "Max"
+              elif ($e == "high") then "High"
+              elif ($e == "low" or $e == "minimal" or $e == "none") then "Low"
+              else "Medium" end
+            ' audit-findings.json)
+            BODY=$(jq -r --argjson idx "$i" '
+              def norm:
+                gsub("\\r\\n"; "\n")
+                | gsub("\\\\r\\\\n"; "\n")
+                | gsub("\\\\n"; "\n")
+                | gsub("(?<a>[^\\n])[ \\t]+(?<b>\\*\\*(?:Problem(?: Statement)?|Affected(?: [A-Za-z0-9_./-]+)* Files|Suggested (?:Fix|Direction|Remediation)|Proposed (?:API|Changes|Solution)|Acceptance Criteria):?\\*\\*:?)"; "\(.a)\n\n\(.b)")
+                | gsub("(?m)^[ \\t]*\\*\\*(?<sec>Problem(?: Statement)?|Affected(?: [A-Za-z0-9_./-]+)* Files|Suggested (?:Fix|Direction|Remediation)|Proposed (?:API|Changes|Solution)|Acceptance Criteria):?\\*\\*:?[ \\t]*"; "## \(.sec)\n\n")
+                | gsub("(?<a>[^\\n])\\s+(?<h>#{1,3}\\s+(?:Problem|Context|Summary|Root Cause|Affected|Suggested|Proposed|Acceptance|Verification)\\b)"; "\(.a)\n\n\(.h)")
+                | gsub("(?<a>[^\\n])\\s+(?<h>#{2,3}\\s+)"; "\(.a)\n\n\(.h)")
+                | gsub("(?m)^#{1,3}\\s+(?<sec>Problem(?: Statement)?|Context|Summary|Root Cause|Affected(?: [A-Za-z0-9_./-]+)* Files(?: \\([^)]*\\))?|Suggested (?:Fix|Direction|Remediation)|Proposed (?:API|Changes|Solution)|Acceptance Criteria|Verification)\\b:?[ \\t]*(?<rest>\\S[^\\n]*)"; "## \(.sec)\n\n\(.rest)")
+                | gsub("(?m)^#\\s+(?<sec>Problem(?: Statement)?|Context|Summary|Root Cause|Affected(?: [A-Za-z0-9_./-]+)* Files(?: \\([^)]*\\))?|Suggested (?:Fix|Direction|Remediation)|Proposed (?:API|Changes|Solution)|Acceptance Criteria|Verification)\\b:?[ \\t]*$"; "## \(.sec)")
+                | gsub("(?<a>[^\\n])[ \\t]+(?<b>- \\*\\*AC-[0-9]+:\\*\\*)"; "\(.a)\n\(.b)")
+                | gsub("(?<a>[^\\n-])[ \\t]+(?<b>\\*\\*AC-[0-9]+:\\*\\*)"; "\(.a)\n- \(.b)")
+                | gsub("(?<a>[^\\n])[ \\t]+(?<b>- `[^`]+`)"; "\(.a)\n\(.b)")
+                | if (test("(?im)^#{2,3}\\s+Acceptance Criteria") | not) and test("(?m)^- \\*\\*AC-1:\\*\\*") then
+                    sub("(?m)^(?<b>- \\*\\*AC-1:\\*\\*)"; "\n\n## Acceptance Criteria\n\n\(.b)")
+                  else . end
+                | if (test("\\n") | not) and test("^#{1,6}\\s+") then
+                    "## Problem\n\n" + sub("^#{1,6}\\s+"; "")
+                  else . end
+                | gsub("(?m)^(?<h>#{2,3}\\s+[^\\n]+)\\n(?<c>[^\\n#])"; "\(.h)\n\n\(.c)")
+                | gsub("(?<a>[^\\n])\\n(?<h>#{2,3}\\s+)"; "\(.a)\n\n\(.h)")
+                | gsub("\\n{3,}"; "\n\n")
+                | sub("^\\s+"; "")
+                | sub("\\s+$"; "");
+              .[$idx] |
+              ((.body // "") | tostring | norm) as $raw |
+              ((.problem // "") | tostring | norm) as $prob |
+              ((.affectedFiles // .affected_files // []) | if type == "array" and length > 0 then (map(tostring | if test("^\\s*-\\s+") then . else "- `" + (gsub("^`|`$"; "")) + "`" end) | join("\n")) elif type == "string" then (. | norm) else "" end) as $files |
+              ((.suggestedFix // .suggested_fix // .suggestedRemediation // .suggested_remediation // .suggestedDirection // .suggested_direction // .proposedApi // .proposed_api // "") | tostring | norm) as $fix |
+              ((.acceptanceCriteria // .acceptance_criteria // []) | if type == "array" and length > 0 then (map(tostring | if test("^\\s*-\\s+") then . else "- " + . end) | join("\n")) elif type == "string" then (. | norm) else "" end) as $ac |
+              if ($raw | test("(?m)^#{2,3}\\s+")) then
+                $raw
+              elif (($prob | length) > 0 or ($files | length) > 0 or ($fix | length) > 0 or ($ac | length) > 0) then
+                ([
+                  (if ($prob | length) > 0 then "## Problem\n\n" + $prob elif ($raw | length) > 0 then "## Problem\n\n" + $raw else empty end),
+                  (if ($files | length) > 0 then "## Affected Files\n\n" + $files else empty end),
+                  (if ($fix | length) > 0 then "## Suggested Fix\n\n" + $fix else empty end),
+                  (if ($ac | length) > 0 then "## Acceptance Criteria\n\n" + $ac else empty end)
+                ] | join("\n\n") | norm)
+              else
+                $raw
+              end
+            ' audit-findings.json)
+            RAW_FILES=$(jq -c --argjson idx "$i" '.[$idx] | (.affectedFiles // .affected_files // []) | if type == "array" then map(tostring) elif type == "string" then [.] else [] end' audit-findings.json)
+            RAW_AC=$(jq -c --argjson idx "$i" '.[$idx] | (.acceptanceCriteria // .acceptance_criteria // []) | if type == "array" then map(tostring) elif type == "string" then [.] else [] end' audit-findings.json)
+
+            if [ -z "$TITLE" ] || [ -z "$BODY" ]; then
+              continue
+            fi
+
+            FULL_BODY="${BODY}
+
+          ---
+          _Reported by \`${AGENT}\` audit in \`${SCOPE}\`._"
+
+            EXISTING_NUM=$(echo "$OPEN_ISSUES" | jq -r --arg t "$TITLE" --arg b "$BODY" '
+              def files(s):
+                [ (s // "") | scan("`([A-Za-z0-9_./-]+\\.[A-Za-z0-9]+)`") | .[0] | ascii_downcase ] | unique;
+              def syms(t; b):
+                ([ (t // ""), (b // "") | scan("`([A-Za-z_][A-Za-z0-9_$]{2,})`") | .[0] ]
+                 + [ (t // "") | scan("\\b([A-Z][A-Z0-9_]{2,}|[a-z]+[A-Z][A-Za-z0-9_]*)\\b") | .[0] ])
+                | map(select((test("\\.") | not) and (ascii_downcase | test("^(true|false|null|undefined|none|todo|fixme|chore|feat|fix|test|docs|perf|refactor)$") | not)))
+                | unique;
+              files($b) as $cfiles |
+              syms($t; $b) as $csyms |
+              .[]? |
+              select(
+                ((.title // "" | ascii_downcase) == ($t | ascii_downcase))
+                or (
+                  ($cfiles | length) > 0 and ($csyms | length) > 0
+                  and (files((.title // "") + "\n" + (.body // "")) as $ifiles | [$cfiles[] | select(. as $f | $ifiles | index($f))] | length > 0)
+                  and (syms(.title; .body) as $isyms | [$csyms[] | select(. as $s | $isyms | index($s))] | length > 0)
+                )
+              ) | .number
+            ' | head -n 1)
+            if [ -n "$EXISTING_NUM" ]; then
+              NEEDS_LAYOUT_FIX=$(echo "$OPEN_ISSUES" | jq -r --argjson num "$EXISTING_NUM" --arg t "$TITLE" '
+                (.[]? | select(.number == $num and ((.title // "" | ascii_downcase) == ($t | ascii_downcase))) | .body // "") as $b |
+                if ($b | length) > 0 and (($b | test("(?m)^#{1,3}\\s+(?:Problem|Context|Summary|Root Cause|Affected|Suggested|Proposed|Acceptance)\\b:?[ \\t]+\\S")) or (($b | split("\n---\n")[0] // "") | test("\\n") | not)) then "true" else "false" end
+              ')
+              if [ "$NEEDS_LAYOUT_FIX" = "true" ]; then
+                gh issue edit "$EXISTING_NUM" --repo "$CURRENT_REPO" --body "$FULL_BODY" >/dev/null 2>&1 || true
+              fi
+              echo "Skipping duplicate finding (already open as #${EXISTING_NUM}): ${TITLE}"
+              continue
+            fi
+
+            CANDIDATES_JSON=$(echo "$CANDIDATES_JSON" | jq -c \
+              --arg title "$TITLE" \
+              --arg priority "$PRIORITY" \
+              --arg model "$MODEL" \
+              --arg effort "$EFFORT" \
+              --arg body "$BODY" \
+              --argjson raw_files "$RAW_FILES" \
+              --argjson raw_ac "$RAW_AC" \
+              '. + [{ title: $title, priority: $priority, model: $model, effort: $effort, body: $body, raw_files: $raw_files, raw_ac: $raw_ac }]')
+          done
+
+          MERGED_FINDINGS=$(echo "$CANDIDATES_JSON" | jq -c '
+            def unique_ci:
+              reduce .[] as $x ([];
+                ($x | tostring | gsub("^\\s+|\\s+$"; "")) as $clean |
+                if ($clean | length) == 0 or ([.[] | ascii_downcase] | index($clean | ascii_downcase)) then .
+                else . + [$clean] end
+              );
+            def intersects($a; $b):
+              [$a[] | select(. as $x | $b | index($x))] | length > 0;
+            def prio_rank($p):
+              if $p == "Urgent" then 4 elif $p == "High" then 3 elif $p == "Low" then 1 else 2 end;
+            def model_rank($m):
+              if $m == "claude-opus-5.5" then 10
+              elif $m == "gpt-6.1-sol" then 9
+              elif $m == "gpt-5.3-codex" then 8
+              elif $m == "gemini-4-argon" then 7
+              elif $m == "claude-sonnet-5.5" then 6
+              elif $m == "auto" then 5
+              elif $m == "gpt-6.1-terra" then 4
+              elif $m == "gpt-6-luna" then 3
+              elif $m == "gemini-3.8-flash" then 2
+              elif $m == "claude-haiku-5.5" then 1
+              else 6 end;
+            def effort_rank($e):
+              if $e == "Max" then 4 elif $e == "High" then 3 elif $e == "Low" then 1 else 2 end;
+            def parse_sections($b):
+              reduce (($b // "") | split("\n")[]) as $line (
+                { cur: "problem", problem: [], files: [], fix: [], ac: [], fix_heading: "Suggested Fix" };
+                if ($line | test("^#{2,3}\\s+")) then
+                  ($line | sub("^#{2,3}\\s+"; "") | sub(":?\\s*$"; "")) as $h |
+                  ($h | ascii_downcase) as $hl |
+                  if ($hl | test("^(problem|context|summary|root cause)")) then .cur = "problem"
+                  elif ($hl | test("^affected")) then .cur = "files"
+                  elif ($hl | test("^(suggested|proposed)")) then .cur = "fix" | .fix_heading = $h
+                  elif ($hl | test("^(acceptance|verification)")) then .cur = "ac"
+                  else .cur = "fix" end
+                else
+                  .[.cur] += [$line]
+                end
+              ) | {
+                problem: (.problem | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "")),
+                files: (.files | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "")),
+                fix: (.fix | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "")),
+                ac: (.ac | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "")),
+                fix_heading: .fix_heading
+              };
+            def enrich:
+              parse_sections(.body) as $sec |
+              ([ (.raw_files[]?), ((.title + "\n" + .body) | scan("`([A-Za-z0-9_./-]+\\.[A-Za-z][A-Za-z0-9]*)`") | .[0]) ]
+               | map(tostring | gsub("^\\s*-\\s*"; "") | gsub("^`|`$"; "") | gsub("^\\s+|\\s+$"; "") | sub("^\\./"; "") | select(test("^[A-Za-z0-9_./-]+\\.[A-Za-z][A-Za-z0-9]*$")))
+               | unique_ci) as $all_files |
+              ([ $all_files[] | ascii_downcase ] | unique) as $all_lower |
+              ([ $all_lower[] | select((split("/") | last | test("^((index|main|mod|exports)\\.[a-z0-9]+|readme\\.md|package\\.json|changelog\\.md)$")) | not) ]
+               | if length > 0 then . else $all_lower end) as $primary_files |
+              ([ $primary_files[] | split("/") | last | sub("\\.(test|spec|bench|stories|d)\\.[a-z0-9]+$"; "") | sub("\\.[a-z0-9]+$"; "")
+                 | select(length >= 2 and (test("^(index|main|app|mod|types|utils|util|helpers|helper|constants|constant|common|shared|readme|package|changelog|test|tests|spec|specs|setup|fixtures|mocks)$") | not)) ]
+               | unique) as $stems |
+              (((try (.title | capture("^[A-Za-z]+\\((?<sc>[^)]+)\\):") | .sc) catch "") | ascii_downcase | gsub("^\\s+|\\s+$"; "") | sub("^src/"; "") | sub("\\.[a-z0-9]+$"; "")) as $sc |
+               if ($sc | length) >= 2 and ($sc | test("^(dead-code|deadcode|unused|gap|test-gap|tests|test|testing|coverage|perf|perf-audit|performance|hot-loop|zero-gc|docs|docs-sync|doc|readme|jsdoc|vector|vector-first|spock|math|dependency|dependency-leverage|dependencies|deps|dep|lib|src|core|all|general|audit|cleanup|refactor|chore|fix|feat)$") | not)
+               then $sc else "" end) as $scope |
+              (([ (.title // ""), (.body // "") | scan("`([A-Za-z_][A-Za-z0-9_$]{2,})`") | .[0] ]
+                + [ (.title // "") | scan("\\b([A-Z][A-Z0-9_]{2,}|[a-z]+[A-Z][A-Za-z0-9_]*)\\b") | .[0] ])
+               | map(select((test("\\.") | not) and (ascii_downcase | test("^(true|false|null|undefined|none|todo|fixme|chore|feat|fix|test|docs|perf|refactor|ac|src|tests|npm|node|json|array|object|string|number|boolean|function|class|const|let|var|return|async|await|import|export|default)$") | not)))
+               | unique) as $syms |
+              . + { sections: $sec, all_files: $all_files, primary_files: $primary_files, stems: $stems, scope: $scope, syms: $syms };
+            def is_close($a; $b):
+              (($a.title | ascii_downcase) == ($b.title | ascii_downcase))
+              or intersects($a.primary_files; $b.primary_files)
+              or intersects($a.stems; $b.stems)
+              or ($a.scope != "" and ($a.scope == $b.scope or ($b.stems | index($a.scope) != null)))
+              or ($b.scope != "" and ($a.stems | index($b.scope) != null))
+              or intersects($a.syms; $b.syms);
+            def merge_cluster($c):
+              if ($c | length) == 1 then
+                $c[0] | { title: .title, priority: .priority, model: .model, effort: .effort, body: .body }
+              else
+                (try ($c[0].title | capture("^(?<p>[A-Za-z]+(?:\\([^)]+\\))?:\\s*)") | .p) catch "") as $prefix |
+                ([ $c[] | .title | sub("^[A-Za-z]+(?:\\([^)]+\\))?:\\s*"; "") ] | unique_ci) as $summaries |
+                (if ($summaries | length) <= 1 then $c[0].title
+                 else
+                   ($prefix + (if ($summaries | length) == 2 then ($summaries | join(" and ")) else ($summaries | join("; ")) end)) as $joined |
+                   if ($joined | length) <= 140 then $joined
+                   else $c[0].title + " (+" + (($c | length) - 1 | tostring) + " related findings)" end
+                 end) as $m_title |
+                ($c | max_by(prio_rank(.priority)).priority) as $m_prio |
+                ($c | max_by(model_rank(.model)).model) as $m_model |
+                ($c | max_by(effort_rank(.effort)).effort) as $m_effort |
+                ([ $c[] | .sections.problem | select(length > 0) ] | unique_ci) as $problems |
+                ([ $c[] | (.all_files[]?), ((.sections.files | split("\n")[]) | gsub("^\\s*-\\s*"; "") | gsub("^`|`$"; "") | gsub("^\\s+|\\s+$"; "")) | select(length > 0) ] | unique_ci | map("- `" + . + "`")) as $file_lines |
+                ([ $c[] | .sections.fix | select(length > 0) ] | unique_ci) as $fixes |
+                (($c | map(.sections.fix_heading) | map(select(length > 0)) | first) // "Suggested Fix") as $fix_heading |
+                ([ $c[] | ((.sections.ac | split("\n")[]), (.raw_ac[]?)) | tostring | gsub("^\\s+|\\s+$"; "") | select(length > 0) | sub("^[-*]\\s*"; "") | sub("^\\*\\*AC-[0-9]+:\\*\\*\\s*"; "") | sub("^AC-[0-9]+:\\s*"; "") | select(length > 0) ] | unique_ci) as $raw_acs |
+                ([ range(0; $raw_acs | length) as $idx | "- **AC-\($idx + 1):** " + $raw_acs[$idx] ]) as $ac_lines |
+                ([
+                  (if ($problems | length) > 0 then "## Problem\n\n" + ($problems | join("\n\n")) else empty end),
+                  (if ($file_lines | length) > 0 then "## Affected Files\n\n" + ($file_lines | join("\n")) else empty end),
+                  (if ($fixes | length) > 0 then "## " + $fix_heading + "\n\n" + ($fixes | join("\n\n")) else empty end),
+                  (if ($ac_lines | length) > 0 then "## Acceptance Criteria\n\n" + ($ac_lines | join("\n")) else empty end)
+                ] | join("\n\n")) as $m_body |
+                { title: $m_title, priority: $m_prio, model: $m_model, effort: $m_effort, body: $m_body }
+              end;
+            reduce (map(enrich)[]) as $item (
+              [];
+              ([ .[] | select(any(.[]; is_close(.; $item))) ]) as $matching |
+              if ($matching | length) == 0 then
+                . + [[$item]]
+              else
+                (($matching | add) + [$item]) as $merged_cluster |
+                (reduce .[] as $c (
+                  { inserted: false, out: [] };
+                  if any($c[]; is_close(.; $item)) then
+                    if .inserted then . else { inserted: true, out: (.out + [$merged_cluster]) } end
+                  else
+                    .out += [$c]
+                  end
+                )).out
+              end
+            ) | map(merge_cluster(.))
+          ')
+
+          # Release trains: issues that need a release go into the milestone in progress (or create one), based on the
+          # latest GitHub release. See skills/release-bump/scripts/plan-milestone.mjs.
+          PLAN_MILESTONE=/tmp/coding-pal-engine/skills/release-bump/scripts/plan-milestone.mjs
+          PUBLISHED_VERSION=""
+          if [ -f package.json ] && [ -f "$PLAN_MILESTONE" ]; then
+            PUBLISHED_VERSION=$(gh release view --repo "$CURRENT_REPO" --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//' || true)
+          fi
+
+          assign_release_milestone() {
+            local number="$1" title="$2" milestones plan action ms_title ms_number
+            [ -n "$PUBLISHED_VERSION" ] || return 0
+            milestones=$(gh api "repos/${CURRENT_REPO}/milestones?state=open&per_page=100" --jq '[.[] | {number, title}]' 2>/dev/null || echo '[]')
+            plan=$(jq -n --arg published "$PUBLISHED_VERSION" --arg title "$title" --arg label "$AUDIT_LABEL" --argjson milestones "$milestones" \
+              '{published: $published, title: $title, labels: [$label], milestones: $milestones}' \
+              | node "$PLAN_MILESTONE") || return 0
+            action=$(echo "$plan" | jq -r '.action')
+            ms_title=$(echo "$plan" | jq -r '.title // ""')
+            ms_number=$(echo "$plan" | jq -r '.number // ""')
+            case "$action" in
+              create)
+                gh api "repos/${CURRENT_REPO}/milestones" -f title="$ms_title" \
+                  -f description="Release train: issues here ship together as one release (coding-pal release-bump skill)." >/dev/null || return 0
+                ;;
+              rename)
+                gh api -X PATCH "repos/${CURRENT_REPO}/milestones/${ms_number}" -f title="$ms_title" >/dev/null || return 0
+                ;;
+              use) ;;
+              *) return 0 ;;
+            esac
+            gh issue edit "$number" --repo "$CURRENT_REPO" --milestone "$ms_title" >/dev/null || true
+            echo "Issue #${number} -> release milestone ${ms_title} (${action})"
+          }
+
+          MERGED_COUNT=$(echo "$MERGED_FINDINGS" | jq 'length')
+          CREATED_COUNT=0
+          for ((i = 0; i < MERGED_COUNT; i++)); do
+            TITLE=$(echo "$MERGED_FINDINGS" | jq -r ".[$i].title // empty")
+            PRIORITY=$(echo "$MERGED_FINDINGS" | jq -r ".[$i].priority // \"Medium\"")
+            MODEL=$(echo "$MERGED_FINDINGS" | jq -r ".[$i].model // \"claude-sonnet-5.5\"")
+            EFFORT=$(echo "$MERGED_FINDINGS" | jq -r ".[$i].effort // \"Medium\"")
+            BODY=$(echo "$MERGED_FINDINGS" | jq -r ".[$i].body // empty")
+
+            if [ -z "$TITLE" ] || [ -z "$BODY" ]; then
+              continue
+            fi
+
+            FULL_BODY="${BODY}
+
+          ---
+          _Reported by \`${AGENT}\` audit in \`${SCOPE}\`._"
+
+            ISSUE_URL=$(gh issue create --repo "$CURRENT_REPO" \
+              --title "$TITLE" \
+              --label "$AUDIT_LABEL" \
+              --body "$FULL_BODY")
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
+            CREATED_COUNT=$((CREATED_COUNT + 1))
+            assign_release_milestone "$ISSUE_NUMBER" "$TITLE" || true
+
+            OPEN_ISSUES=$(echo "$OPEN_ISSUES" | jq -c --argjson num "${ISSUE_NUMBER:-0}" --arg title "$TITLE" --arg body "$FULL_BODY" '. + [{"number": $num, "title": $title, "body": $body}]')
+
+            DATA=$(gh api graphql -f query='
+              query($owner: String!, $repo: String!, $number: Int!, $projectTitle: String!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $number) {
+                    id
+                    projectItems(first: 20) {
+                      nodes {
+                        id
+                        project { id }
+                      }
+                    }
+                  }
+                  owner {
+                    ... on Organization {
+                      issueFields(first: 20) {
+                        nodes {
+                          ... on IssueFieldSingleSelect {
+                            id
+                            name
+                            options { id name }
+                          }
+                        }
+                      }
+                      projectsV2(first: 20, query: $projectTitle) {
+                        nodes {
+                          id
+                          title
+                          field(name: "Status") {
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              options { id name }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    ... on User {
+                      projectsV2(first: 20, query: $projectTitle) {
+                        nodes {
+                          id
+                          title
+                          field(name: "Status") {
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              options { id name }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' -f owner="$OWNER" -f repo="$REPO" -F number="$ISSUE_NUMBER" -f projectTitle="$PROJECT_TITLE" 2>/dev/null || true)
+            DATA="${DATA:-"{}"}"
+
+            ISSUE_ID=$(echo "$DATA" | jq -r '.data.repository.issue.id // empty' | head -n 1)
+            PRIORITY_FIELD=$(echo "$DATA" | jq -c '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "priority")' | head -n 1)
+            PRIORITY_FIELD_ID=$(echo "$PRIORITY_FIELD" | jq -r '.id // empty')
+            PRIORITY_OPTION_ID=$(echo "$PRIORITY_FIELD" | jq -r --arg p "$PRIORITY" '(.options[]? | select((.name | ascii_downcase) == ($p | ascii_downcase)) | .id), (.options[]? | select((.name | ascii_downcase) == "medium") | .id)' | head -n 1)
+            if [ -z "$PRIORITY_FIELD_ID" ] || [ -z "$PRIORITY_OPTION_ID" ]; then
+              PRIORITY_FIELD_ID="IFSS_kgDOAoWpGg"
+              case "$PRIORITY" in
+                Urgent) PRIORITY_OPTION_ID="IFSSO_kgDOBGndlw" ;;
+                High)   PRIORITY_OPTION_ID="IFSSO_kgDOBGndmA" ;;
+                Low)    PRIORITY_OPTION_ID="IFSSO_kgDOBGndmg" ;;
+                *)      PRIORITY_OPTION_ID="IFSSO_kgDOBGndmQ" ;;
+              esac
+            fi
+            if [ -n "$ISSUE_ID" ] && [ -n "$PRIORITY_FIELD_ID" ] && [ -n "$PRIORITY_OPTION_ID" ]; then
+              gh api graphql -f query='
+                mutation($issueId: ID!, $fieldId: ID!, $optionId: ID!) {
+                  setIssueFieldValue(input: {
+                    issueId: $issueId,
+                    issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $optionId }]
+                  }) { issue { id } }
+                }' -f issueId="$ISSUE_ID" -f fieldId="$PRIORITY_FIELD_ID" -f optionId="$PRIORITY_OPTION_ID" >/dev/null 2>&1 || true
+            fi
+            MODEL_FIELD=$(echo "$DATA" | jq -c '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "model")' | head -n 1)
+            MODEL_FIELD_ID=$(echo "$MODEL_FIELD" | jq -r '.id // empty')
+            MODEL_OPTION_ID=$(echo "$MODEL_FIELD" | jq -r --arg m "$MODEL" '(.options[]? | select((.name | ascii_downcase) == ($m | ascii_downcase)) | .id), (.options[]? | select((.name | ascii_downcase) == "claude-sonnet-5.5") | .id)' | head -n 1)
+            if [ -z "$MODEL_FIELD_ID" ] || [ -z "$MODEL_OPTION_ID" ]; then
+              MODEL_FIELD_ID="IFSS_kgDOAvKZhw"
+              case "$MODEL" in
+                claude-opus-5.5)  MODEL_OPTION_ID="IFSSO_kgDOBSkjjA" ;;
+                claude-haiku-5.5) MODEL_OPTION_ID="IFSSO_kgDOBSkjjQ" ;;
+                gpt-6.1-sol)      MODEL_OPTION_ID="IFSSO_kgDOBSkjjg" ;;
+                gpt-6.1-terra)    MODEL_OPTION_ID="IFSSO_kgDOBSkjjw" ;;
+                gpt-6-luna)       MODEL_OPTION_ID="IFSSO_kgDOBSkjkA" ;;
+                gpt-5.3-codex)    MODEL_OPTION_ID="IFSSO_kgDOBSkjkQ" ;;
+                gemini-4-argon)   MODEL_OPTION_ID="IFSSO_kgDOBSkjkg" ;;
+                gemini-3.8-flash) MODEL_OPTION_ID="IFSSO_kgDOBSkjkw" ;;
+                auto)             MODEL_OPTION_ID="IFSSO_kgDOBSkjlQ" ;;
+                *)                MODEL_OPTION_ID="IFSSO_kgDOBSkjiw" ;;
+              esac
+            fi
+            if [ -n "$ISSUE_ID" ] && [ -n "$MODEL_FIELD_ID" ] && [ -n "$MODEL_OPTION_ID" ]; then
+              gh api graphql -f query='
+                mutation($issueId: ID!, $fieldId: ID!, $optionId: ID!) {
+                  setIssueFieldValue(input: {
+                    issueId: $issueId,
+                    issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $optionId }]
+                  }) { issue { id } }
+                }' -f issueId="$ISSUE_ID" -f fieldId="$MODEL_FIELD_ID" -f optionId="$MODEL_OPTION_ID" >/dev/null 2>&1 || true
+            fi
+            EFFORT_FIELD=$(echo "$DATA" | jq -c '.data.repository.owner.issueFields.nodes[]? | select((.name // "" | ascii_downcase) == "effort")' | head -n 1)
+            EFFORT_FIELD_ID=$(echo "$EFFORT_FIELD" | jq -r '.id // empty')
+            EFFORT_OPTION_ID=$(echo "$EFFORT_FIELD" | jq -r --arg e "$EFFORT" '(.options[]? | select((.name | ascii_downcase) == ($e | ascii_downcase)) | .id), (.options[]? | select((.name | ascii_downcase) == "medium") | .id)' | head -n 1)
+            if [ -z "$EFFORT_FIELD_ID" ] || [ -z "$EFFORT_OPTION_ID" ]; then
+              EFFORT_FIELD_ID="IFSS_kgDOAvKWEg"
+              case "$EFFORT" in
+                Max)  EFFORT_OPTION_ID="IFSSO_kgDOBSkdRA" ;;
+                High) EFFORT_OPTION_ID="IFSSO_kgDOBSkdRQ" ;;
+                Low)  EFFORT_OPTION_ID="IFSSO_kgDOBSkdRw" ;;
+                *)    EFFORT_OPTION_ID="IFSSO_kgDOBSkdRg" ;;
+              esac
+            fi
+            if [ -n "$ISSUE_ID" ] && [ -n "$EFFORT_FIELD_ID" ] && [ -n "$EFFORT_OPTION_ID" ]; then
+              gh api graphql -f query='
+                mutation($issueId: ID!, $fieldId: ID!, $optionId: ID!) {
+                  setIssueFieldValue(input: {
+                    issueId: $issueId,
+                    issueFields: [{ fieldId: $fieldId, singleSelectOptionId: $optionId }]
+                  }) { issue { id } }
+                }' -f issueId="$ISSUE_ID" -f fieldId="$EFFORT_FIELD_ID" -f optionId="$EFFORT_OPTION_ID" >/dev/null 2>&1 || true
+            fi
+
+            PROJECT=$(echo "$DATA" | jq -c --arg title "$PROJECT_TITLE" --arg repo "$REPO" '.data.repository.owner.projectsV2.nodes[]? | select((.title | ascii_downcase | sub("\\.js$"; "")) == ($title | ascii_downcase | sub("\\.js$"; "")) or (.title | ascii_downcase) == ($repo | ascii_downcase))' | head -n 1)
+            PROJECT_ID=$(echo "$PROJECT" | jq -r '.id // empty')
+            FIELD_ID=$(echo "$PROJECT" | jq -r '.field.id // empty')
+            OPTION_ID=$(echo "$PROJECT" | jq -r '.field.options[]? | select((.name | ascii_downcase) == "triage") | .id' | head -n 1)
+
+            if [ -n "$ISSUE_ID" ] && [ -n "$PROJECT_ID" ]; then
+              ITEM_ID=$(gh api graphql -f query='
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } }
+                }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_ID" --jq '.data.addProjectV2ItemById.item.id' 2>/dev/null || true)
+              if [ -z "$ITEM_ID" ]; then
+                ITEM_ID=$(echo "$DATA" | jq -r --arg pid "$PROJECT_ID" '.data.repository.issue.projectItems.nodes[]? | select(.project.id == $pid) | .id' | head -n 1)
+              fi
+              if [ -n "$ITEM_ID" ] && [ -n "$FIELD_ID" ] && [ -n "$OPTION_ID" ]; then
+                gh api graphql -f query='
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+                      value: { singleSelectOptionId: $optionId }
+                    }) { projectV2Item { id } }
+                  }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f optionId="$OPTION_ID" >/dev/null 2>&1 || true
+              fi
+            fi
+
+            {
+              if [ "$CREATED_COUNT" -eq 1 ]; then
+                echo ""
+                echo "### Created Audit Finding Issues"
+              fi
+              echo "- ${ISSUE_URL}: ${TITLE}"
+            } >> audit-report.md
+          done
+
+          echo "created_count=${CREATED_COUNT}" >> "$GITHUB_OUTPUT"
+          rm -f audit-findings.json
+
+      - name: Restore repo primitives and publish summary
+        if: always() && steps.preflight.outputs.skip != 'true'
+        env:
+          AGENT: ${{ inputs.agent }}
+          SCOPE: ${{ inputs.scope }}
+        run: |
+          git ls-files -z | xargs -0 -r git update-index --no-skip-worktree 2>/dev/null || true
+          git clean -fd .github/instructions .github/agents .github/prompts .github/skills .agents .claude .cursor .gemini
+          git checkout -- . 2>/dev/null || true
+          if [ -f audit-report.md ]; then
+            cat audit-report.md >> "$GITHUB_STEP_SUMMARY"
+            rm -f audit-report.md
+          else
+            echo "Automated \`${AGENT}\` audit in \`${SCOPE}\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
