@@ -1,0 +1,97 @@
+# Managed by coding-pal (templates/callers/release.yml). Re-generate with scripts/factory/bootstrap.sh instead of editing.
+name: Pipeline - Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number for the merged pull request'
+        required: true
+        type: string
+      pr_number:
+        description: 'Merged pull request number'
+        required: true
+        type: string
+      base_ref:
+        description: 'Base branch into which the PR was merged'
+        required: false
+        type: string
+        default: 'main'
+      prove_base_sha:
+        description: 'Base commit SHA before the PR merge'
+        required: true
+        type: string
+      release_merge_sha:
+        description: 'Merge commit SHA produced by the PR merge'
+        required: true
+        type: string
+      release_started_at:
+        description: 'UTC ISO-8601 timestamp recorded right before PR merge'
+        required: true
+        type: string
+      release_sha:
+        description: 'Release commit SHA if a GitHub Release was created (optional)'
+        required: false
+        type: string
+        default: ''
+      release_tag:
+        description: 'Release tag if a GitHub Release was created (optional)'
+        required: false
+        type: string
+        default: ''
+      project_title:
+        description: 'GitHub Project V2 board title'
+        required: false
+        type: string
+        default: '__PROJECT_TITLE__'
+      deployment_workflow:
+        description: 'Push-triggered deployment workflow to await before Done'
+        required: false
+        type: string
+        default: ''
+      deployment_paths:
+        description: 'Newline-separated git paths matching the deployment push filter'
+        required: false
+        type: string
+        default: ''
+      deployment_event:
+        description: 'Event that triggers the deployment workflow (push or release)'
+        required: false
+        type: string
+        default: 'release'
+      publish_workflow:
+        description: 'Workflow triggered by the published GitHub Release that builds the container images'
+        required: false
+        type: string
+        default: 'publish.yml'
+      batch_issues:
+        description: 'Space-separated numbers of other merged issues released together in the same milestone train'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  actions: read
+
+jobs:
+  release:
+    uses: __ENGINE_REPO__/.github/workflows/pipeline-release.yml@__ENGINE_REF__
+    with:
+      issue_number: ${{ inputs.issue_number }}
+      pr_number: ${{ inputs.pr_number }}
+      base_ref: ${{ inputs.base_ref || 'main' }}
+      prove_base_sha: ${{ inputs.prove_base_sha }}
+      release_merge_sha: ${{ inputs.release_merge_sha }}
+      release_started_at: ${{ inputs.release_started_at }}
+      release_sha: ${{ inputs.release_sha || '' }}
+      release_tag: ${{ inputs.release_tag || '' }}
+      project_title: ${{ inputs.project_title || '__PROJECT_TITLE__' }}
+      deployment_workflow: ${{ inputs.deployment_workflow || '' }}
+      deployment_paths: ${{ inputs.deployment_paths || '' }}
+      deployment_event: ${{ inputs.deployment_event || 'release' }}
+      publish_workflow: ${{ inputs.publish_workflow || 'publish.yml' }}
+      batch_issues: ${{ inputs.batch_issues || '' }}
+    secrets: inherit

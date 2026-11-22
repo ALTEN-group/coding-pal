@@ -1,0 +1,31 @@
+# Managed by coding-pal (templates/callers/think.yml). Re-generate with scripts/factory/bootstrap.sh instead of editing.
+name: Pipeline - Think
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to analyze with the Think agent'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+  pull-requests: read
+
+jobs:
+  think:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.event.issue.state == 'open' &&
+       github.event.label.name == '1-think')
+    uses: __ENGINE_REPO__/.github/workflows/pipeline-think.yml@__ENGINE_REF__
+    with:
+      issue_number: ${{ inputs.issue_number || github.event.issue.number }}
+      project_title: __PROJECT_TITLE__
+    secrets: inherit
