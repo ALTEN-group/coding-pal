@@ -1,0 +1,142 @@
+name: Audit fleet (all repos)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Repositories to audit'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - libraries
+          - editors
+          - DoomR.js
+          - BumpR.js
+          - Cadenza
+          - FaceGun
+          - FaceR.js
+          - GroovR.js
+          - LoopR.js
+          - MappR
+          - PixelGun
+          - PolyGun
+          - RoostR.js
+          - ShaderGun
+          - Spock.js
+      audit:
+        description: 'Audit to run'
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - dependency-audit
+          - vector-first-audit
+          - perf-audit
+          - dead-code-audit
+          - test-gap-audit
+          - docs-sync-audit
+          - a11y-audit
+      scope:
+        description: 'Path to audit (e.g. src/)'
+        type: string
+        default: 'src/'
+      dependency:
+        description: 'Dependency filter for dependency-audit (or "all")'
+        type: string
+        default: 'all'
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Dispatch audits across target repositories
+        id: dispatch_fleet
+        env:
+          GH_TOKEN: ${{ secrets.PIPELINE_GITHUB_TOKEN }}
+          TARGET: ${{ inputs.target }}
+          AUDIT: ${{ inputs.audit }}
+          SCOPE: ${{ inputs.scope }}
+          DEPENDENCY: ${{ inputs.dependency }}
+        run: |
+          case "$TARGET" in
+            all)
+              REPOS="BumpR.js Cadenza DoomR.js FaceGun FaceR.js GroovR.js LoopR.js MappR PixelGun PolyGun RoostR.js ShaderGun Spock.js"
+              ;;
+            libraries)
+              REPOS="BumpR.js FaceR.js GroovR.js LoopR.js RoostR.js Spock.js"
+              ;;
+            editors)
+              REPOS="Cadenza FaceGun MappR PixelGun PolyGun ShaderGun"
+              ;;
+            *)
+              REPOS="$TARGET"
+              ;;
+          esac
+
+          SCOPE_VAL="${SCOPE:-src/}"
+          DEP_VAL="${DEPENDENCY:-all}"
+          DISPATCHED=0
+
+          {
+            echo "### Fleet Audit Dispatch Summary"
+            echo ""
+            echo "- **Target:** \`${TARGET}\`"
+            echo "- **Audit:** \`${AUDIT}\`"
+            echo "- **Scope:** \`${SCOPE_VAL}\`"
+            echo ""
+            echo "| Repository | Status |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for REPO in $REPOS; do
+            case "$TARGET" in
+              all|libraries|editors)
+                IS_PRIVATE=$(gh repo view "1pizzateam/${REPO}" --json isPrivate --jq '.isPrivate // false' 2>/dev/null || echo "false")
+                if [ "$IS_PRIVATE" = "true" ]; then
+                  echo "Skipping ${REPO}: private repositories are excluded from group fleet dispatches."
+                  echo "| \`1pizzateam/${REPO}\` | Skipped (private repository) |" >> "$GITHUB_STEP_SUMMARY"
+                  continue
+                fi
+                ;;
+            esac
+
+            if [ "$AUDIT" = "docs-sync-audit" ]; then
+              case "$REPO" in
+                BumpR.js|FaceGun|FaceR.js|GroovR.js|LoopR.js|RoostR.js|Spock.js) ;;
+                *)
+                  echo "Skipping ${REPO}: docs-sync-audit is not configured for this repository."
+                  echo "| \`1pizzateam/${REPO}\` | Skipped (\`docs-sync-audit\` not applicable) |" >> "$GITHUB_STEP_SUMMARY"
+                  continue
+                  ;;
+              esac
+            fi
+
+            if [ "$AUDIT" = "a11y-audit" ]; then
+              case "$REPO" in
+                Cadenza|DoomR.js|FaceGun|MappR|PixelGun|PolyGun|ShaderGun) ;;
+                *)
+                  echo "Skipping ${REPO}: a11y-audit is only configured for UI/editor repositories."
+                  echo "| \`1pizzateam/${REPO}\` | Skipped (\`a11y-audit\` not applicable) |" >> "$GITHUB_STEP_SUMMARY"
+                  continue
+                  ;;
+              esac
+            fi
+
+            gh workflow run audits.yml \
+              --repo "1pizzateam/${REPO}" \
+              -f "audit=${AUDIT}" \
+              -f "scope=${SCOPE_VAL}" \
+              -f "dependency=${DEP_VAL}"
+            DISPATCHED=$((DISPATCHED + 1))
+            echo "| \`1pizzateam/${REPO}\` | Dispatched \`${AUDIT}\` |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo "dispatched_count=${DISPATCHED}" >> "$GITHUB_OUTPUT"

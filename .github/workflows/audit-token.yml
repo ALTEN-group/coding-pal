@@ -1,0 +1,14 @@
+name: Audit agent - token-audit
+
+on:
+  workflow_call:
+    inputs:
+      scope: { type: string, default: '.' }
+
+jobs:
+  audit:
+    uses: 1pizzateam/coding-pal/.github/workflows/audit-runner.yml@main
+    with:
+      agent: token-audit
+      scope: ${{ inputs.scope }}
+    secrets: inherit

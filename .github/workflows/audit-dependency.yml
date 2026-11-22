@@ -1,0 +1,16 @@
+name: Audit agent - dependency-leverage
+
+on:
+  workflow_call:
+    inputs:
+      scope: { type: string, default: 'src/' }
+      dependency: { type: string, default: 'all' }
+
+jobs:
+  audit:
+    uses: 1pizzateam/coding-pal/.github/workflows/audit-runner.yml@main
+    with:
+      agent: dependency-leverage
+      scope: ${{ inputs.scope }}
+      prompt: "Dependency filter: ${{ inputs.dependency }}."
+    secrets: inherit

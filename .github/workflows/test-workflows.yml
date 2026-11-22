@@ -1,0 +1,49 @@
+name: CI - Workflow tests
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+      - 'tests/**'
+      - 'skills/release-bump/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'tests/**'
+      - 'skills/release-bump/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.7
+        run: |
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          cd "$RUNNER_TEMP/actionlint"
+          curl --fail --silent --show-error --location --remote-name \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --remote-name \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          sha256sum --check --ignore-missing "actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
+      - name: Lint pipeline workflows
+        run: |
+          actionlint -shellcheck= .github/workflows/*.yml
+      - name: Run workflow regression tests
+        run: ruby tests/workflows_test.rb
+      - name: Run release bump classifier tests
+        env:
+          TS_FROM: ${{ runner.temp }}/ts
+        run: |
+          mkdir -p "$TS_FROM"
+          npm install --prefix "$TS_FROM" --no-audit --no-fund typescript
+          node --test tests/classify-bump.test.mjs

@@ -1,0 +1,14 @@
+name: Audit agent - docs-sync
+
+on:
+  workflow_call:
+    inputs:
+      scope: { type: string, default: 'src/' }
+
+jobs:
+  audit:
+    uses: 1pizzateam/coding-pal/.github/workflows/audit-runner.yml@main
+    with:
+      agent: docs-sync
+      scope: ${{ inputs.scope }}
+    secrets: inherit
