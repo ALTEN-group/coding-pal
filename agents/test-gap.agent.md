@@ -11,6 +11,7 @@ description: "Identify untested branches and edge cases in source modules and re
    - `"priority"`: GitHub issue priority (`"Urgent"`, `"High"`, `"Medium"`, or `"Low"`)
    - `"model"`: recommended Copilot model for remediation (`"claude-sonnet-5.5"`, `"claude-opus-5.5"`, `"claude-haiku-5.5"`, `"gpt-6.1-sol"`, `"gpt-6.1-terra"`, `"gpt-6-luna"`, `"gpt-5.3-codex"`, `"gemini-4-argon"`, `"gemini-3.8-flash"`, or `"auto"`) based on finding complexity
    - `"effort"`: recommended thinking effort (`"Low"`, `"Medium"`, `"High"`, or `"Max"`) based on reasoning depth required
+   - `"quick"`: boolean (`true` or `false`) indicating whether the finding is a simple, self-contained fix with clear affected files and straightforward remediation that should receive the `quick` fast-path label; adding missing tests is mechanical, so set `true` unless the tests need design judgment
    - `"problem"`: clear explanation of the untested branches, methods, or edge cases
    - `"affectedFiles"`: array of affected source and test file paths
    - `"suggestedFix"`: concrete unit tests to add
